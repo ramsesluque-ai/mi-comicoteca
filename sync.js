@@ -1,6 +1,6 @@
 'use strict';
 (function(){
-const OWNER='ramsesluque-ai',REPO='mi-comicoteca',BRANCH='main',PATH='comicoteca-sync.enc.json';
+const OWNER='ramsesluque-ai',REPO='mi-comicoteca',BRANCH='sync-data',PATH='comicoteca-sync.enc.json';
 const RAW=`https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${PATH}`,API=`https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`;
 const PK='mc_sync_pass_v1',TK='mc_github_token_v1',RK='mc_sync_revision_v1';
 let pass=sessionStorage.getItem(PK)||localStorage.getItem(PK)||'',token=localStorage.getItem(TK)||'',suppress=false,timer=null,pushing=false;
@@ -13,7 +13,7 @@ async function unzip(u){const d=new DecompressionStream('gzip');return new Uint8
 async function decrypt(e,p){const k=await key(p,b64bytes(e.salt),e.iterations||250000);let u=new Uint8Array(await crypto.subtle.decrypt({name:'AES-GCM',iv:b64bytes(e.iv)},k,b64bytes(e.ciphertext)));if(e.compression==='gzip')u=await unzip(u);return JSON.parse(dec.decode(u))}
 async function encrypt(data,p,revision){const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12)),k=await key(p,salt,250000),plain=await zip(enc.encode(JSON.stringify(data))),ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},k,plain));return{v:2,alg:'AES-GCM',kdf:'PBKDF2-SHA256',iterations:250000,compression:'gzip',revision,updatedAt:new Date().toISOString(),salt:bytes64(salt),iv:bytes64(iv),ciphertext:bytes64(ct)}}
 async function remote(optional=false){const r=await fetch(RAW+'?t='+Date.now(),{cache:'no-store'});if(r.ok)return r.json();if(r.status===404&&optional)return null;throw Error(r.status===404?'Todavía no existe una copia central. Importa tu colección en este dispositivo y pulsa “Guardar ahora”.':'No se pudo leer la copia central ('+r.status+')')}
-async function ghfile(){const r=await fetch(API,{headers:{Accept:'application/vnd.github+json',Authorization:'Bearer '+token,'X-GitHub-Api-Version':'2022-11-28'},cache:'no-store'});if(r.status===404)return null;if(!r.ok)throw Error('GitHub rechazó la credencial ('+r.status+')');return r.json()}
+async function ghfile(){const r=await fetch(API+'?ref='+encodeURIComponent(BRANCH),{headers:{Accept:'application/vnd.github+json',Authorization:'Bearer '+token,'X-GitHub-Api-Version':'2022-11-28'},cache:'no-store'});if(r.status===404)return null;if(!r.ok)throw Error('GitHub rechazó la credencial ('+r.status+')');return r.json()}
 async function ghput(text,sha){const body={message:'Sincroniza MI COMICOTECA',content:bytes64(enc.encode(text)),branch:BRANCH};if(sha)body.sha=sha;const r=await fetch(API,{method:'PUT',headers:{Accept:'application/vnd.github+json',Authorization:'Bearer '+token,'X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json'},body:JSON.stringify(body)});if(!r.ok){let m='';try{m=(await r.json()).message}catch{}throw Error('No se pudo guardar en GitHub ('+r.status+'): '+m)}return r.json()}
 const rev=()=>+(localStorage.getItem(RK)||0);function setRev(n){localStorage.setItem(RK,String(n||0));badge()}
 function setPass(p,remember){pass=p;sessionStorage.setItem(PK,p);remember?localStorage.setItem(PK,p):localStorage.removeItem(PK)}
