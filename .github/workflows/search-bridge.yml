@@ -27,7 +27,9 @@ jobs:
       - name: Python dependencies
         run: pip install --quiet requests beautifulsoup4 pillow
       - name: Search bibliographic sources
-        run: python bridge_worker.py
+        run: python bridge_worker_v2.py
+      - name: Update Master cover overlay
+        run: python bridge_overlay.py
       - name: Save result cache
         run: |
           git config user.name 'github-actions[bot]'
