@@ -38,7 +38,7 @@
     let v=String(r?.issueNr??r?.issue??'').trim();
     if(typeof mcSEIssue==='function')v=mcSEIssue(v);
     else v=v.replace(/^0+(?=\d)/,'');
-    return v?kn(v):'id:'+String(r?.id||Math.random());
+    return v?kn(v):'id:'+String(r?.id||'sin-id');
   }
 
   try{
@@ -113,6 +113,7 @@
   }
 
   try{renderSeries=v50RenderSeries;window.renderSeries=v50RenderSeries;openSeries=v50OpenSeries;window.openSeries=v50OpenSeries}catch{}
+  window.mcCollectionIdentityV50={canonical,fullKey,looseKey,issueKey,currentStatic,resolvedKey};
 
   try{
     const mark='mc_v50_collection_identity_boot';
