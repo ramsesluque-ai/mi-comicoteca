@@ -1,5 +1,5 @@
 {
-  "ok": false,
+  "ok": true,
   "requestId": "test-all-star-batman-3",
   "cacheKey": "all-star-batman-renacimiento-ecc-3-9788416998289",
   "query": {
@@ -12,6 +12,25 @@
     "issue": "3",
     "isbn": "9788416998289"
   },
-  "generatedAt": "2026-10-22T18:21:29Z",
-  "candidates": []
+  "candidates": [
+    {
+      "source": "Fuente española · respaldo",
+      "score": 15000,
+      "data": {
+        "title": "ALL-STAR BATMAN #03 UNIVERSO DC RENACIMIENTO",
+        "publisher": "ECC Ediciones",
+        "publicationDate": "",
+        "pages": "",
+        "isbn": "9788416998289",
+        "series": "All-Star Batman: Renacimiento",
+        "issueNr": "3",
+        "coverUrl": "https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/covers/all-star-batman-renacimiento-ecc-3-9788416998289-fallback.webp",
+        "sourceUrl": "https://tienda.dreamers.es/productos/823372_ALLSTAR_BATMAN_03_UNIVERSO_DC_RENACIMIENTO.html",
+        "originalCoverUrl": "https://tienda.dreamers.es/imagenes/823372.jpg",
+        "coverUrls": [
+          "https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/covers/all-star-batman-renacimiento-ecc-3-9788416998289-fallback.webp"
+        ]
+      }
+    }
+  ]
 }
