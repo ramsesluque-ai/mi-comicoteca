@@ -26,6 +26,8 @@ jobs:
           fetch-depth: 0
       - name: Python dependencies
         run: pip install --quiet requests beautifulsoup4 pillow
+      - name: Exact GCD sourceId cover
+        run: python bridge_gcd_sourceid.py
       - name: Spanish ISBN fallback
         run: python bridge_fallback_spanish.py
       - name: Search bibliographic sources
