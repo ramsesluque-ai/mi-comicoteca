@@ -129,6 +129,19 @@
     "sourceUrl": "https://covers.openlibrary.org/b/id/7445647-L.jpg",
     "title": ""
   },
+  "9788415153061": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/14050320-L.jpg",
+    "isbn": "9788415153061",
+    "issueNr": "1",
+    "pages": "240",
+    "publicationDate": "2010-12-00",
+    "publisher": "Diábolo Ediciones",
+    "series": "Los Archivos de Steve Ditko",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/14050320-L.jpg",
+    "title": "Strange Suspense"
+  },
   "9788415225126": {
     "_score": 12000,
     "coverUrl": "https://covers.openlibrary.org/b/id/13975468-L.jpg",
@@ -298,6 +311,45 @@
     "sourceUrl": "https://covers.openlibrary.org/b/id/7355581-L.jpg",
     "title": "Noël"
   },
+  "9788415850328": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/7349265-L.jpg",
+    "isbn": "9788415850328",
+    "issueNr": "1",
+    "pages": "64",
+    "publicationDate": "2014-04-00",
+    "publisher": "Dibbuks",
+    "series": "Los Campbell",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/7349265-L.jpg",
+    "title": "Inferno"
+  },
+  "9788415850540": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/7884896-L.jpg",
+    "isbn": "9788415850540",
+    "issueNr": "[nn]",
+    "pages": "128",
+    "publicationDate": "2015-09-00",
+    "publisher": "Dibbuks",
+    "series": "El Fantasma de Gaudi",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/7884896-L.jpg",
+    "title": ""
+  },
+  "9788415850663": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/8181523-L.jpg",
+    "isbn": "9788415850663",
+    "issueNr": "5",
+    "pages": "68",
+    "publicationDate": "2015-02-00",
+    "publisher": "Dibbuks",
+    "series": "Una aventura de Spirou por...",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/8181523-L.jpg",
+    "title": "El botones de verde caqui"
+  },
   "9788416074037": {
     "_score": 12000,
     "coverUrl": "https://covers.openlibrary.org/b/id/13949148-L.jpg",
@@ -415,6 +467,45 @@
     "sourceUrl": "https://covers.openlibrary.org/b/id/8191675-L.jpg",
     "title": ""
   },
+  "9788416303175": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/8255294-L.jpg",
+    "isbn": "9788416303175",
+    "issueNr": "[nn]",
+    "pages": "200",
+    "publicationDate": "2015-01-00",
+    "publisher": "ECC",
+    "series": "Astro City: Vida en la Gran Ciudad",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/8255294-L.jpg",
+    "title": ""
+  },
+  "9788416475582": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/12661960-L.jpg",
+    "isbn": "9788416475582",
+    "issueNr": "[1]",
+    "pages": "144",
+    "publicationDate": "2015-08-00",
+    "publisher": "ECC",
+    "series": "Batgirl",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/12661960-L.jpg",
+    "title": ""
+  },
+  "9788416475599": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/12331975-L.jpg",
+    "isbn": "9788416475599",
+    "issueNr": "2",
+    "pages": "144",
+    "publicationDate": "2015-08-26",
+    "publisher": "ECC",
+    "series": "Aquaman",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/12331975-L.jpg",
+    "title": ""
+  },
   "9788416486137": {
     "_score": 12000,
     "coverUrl": "https://covers.openlibrary.org/b/id/8151219-L.jpg",
@@ -465,6 +556,32 @@
     "series": "Viento Mágico",
     "source": "Backfill · OpenLibrary",
     "sourceUrl": "https://covers.openlibrary.org/b/id/13949090-L.jpg",
+    "title": ""
+  },
+  "9788416507108": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/8760610-L.jpg",
+    "isbn": "9788416507108",
+    "issueNr": "3",
+    "pages": "64",
+    "publicationDate": "2016-02-00",
+    "publisher": "Dibbuks",
+    "series": "Los Campbell",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/8760610-L.jpg",
+    "title": "¡Raptado!"
+  },
+  "9788416840229": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/10671498-L.jpg",
+    "isbn": "9788416840229",
+    "issueNr": "[3]",
+    "pages": "200",
+    "publicationDate": "2016-08-00",
+    "publisher": "ECC",
+    "series": "Batgirl",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/10671498-L.jpg",
     "title": ""
   },
   "9788416880058": {
@@ -584,6 +701,84 @@
     "sourceUrl": "https://www.milcomics.com/comic-batman/all-star-batman-06-renacimiento-88209.html",
     "title": "Comprar All-Star Batman 06 (Renacimiento) - Mil Comics: Tienda de cómics y figuras Marvel, DC Comics, Star Wars, Tintín"
   },
+  "9788417147303": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/12327096-L.jpg",
+    "isbn": "9788417147303",
+    "issueNr": "7",
+    "pages": "36",
+    "publicationDate": "2017-07-00",
+    "publisher": "ECC",
+    "series": "All-Star Batman: Renacimiento",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/12327096-L.jpg",
+    "title": ""
+  },
+  "9788417243999": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/12332007-L.jpg",
+    "isbn": "9788417243999",
+    "issueNr": "12",
+    "pages": "36",
+    "publicationDate": "2017-12-00",
+    "publisher": "ECC",
+    "series": "All-Star Batman: Renacimiento",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/12332007-L.jpg",
+    "title": ""
+  },
+  "9788417276713": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/12327090-L.jpg",
+    "isbn": "9788417276713",
+    "issueNr": "13",
+    "pages": "32",
+    "publicationDate": "2017-12-00",
+    "publisher": "ECC",
+    "series": "All-Star Batman: Renacimiento",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/12327090-L.jpg",
+    "title": ""
+  },
+  "9788417316174": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/12327089-L.jpg",
+    "isbn": "9788417316174",
+    "issueNr": "14",
+    "pages": "36",
+    "publicationDate": "2018-02-00",
+    "publisher": "ECC",
+    "series": "All-Star Batman: Renacimiento",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/12327089-L.jpg",
+    "title": ""
+  },
+  "9788417354183": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/12327085-L.jpg",
+    "isbn": "9788417354183",
+    "issueNr": "15",
+    "pages": "36",
+    "publicationDate": "2018-03-00",
+    "publisher": "ECC",
+    "series": "All-Star Batman: Renacimiento",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/12327085-L.jpg",
+    "title": ""
+  },
+  "9788417787202": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/13914450-L.jpg",
+    "isbn": "9788417787202",
+    "issueNr": "1",
+    "pages": "248",
+    "publicationDate": "2019-03-00",
+    "publisher": "ECC",
+    "series": "Batman",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/13914450-L.jpg",
+    "title": "Batman e Hijo"
+  },
   "9788418101427": {
     "_score": 12000,
     "coverUrl": "https://covers.openlibrary.org/b/id/10953819-L.jpg",
@@ -595,6 +790,71 @@
     "series": "Claudio et Lucia contre l'agence FAKE",
     "source": "Backfill · OpenLibrary",
     "sourceUrl": "https://covers.openlibrary.org/b/id/10953819-L.jpg",
+    "title": ""
+  },
+  "9788418320330": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/14049715-L.jpg",
+    "isbn": "9788418320330",
+    "issueNr": "1",
+    "pages": "224",
+    "publicationDate": "2021-06-03",
+    "publisher": "Diábolo Ediciones",
+    "series": "Tales from the Crypt",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/14049715-L.jpg",
+    "title": ""
+  },
+  "9788418320477": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/14049765-L.jpg",
+    "isbn": "9788418320477",
+    "issueNr": "1",
+    "pages": "224",
+    "publicationDate": "2021-10-00",
+    "publisher": "Diábolo Ediciones",
+    "series": "Weird Science",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/14049765-L.jpg",
+    "title": ""
+  },
+  "9788418320576": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/14049714-L.jpg",
+    "isbn": "9788418320576",
+    "issueNr": "2",
+    "pages": "224",
+    "publicationDate": "2021-12-00",
+    "publisher": "Diábolo Ediciones",
+    "series": "Tales from the Crypt",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/14049714-L.jpg",
+    "title": ""
+  },
+  "9788418320798": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/14049711-L.jpg",
+    "isbn": "9788418320798",
+    "issueNr": "3",
+    "pages": "224",
+    "publicationDate": "2022-07-00",
+    "publisher": "Diábolo Ediciones",
+    "series": "Tales from the Crypt",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/14049711-L.jpg",
+    "title": ""
+  },
+  "9788418320910": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/14049733-L.jpg",
+    "isbn": "9788418320910",
+    "issueNr": "3",
+    "pages": "224",
+    "publicationDate": "2022-11-00",
+    "publisher": "Diábolo Ediciones",
+    "series": "Weird Science",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/14049733-L.jpg",
     "title": ""
   },
   "9788418589331": {
@@ -609,6 +869,19 @@
     "source": "Bridge · MilComics",
     "sourceUrl": "https://www.milcomics.com/comic-americano/battlefields-integral-01-las-brujas-de-la-noche-162524.html",
     "title": "Comprar Battlefields Integral 01: Las brujas de la noche - Mil Comics: Tienda de cómics y figuras Marvel, DC Comics, Star Wars, Tintín"
+  },
+  "9788419740007": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/15101209-L.jpg",
+    "isbn": "9788419740007",
+    "issueNr": "[nn]",
+    "pages": "192",
+    "publicationDate": "2023-03-00",
+    "publisher": "Dolmen",
+    "series": "Barbarella",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/15101209-L.jpg",
+    "title": ""
   },
   "9788492615292": {
     "_score": 12000,
@@ -662,6 +935,19 @@
     "sourceUrl": "https://covers.openlibrary.org/b/id/7089362-L.jpg",
     "title": ""
   },
+  "9788492902446": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/7270445-L.jpg",
+    "isbn": "9788492902446",
+    "issueNr": "[nn]",
+    "pages": "164",
+    "publicationDate": "2011-06-00",
+    "publisher": "Dibbuks",
+    "series": "El azul es un color cálido",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/7270445-L.jpg",
+    "title": ""
+  },
   "9788493508807": {
     "_score": 12000,
     "coverUrl": "https://covers.openlibrary.org/b/id/10874514-L.jpg",
@@ -673,6 +959,32 @@
     "series": "Shenzhen",
     "source": "Backfill · OpenLibrary",
     "sourceUrl": "https://covers.openlibrary.org/b/id/10874514-L.jpg",
+    "title": ""
+  },
+  "9788493676407": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/14050356-L.jpg",
+    "isbn": "9788493676407",
+    "issueNr": "3",
+    "pages": "84",
+    "publicationDate": "2008-11-00",
+    "publisher": "Diábolo Ediciones",
+    "series": "Cthulhu",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/14050356-L.jpg",
+    "title": ""
+  },
+  "9788494819278": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/14049729-L.jpg",
+    "isbn": "9788494819278",
+    "issueNr": "[nn]",
+    "pages": "116",
+    "publicationDate": "2018-03-00",
+    "publisher": "Diábolo Ediciones",
+    "series": "Cthulhu: Especial 10º aniversario",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/14049729-L.jpg",
     "title": ""
   },
   "9788496587519": {
