@@ -1,5 +1,5 @@
 {
-  "ok": false,
+  "ok": true,
   "requestId": "test-all-star-batman-1",
   "cacheKey": "all-star-batman-renacimiento-ecc-1-9788416945313",
   "query": {
@@ -12,6 +12,26 @@
     "issue": "1",
     "isbn": "9788416945313"
   },
-  "generatedAt": "2026-10-22T14:11:38Z",
-  "candidates": []
+  "generatedAt": "2026-10-22T14:34:23Z",
+  "candidates": [
+    {
+      "source": "MilComics",
+      "score": 16100,
+      "data": {
+        "title": "Comprar All-Star Batman 01 (Renacimiento) - Mil Comics: Tienda de cómics y figuras Marvel, DC Comics, Star Wars, Tintín",
+        "publisher": "Ecc Ediciones Encuadernacion ComiC-Book (grapa) Formato En Castellano EAN 978841",
+        "publicationDate": "2016-12-01",
+        "pages": "28.000",
+        "isbn": "9788416945313",
+        "series": "All-Star Batman: Renacimiento",
+        "issueNr": "1",
+        "coverUrl": "https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/covers/all-star-batman-renacimiento-ecc-1-9788416945313-1.webp",
+        "sourceUrl": "https://www.milcomics.com/comics-descatalogados/all-star-batman-01-renacimiento-103770.html",
+        "originalCoverUrl": "https://www.milcomics.com/1177080-thickbox_default/all-star-batman-01-renacimiento.jpg",
+        "coverUrls": [
+          "https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/covers/all-star-batman-renacimiento-ecc-1-9788416945313-1.webp"
+        ]
+      }
+    }
+  ]
 }
