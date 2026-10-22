@@ -1,0 +1,347 @@
+{
+  "snapshot": "20261001",
+  "issues": 124039,
+  "series": 5274,
+  "publishers": 338,
+  "priority": [
+    {
+      "publisher": "Aleta",
+      "slug": "aleta",
+      "issues": 270,
+      "series": 27,
+      "chunks": [
+        "publishers/aleta-001.json"
+      ],
+      "priority": true
+    },
+    {
+      "publisher": "Astiberri",
+      "slug": "astiberri",
+      "issues": 137,
+      "series": 79,
+      "chunks": [
+        "publishers/astiberri-001.json"
+      ],
+      "priority": true
+    },
+    {
+      "publisher": "Bruguera",
+      "slug": "bruguera",
+      "issues": 15578,
+      "series": 131,
+      "chunks": [
+        "publishers/bruguera-001.json",
+        "publishers/bruguera-002.json",
+        "publishers/bruguera-003.json",
+        "publishers/bruguera-004.json"
+      ],
+      "priority": true
+    },
+    {
+      "publisher": "Dibbuks",
+      "slug": "dibbuks",
+      "issues": 57,
+      "series": 21,
+      "chunks": [
+        "publishers/dibbuks-001.json"
+      ],
+      "priority": true
+    },
+    {
+      "publisher": "Dolmen",
+      "slug": "dolmen",
+      "issues": 671,
+      "series": 57,
+      "chunks": [
+        "publishers/dolmen-001.json"
+      ],
+      "priority": true
+    },
+    {
+      "publisher": "ECC",
+      "slug": "ecc",
+      "issues": 2529,
+      "series": 556,
+      "chunks": [
+        "publishers/ecc-001.json"
+      ],
+      "priority": true
+    },
+    {
+      "publisher": "Ediciones B",
+      "slug": "ediciones-b",
+      "issues": 2022,
+      "series": 52,
+      "chunks": [
+        "publishers/ediciones-b-001.json"
+      ],
+      "priority": true
+    },
+    {
+      "publisher": "Editorial Valenciana",
+      "slug": "editorial-valenciana",
+      "issues": 6374,
+      "series": 53,
+      "chunks": [
+        "publishers/editorial-valenciana-001.json",
+        "publishers/editorial-valenciana-002.json"
+      ],
+      "priority": true
+    },
+    {
+      "publisher": "El Jueves",
+      "slug": "el-jueves",
+      "issues": 3005,
+      "series": 10,
+      "chunks": [
+        "publishers/el-jueves-001.json"
+      ],
+      "priority": true
+    },
+    {
+      "publisher": "Ferma",
+      "slug": "ferma",
+      "issues": 3936,
+      "series": 46,
+      "chunks": [
+        "publishers/ferma-001.json"
+      ],
+      "priority": true
+    },
+    {
+      "publisher": "Glénat",
+      "slug": "glenat",
+      "issues": 862,
+      "series": 78,
+      "chunks": [
+        "publishers/glenat-001.json"
+      ],
+      "priority": true
+    },
+    {
+      "publisher": "Grijalbo-Dargaud",
+      "slug": "grijalbo-dargaud",
+      "issues": 1047,
+      "series": 23,
+      "chunks": [
+        "publishers/grijalbo-dargaud-001.json"
+      ],
+      "priority": true
+    },
+    {
+      "publisher": "Hispano Americana",
+      "slug": "hispano-americana",
+      "issues": 2440,
+      "series": 59,
+      "chunks": [
+        "publishers/hispano-americana-001.json"
+      ],
+      "priority": true
+    },
+    {
+      "publisher": "Ivrea",
+      "slug": "ivrea",
+      "issues": 15,
+      "series": 2,
+      "chunks": [
+        "publishers/ivrea-001.json"
+      ],
+      "priority": true
+    },
+    {
+      "publisher": "Juventud",
+      "slug": "juventud",
+      "issues": 53,
+      "series": 3,
+      "chunks": [
+        "publishers/juventud-001.json"
+      ],
+      "priority": true
+    },
+    {
+      "publisher": "La Cúpula",
+      "slug": "la-cupula",
+      "issues": 1190,
+      "series": 173,
+      "chunks": [
+        "publishers/la-cupula-001.json"
+      ],
+      "priority": true
+    },
+    {
+      "publisher": "Lumen",
+      "slug": "lumen",
+      "issues": 1,
+      "series": 1,
+      "chunks": [
+        "publishers/lumen-001.json"
+      ],
+      "priority": true
+    },
+    {
+      "publisher": "Maga",
+      "slug": "maga",
+      "issues": 4111,
+      "series": 79,
+      "chunks": [
+        "publishers/maga-001.json",
+        "publishers/maga-002.json"
+      ],
+      "priority": true
+    },
+    {
+      "publisher": "MC Ediciones",
+      "slug": "mc-ediciones",
+      "issues": 106,
+      "series": 6,
+      "chunks": [
+        "publishers/mc-ediciones-001.json"
+      ],
+      "priority": true
+    },
+    {
+      "publisher": "Milky Way",
+      "slug": "milky-way",
+      "issues": 59,
+      "series": 7,
+      "chunks": [
+        "publishers/milky-way-001.json"
+      ],
+      "priority": true
+    },
+    {
+      "publisher": "Molino",
+      "slug": "molino",
+      "issues": 74,
+      "series": 1,
+      "chunks": [
+        "publishers/molino-001.json"
+      ],
+      "priority": true
+    },
+    {
+      "publisher": "Montena",
+      "slug": "montena",
+      "issues": 46,
+      "series": 1,
+      "chunks": [
+        "publishers/montena-001.json"
+      ],
+      "priority": true
+    },
+    {
+      "publisher": "Norma",
+      "slug": "norma",
+      "issues": 2468,
+      "series": 250,
+      "chunks": [
+        "publishers/norma-001.json"
+      ],
+      "priority": true
+    },
+    {
+      "publisher": "Novaro",
+      "slug": "novaro",
+      "issues": 113,
+      "series": 4,
+      "chunks": [
+        "publishers/novaro-001.json"
+      ],
+      "priority": true
+    },
+    {
+      "publisher": "Panini",
+      "slug": "panini",
+      "issues": 5710,
+      "series": 871,
+      "chunks": [
+        "publishers/panini-001.json",
+        "publishers/panini-002.json"
+      ],
+      "priority": true
+    },
+    {
+      "publisher": "Planeta / DeAgostini",
+      "slug": "planeta-deagostini",
+      "issues": 11188,
+      "series": 858,
+      "chunks": [
+        "publishers/planeta-deagostini-001.json",
+        "publishers/planeta-deagostini-002.json",
+        "publishers/planeta-deagostini-003.json"
+      ],
+      "priority": true
+    },
+    {
+      "publisher": "Ponent Mon / Edicions de Ponent",
+      "slug": "ponent-mon-edicions-de-ponent",
+      "issues": 126,
+      "series": 24,
+      "chunks": [
+        "publishers/ponent-mon-edicions-de-ponent-001.json"
+      ],
+      "priority": true
+    },
+    {
+      "publisher": "Salvat",
+      "slug": "salvat",
+      "issues": 164,
+      "series": 3,
+      "chunks": [
+        "publishers/salvat-001.json"
+      ],
+      "priority": true
+    },
+    {
+      "publisher": "Toray",
+      "slug": "toray",
+      "issues": 7499,
+      "series": 76,
+      "chunks": [
+        "publishers/toray-001.json",
+        "publishers/toray-002.json"
+      ],
+      "priority": true
+    },
+    {
+      "publisher": "Toutain",
+      "slug": "toutain",
+      "issues": 606,
+      "series": 42,
+      "chunks": [
+        "publishers/toutain-001.json"
+      ],
+      "priority": true
+    },
+    {
+      "publisher": "Vértice",
+      "slug": "vertice",
+      "issues": 3019,
+      "series": 115,
+      "chunks": [
+        "publishers/vertice-001.json"
+      ],
+      "priority": true
+    },
+    {
+      "publisher": "Yermo",
+      "slug": "yermo",
+      "issues": 198,
+      "series": 63,
+      "chunks": [
+        "publishers/yermo-001.json"
+      ],
+      "priority": true
+    },
+    {
+      "publisher": "Zinco",
+      "slug": "zinco",
+      "issues": 3134,
+      "series": 255,
+      "chunks": [
+        "publishers/zinco-001.json"
+      ],
+      "priority": true
+    }
+  ]
+}
