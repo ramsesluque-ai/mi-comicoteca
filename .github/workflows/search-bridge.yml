@@ -28,6 +28,8 @@ jobs:
         run: pip install --quiet requests beautifulsoup4 pillow
       - name: Search bibliographic sources
         run: python bridge_worker_v2.py
+      - name: Spanish ISBN fallback
+        run: python bridge_fallback_spanish.py
       - name: Update Master cover overlay
         run: python bridge_overlay.py
       - name: Save result cache
