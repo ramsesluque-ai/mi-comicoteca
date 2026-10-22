@@ -220,6 +220,19 @@
     "sourceUrl": "https://covers.openlibrary.org/b/id/13949227-L.jpg",
     "title": ""
   },
+  "9788415520597": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/7282171-L.jpg",
+    "isbn": "9788415520597",
+    "issueNr": "1",
+    "pages": "96",
+    "publicationDate": "2012-05-00",
+    "publisher": "ECC",
+    "series": "Batman y Robin",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/7282171-L.jpg",
+    "title": ""
+  },
   "9788415685111": {
     "_score": 12000,
     "coverUrl": "https://covers.openlibrary.org/b/id/7283851-L.jpg",
@@ -350,6 +363,19 @@
     "sourceUrl": "https://covers.openlibrary.org/b/id/8181523-L.jpg",
     "title": "El botones de verde caqui"
   },
+  "9788415990079": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/12343063-L.jpg",
+    "isbn": "9788415990079",
+    "issueNr": "[nn]",
+    "pages": "80",
+    "publicationDate": "2013-12-00",
+    "publisher": "ECC",
+    "series": "Batman: El Caballero Oscuro - Irresistible",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/12343063-L.jpg",
+    "title": ""
+  },
   "9788416074037": {
     "_score": 12000,
     "coverUrl": "https://covers.openlibrary.org/b/id/13949148-L.jpg",
@@ -426,6 +452,19 @@
     "series": "Infiniment",
     "source": "Backfill · OpenLibrary",
     "sourceUrl": "https://covers.openlibrary.org/b/id/10502686-L.jpg",
+    "title": ""
+  },
+  "9788416194414": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/7319914-L.jpg",
+    "isbn": "9788416194414",
+    "issueNr": "[nn]",
+    "pages": "360",
+    "publicationDate": "2014-09-00",
+    "publisher": "ECC",
+    "series": "Batman: El Tribunal de los Búhos",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/7319914-L.jpg",
     "title": ""
   },
   "9788416251001": {
@@ -662,6 +701,19 @@
     "sourceUrl": "https://tienda.dreamers.es/productos/823372_ALLSTAR_BATMAN_03_UNIVERSO_DC_RENACIMIENTO.html",
     "title": "ALL-STAR BATMAN #03 UNIVERSO DC RENACIMIENTO"
   },
+  "9788417063344": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/12327484-L.jpg",
+    "isbn": "9788417063344",
+    "issueNr": "47",
+    "pages": "132",
+    "publicationDate": "2018-11-00",
+    "publisher": "ECC",
+    "series": "Batman y Superman: Colección Novelas Gráficas",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/12327484-L.jpg",
+    "title": "Batman: Más Oscuro que la Muerte"
+  },
   "9788417063504": {
     "_score": 16100,
     "coverUrl": "https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/covers/all-star-batman-renacimiento-ecc-4-9788417063504-1.webp",
@@ -712,6 +764,19 @@
     "series": "All-Star Batman: Renacimiento",
     "source": "Backfill · OpenLibrary",
     "sourceUrl": "https://covers.openlibrary.org/b/id/12327096-L.jpg",
+    "title": ""
+  },
+  "9788417176136": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/10528056-L.jpg",
+    "isbn": "9788417176136",
+    "issueNr": "[nn]",
+    "pages": "264",
+    "publicationDate": "2022-02-00",
+    "publisher": "ECC",
+    "series": "Batman: Año Uno - Segunda Edición",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/10528056-L.jpg",
     "title": ""
   },
   "9788417243999": {
@@ -792,6 +857,19 @@
     "sourceUrl": "https://covers.openlibrary.org/b/id/10953819-L.jpg",
     "title": ""
   },
+  "9788418225529": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/10860831-L.jpg",
+    "isbn": "9788418225529",
+    "issueNr": "[nn]",
+    "pages": "176",
+    "publicationDate": "2020-06-00",
+    "publisher": "ECC",
+    "series": "Batman: Condenado",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/10860831-L.jpg",
+    "title": ""
+  },
   "9788418320330": {
     "_score": 12000,
     "coverUrl": "https://covers.openlibrary.org/b/id/14049715-L.jpg",
@@ -869,6 +947,110 @@
     "source": "Bridge · MilComics",
     "sourceUrl": "https://www.milcomics.com/comic-americano/battlefields-integral-01-las-brujas-de-la-noche-162524.html",
     "title": "Comprar Battlefields Integral 01: Las brujas de la noche - Mil Comics: Tienda de cómics y figuras Marvel, DC Comics, Star Wars, Tintín"
+  },
+  "9788418660009": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/13914357-L.jpg",
+    "isbn": "9788418660009",
+    "issueNr": "1",
+    "pages": "28",
+    "publicationDate": "2021-04-20",
+    "publisher": "ECC",
+    "series": "Batman / Fortnite: Punto cero",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/13914357-L.jpg",
+    "title": ""
+  },
+  "9788418660146": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/13914319-L.jpg",
+    "isbn": "9788418660146",
+    "issueNr": "2",
+    "pages": "28",
+    "publicationDate": "2021-05-04",
+    "publisher": "ECC",
+    "series": "Batman / Fortnite: Punto cero",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/13914319-L.jpg",
+    "title": ""
+  },
+  "9788418660504": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/13914317-L.jpg",
+    "isbn": "9788418660504",
+    "issueNr": "3",
+    "pages": "28",
+    "publicationDate": "2021-05-18",
+    "publisher": "ECC",
+    "series": "Batman / Fortnite: Punto cero",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/13914317-L.jpg",
+    "title": ""
+  },
+  "9788418742156": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/13914316-L.jpg",
+    "isbn": "9788418742156",
+    "issueNr": "4",
+    "pages": "28",
+    "publicationDate": "2021-06-01",
+    "publisher": "ECC",
+    "series": "Batman / Fortnite: Punto cero",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/13914316-L.jpg",
+    "title": ""
+  },
+  "9788418742408": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/13914318-L.jpg",
+    "isbn": "9788418742408",
+    "issueNr": "5",
+    "pages": "28",
+    "publicationDate": "2021-06-15",
+    "publisher": "ECC",
+    "series": "Batman / Fortnite: Punto cero",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/13914318-L.jpg",
+    "title": ""
+  },
+  "9788418742774": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/13914305-L.jpg",
+    "isbn": "9788418742774",
+    "issueNr": "6",
+    "pages": "28",
+    "publicationDate": "2021-07-06",
+    "publisher": "ECC",
+    "series": "Batman / Fortnite: Punto cero",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/13914305-L.jpg",
+    "title": ""
+  },
+  "9788419428202": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/13914135-L.jpg",
+    "isbn": "9788419428202",
+    "issueNr": "12",
+    "pages": "36",
+    "publicationDate": "2022-09-00",
+    "publisher": "ECC",
+    "series": "Batman",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/13914135-L.jpg",
+    "title": ""
+  },
+  "9788419484598": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/13914136-L.jpg",
+    "isbn": "9788419484598",
+    "issueNr": "13",
+    "pages": "36",
+    "publicationDate": "2022-10-00",
+    "publisher": "ECC",
+    "series": "Batman",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/13914136-L.jpg",
+    "title": ""
   },
   "9788419740007": {
     "_score": 12000,
