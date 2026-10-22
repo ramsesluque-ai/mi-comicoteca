@@ -1,5 +1,5 @@
 'use strict';
-/* v42: overlays del Maestro por ISBN, sourceId GCD exacto y clave bibliográfica compuesta. */
+/* v43: overlays del Maestro sin alterar la identidad de serie/edición. */
 (function(){
   if(typeof mcSECode!=='function'||typeof mcSENorm!=='function'||typeof mcSEIssue!=='function')return;
 
@@ -38,17 +38,23 @@
     window.mcSEFromRow=mcSEFromRow;
   }
 
+  /*
+   * CRÍTICO: el overlay de portada NO puede cambiar la identidad estructural
+   * del Maestro. publisher/cabecera/volumen/etapa/año/número permanecen siempre
+   * como vienen del snapshot base. Solo enriquecemos metadatos auxiliares.
+   */
   if(typeof mcMasterEnrichRows==='function'){
     mcMasterEnrichRows=async function(rows){
       const over=await mcSEOverrides();
       return rows.map(r=>{
         const o=overrideFor(r,over)||{};
         return{...r,
-          title:o.title||r.title||'',publisher:o.publisher||r.publisher||'',
-          catalogHeader:o.series||r.catalogHeader||r.series||'',series:o.series||r.series||r.catalogHeader||'',
-          issueNr:o.issueNr||r.issueNr||r.issue||'',issue:o.issueNr||r.issue||r.issueNr||'',
-          publicationDate:o.publicationDate||r.publicationDate||'',pages:o.pages||r.pages||'',
-          isbn:o.isbn||r.isbn||'',coverUrl:o.coverUrl||r.coverUrl||'',sourceUrl:o.sourceUrl||r.sourceUrl||''
+          title:o.title||r.title||'',
+          publicationDate:o.publicationDate||r.publicationDate||'',
+          pages:o.pages||r.pages||'',
+          isbn:r.isbn||o.isbn||'',
+          coverUrl:o.coverUrl||r.coverUrl||'',
+          sourceUrl:o.sourceUrl||r.sourceUrl||''
         };
       });
     };
