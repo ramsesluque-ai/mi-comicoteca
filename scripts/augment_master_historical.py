@@ -11,9 +11,6 @@ OUT=ROOT/'master-data'
 PUBDIR=OUT/'publishers'
 CHUNK_SIZE=4000
 
-# El Maestro principal es España. Estas editoriales históricas tuvieron ediciones
-# en español relevantes para coleccionistas españoles aunque GCD las catalogue
-# bajo otro país de origen. Se incorporan explícitamente y de forma controlada.
 HISTORICAL_SPANISH_PUBLISHERS={
     'Novaro': ('novaro',),
 }
@@ -62,6 +59,24 @@ def stage_from_brand(v):
         if marker in n:
             return label
     return ''
+
+
+def normalize_header_stage(series, stage=''):
+    """Separa cabecera de etapa cuando GCD incrusta la etapa en el nombre de serie."""
+    series=str(series or '').strip(); stage=str(stage or '').strip()
+    patterns=[
+        (r'\s*[-–—:]\s*serie\s+águila\s*$', 'Serie Águila'),
+        (r'\s*[-–—:]\s*serie\s+aguila\s*$', 'Serie Águila'),
+        (r'\s*[-–—:]\s*serie\s+avestruz\s*$', 'Serie Avestruz'),
+        (r'\s*[-–—:]\s*serie\s+colibr[ií]\s*$', 'Serie Colibrí'),
+        (r'\s*[-–—:]\s*librocomic\s*$', 'Librocomic'),
+    ]
+    for pat,label in patterns:
+        if re.search(pat,series,re.I):
+            series=re.sub(pat,'',series,flags=re.I).strip()
+            if not stage: stage=label
+            break
+    return series,stage
 
 
 def bindings(v):
@@ -152,6 +167,7 @@ def supplement_rows():
         issue_raw=str(r.get('issue_number_raw') or r.get('issue_number') or '').strip()
         brand=str(r.get('historical_brand') or '')
         stage=stage_from_brand(brand)
+        series,stage=normalize_header_stage(series,stage)
         out.append({
           'id':f"gcd_{r.get('issue_id')}",
           'source':'GCD/gcdata', 'sourceId':str(r.get('issue_id') or ''),
@@ -171,13 +187,24 @@ def supplement_rows():
     return out
 
 
+def normalize_existing_historical(rows):
+    for r in rows:
+        if norm(r.get('publisher'))!='novaro':continue
+        h,s=normalize_header_stage(r.get('catalogHeader') or r.get('series') or '',r.get('stage') or '')
+        if h:
+            r['catalogHeader']=h
+            r['series']=h
+        if s:r['stage']=s
+    return rows
+
+
 def write_master(rows):
     old_index={}
     try: old_index=json.loads((OUT/'index.json').read_text(encoding='utf-8'))
     except: pass
     priority=old_index.get('priorityEditorials') or []
+    rows=normalize_existing_historical(rows)
 
-    # Recalcular volumen por editorial + cabecera + etapa para no mezclar Águila/Avestruz/etc.
     years=defaultdict(set)
     for r in rows:
         if r.get('startYear'):
@@ -189,7 +216,7 @@ def write_master(rows):
 
     rows.sort(key=lambda r:(norm(r.get('publisher')),norm(r.get('catalogHeader')),norm(r.get('stage')),int(r.get('startYear')) if str(r.get('startYear') or '').isdigit() else 9999,issue_sort(r.get('issueNr')),str(r.get('sourceId') or '')))
     bypub=defaultdict(list)
-    for r in rows:bypub[str(r.get('publisher') or 'Sin editorial')].append(r)
+    for r in rows:bypub[r.get('publisher') or 'Sin editorial'].append(r)
 
     if PUBDIR.exists():shutil.rmtree(PUBDIR)
     PUBDIR.mkdir(parents=True,exist_ok=True)
@@ -218,9 +245,9 @@ def write_master(rows):
 
     from datetime import datetime,timezone
     index={
-      'name':'MI COMICOTECA · Maestro España + histórico en español','version':2,'snapshot':'20261001',
+      'name':'MI COMICOTECA · Maestro España + histórico en español','version':3,'snapshot':'20261001',
       'generatedAt':datetime.now(timezone.utc).isoformat().replace('+00:00','Z'),
-      'scope':'Series GCD de España + suplementos históricos en español para editoriales transnacionales (actualmente Novaro)',
+      'scope':'Series GCD de España + suplementos históricos en español; cabecera y etapa normalizadas',
       'totalIssues':len(rows),'totalSeries':total_series,'totalPublishers':len(publisher_meta),
       'priorityEditorials':priority,'historicalSupplements':list(HISTORICAL_SPANISH_PUBLISHERS),'publishers':publisher_meta
     }
@@ -241,7 +268,6 @@ def main():
         if not key:continue
         if key in by_id:
             old=by_id[key]
-            # Completar etapa histórica sin destruir metadatos ya enriquecidos.
             if r.get('stage') and not old.get('stage'):old['stage']=r['stage']
             if r.get('tags') and not old.get('tags'):old['tags']=r['tags']
             for f in ('publisher','publisherOriginal','catalogHeader','series','startYear','issueNr','issue','title','publicationDate','pages','isbn','barcode','price','color','format','dimensions','binding','language'):
