@@ -17,6 +17,7 @@ concurrency:
 jobs:
   backfill:
     runs-on: ubuntu-latest
+    timeout-minutes: 340
     steps:
       - name: Checkout bridge-data
         uses: actions/checkout@v6
@@ -31,37 +32,47 @@ jobs:
           fetch-depth: 1
       - name: Python dependencies
         run: pip install --quiet requests beautifulsoup4
-      - name: Read batch config
+      - name: Read overnight configuration
         id: cfg
         run: |
           CMD=$(ls -1t bridge/backfill/commands/*.json 2>/dev/null | head -1)
           if [ -n "$CMD" ]; then
             BATCH=$(python -c "import json;d=json.load(open('$CMD'));print(int(d.get('batch',80)))")
             ROUNDS=$(python -c "import json;d=json.load(open('$CMD'));print(int(d.get('rounds',1)))")
+            WORKERS=$(python -c "import json;d=json.load(open('$CMD'));print(int(d.get('workers',5)))")
           else
             BATCH=80
             ROUNDS=1
+            WORKERS=5
           fi
           if [ "$BATCH" -gt 250 ]; then BATCH=250; fi
-          if [ "$ROUNDS" -gt 6 ]; then ROUNDS=6; fi
+          if [ "$BATCH" -lt 1 ]; then BATCH=1; fi
+          if [ "$ROUNDS" -gt 12 ]; then ROUNDS=12; fi
           if [ "$ROUNDS" -lt 1 ]; then ROUNDS=1; fi
-          echo "size=$BATCH" >> "$GITHUB_OUTPUT"
+          if [ "$WORKERS" -gt 5 ]; then WORKERS=5; fi
+          if [ "$WORKERS" -lt 1 ]; then WORKERS=1; fi
+          echo "batch=$BATCH" >> "$GITHUB_OUTPUT"
           echo "rounds=$ROUNDS" >> "$GITHUB_OUTPUT"
-      - name: Enrich Maestro covers
-        run: |
-          for i in $(seq 1 ${{ steps.cfg.outputs.rounds }}); do
-            echo "=== RONDA $i/${{ steps.cfg.outputs.rounds }} ==="
-            python master_cover_backfill.py --master _main/master-data/publishers --batch ${{ steps.cfg.outputs.size }}
-          done
-      - name: Save overlay and cursor
+          echo "workers=$WORKERS" >> "$GITHUB_OUTPUT"
+      - name: Enrich Maestro covers continuously
+        env:
+          BATCH: ${{ steps.cfg.outputs.batch }}
+          ROUNDS: ${{ steps.cfg.outputs.rounds }}
+          WORKERS: ${{ steps.cfg.outputs.workers }}
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add bridge/cache/master-cover-overrides.json bridge/cache/master-cover-backfill-state.json
-          if git diff --cached --quiet; then
-            echo 'No changes in this run'
-          else
-            git commit -m 'Backfill Tebeosfera-first de portadas del Maestro'
-            git pull --rebase origin bridge-data
-            git push origin bridge-data
-          fi
+          for ROUND in $(seq 1 "$ROUNDS"); do
+            echo "===== TEBEOSFERA ROUND $ROUND/$ROUNDS ====="
+            python master_cover_backfill.py --master _main/master-data/publishers --batch "$BATCH" --workers "$WORKERS"
+            git add bridge/cache/master-cover-overrides.json bridge/cache/master-cover-backfill-state.json
+            if git diff --cached --quiet; then
+              echo "Round $ROUND: no changes"
+            else
+              git commit -m "Backfill Tebeosfera ronda $ROUND/$ROUNDS"
+              git pull --rebase origin bridge-data
+              git push origin HEAD:bridge-data
+            fi
+            python -c "import json;d=json.load(open('bridge/cache/master-cover-backfill-state.json'));print('PROGRESS scanned=',d.get('scanned',0),'linked=',d.get('linked',0),'last=',d.get('lastBatchLinked',0),'Tebeosfera=',d.get('lastBatchTebeosfera',0),'passes=',d.get('passes',0))"
+            sleep 10
+          done
