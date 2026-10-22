@@ -1,4 +1,5 @@
 {
   "batch": 80,
-  "reason": "Primer lote validado del enriquecimiento progresivo del Maestro"
+  "reason": "Relanza primer lote validado con workflow ya registrado",
+  "run": 2
 }
