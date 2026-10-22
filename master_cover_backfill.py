@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 ROOT=Path(__file__).resolve().parent
 OVERLAY=ROOT/'bridge'/'cache'/'master-cover-overrides.json'
 STATE=ROOT/'bridge'/'cache'/'master-cover-backfill-state.json'
-HEADERS={'User-Agent':'Mozilla/5.0 Chrome/153 MI-COMICOTECA-MASTER/1.2','Accept-Language':'es-ES,es;q=0.9'}
+HEADERS={'User-Agent':'Mozilla/5.0 Chrome/153 MI-COMICOTECA-MASTER/1.3','Accept-Language':'es-ES,es;q=0.9'}
 
 def code(v):return re.sub(r'[^0-9Xx]','',str(v or '')).upper()
 def norm(v):
@@ -51,7 +51,9 @@ def milcomics(isbn):
   if img:return urljoin(u,img).replace('http:','https:'),'MilComics'
  return None
 def cover_for(isbn):
- for fn in (openlibrary,googlebooks,milcomics):
+ # Backfill global: sólo fuentes rápidas y exactas por ISBN. Las fuentes españolas
+ # más costosas se reservan para la segunda pasada de huecos / búsquedas por serie.
+ for fn in (openlibrary,googlebooks):
   hit=fn(isbn)
   if hit:return hit
  return None
