@@ -1,0 +1,53 @@
+name: Build Maestro España
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/build_master_spain.py'
+      - '.github/workflows/build-master-spain.yml'
+  schedule:
+    - cron: '20 4 2 * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-maestro-espana
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.actor != 'github-actions[bot]' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Python dependencies
+        run: pip install --quiet requests duckdb
+      - name: Build Spain master
+        run: python scripts/build_master_spain.py
+      - name: Validate master
+        run: |
+          python - <<'PY'
+          import json, pathlib, sys
+          p=pathlib.Path('master-data/index.json')
+          if not p.exists(): sys.exit('Missing master-data/index.json')
+          d=json.loads(p.read_text())
+          print('MASTER', d['totalIssues'], 'issues /', d['totalSeries'], 'series /', d['totalPublishers'], 'publishers')
+          if d['totalIssues'] < 1000: sys.exit('Master unexpectedly small')
+          PY
+      - name: Commit generated master
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A master-data
+          if git diff --cached --quiet; then
+            echo 'Maestro sin cambios'
+          else
+            git commit -m 'Actualiza Maestro España desde GCD 20261001'
+            git push origin main
+          fi
