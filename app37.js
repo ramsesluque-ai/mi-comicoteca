@@ -1,27 +1,31 @@
 'use strict';
-/* v48: reconciliación Maestro -> Catálogo.
-   Corrige cabecera/serie/edición y algunos títulos SOLO cuando la correspondencia es inequívoca.
-   El catálogo privado se modifica en el navegador y luego se sincroniza cifrado.
+/* v49: reconciliación Maestro reconstruido -> Catálogo.
+   Corrige cabecera/serie/edición y títulos SOLO cuando la correspondencia es inequívoca.
+   Tebeosfera manda en metadatos enriquecidos; el catálogo privado se modifica localmente
+   y luego se sincroniza cifrado.
 */
 (function(){
   if(typeof allStore!=='function'||typeof putStore!=='function'||typeof mcSEMasterIndex!=='function'||typeof mcSEPublisherMeta!=='function')return;
 
-  /* Preservar metadatos técnicos al volver a guardar una ficha desde cualquier formulario. */
+  /* Preservar TODOS los metadatos técnicos de portada/sincronización al guardar una ficha. */
   if(typeof cleanComic==='function'){
     const baseClean=cleanComic;
     cleanComic=function(r={}){
       const x=baseClean(r);
       return{...x,
         sourceId:r.sourceId||x.sourceId||'',barcode:r.barcode||x.barcode||'',
+        coverKey:r.coverKey||x.coverKey||'',coverSourceUrl:r.coverSourceUrl||x.coverSourceUrl||'',
+        coverUrls:Array.isArray(r.coverUrls)?r.coverUrls:(Array.isArray(x.coverUrls)?x.coverUrls:[]),
         coverSyncPending:r.coverSyncPending===true,coverSyncedAt:r.coverSyncedAt||'',
         coverRejectedSourceUrl:r.coverRejectedSourceUrl||'',coverRejectedAt:r.coverRejectedAt||'',
-        masterReconciledId:r.masterReconciledId||'',masterReconciledAt:r.masterReconciledAt||''
+        masterReconciledId:r.masterReconciledId||'',masterReconciledAt:r.masterReconciledAt||'',
+        masterReconciledFingerprint:r.masterReconciledFingerprint||''
       };
     };
     window.cleanComic=cleanComic;
   }
 
-  const STATE_KEY='mc_catalog_master_reconcile_v48';
+  const STATE_KEY='mc_catalog_master_reconcile_v49';
   const MAX_RECORDS_PER_PUBLISHER=5000;
   let running=false,timer=null,last={publishers:0,checked:0,matched:0,changed:0,ambiguous:0,errors:0,done:false};
   const n=v=>typeof mcSENorm==='function'?mcSENorm(v):String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
@@ -29,11 +33,11 @@
   const issue=v=>typeof mcSEIssue==='function'?mcSEIssue(v):String(v??'').trim().replace(/^0+(?=\d)/,'');
   const pub=v=>typeof mcSECanonPub==='function'?mcSECanonPub(v):String(v??'').trim();
   const header=v=>typeof window.mcCanonicalSeriesHeader==='function'?window.mcCanonicalSeriesHeader(v):n(v);
-  const same=(a,b)=>n(a)===n(b);
 
   function stateGet(){try{return JSON.parse(localStorage.getItem(STATE_KEY)||'{}')}catch{return{}}}
   function stateSet(v){localStorage.setItem(STATE_KEY,JSON.stringify(v))}
   function push(map,k,v){if(!k)return;if(!map.has(k))map.set(k,[]);map.get(k).push(v)}
+  function masterFingerprint(idx){return [idx.snapshot||'',idx.totalIssues||0,idx.totalSeries||0,idx.generatedAt||''].join('|')}
 
   function buildIndex(rows){
     const byIsbn=new Map(),bySid=new Map(),byHeaderIssue=new Map();
@@ -56,7 +60,7 @@
     let a=(idx.byHeaderIssue.get(h+'|'+num)||[]).filter(r=>n(pub(r.publisher))===n(pub(x.publisher)));
     if(!a.length)return null;if(a.length===1)return{row:a[0],confidence:'unique'};
 
-    /* Con varias ediciones del mismo nº, usar etapa/año como discriminadores fuertes. */
+    /* Con varias ediciones del mismo nº, etapa/año/volumen son discriminadores fuertes. */
     const xs=n(x.stage||''),xy=String(x.startYear||'').trim(),xv=n(x.volume||'');
     if(xs){const z=a.filter(r=>n(r.stage||'')===xs);if(z.length===1)return{row:z[0],confidence:'stage'};if(z.length)a=z}
     if(xy){const z=a.filter(r=>String(r.startYear||'').trim()===xy);if(z.length===1)return{row:z[0],confidence:'year'};if(z.length)a=z}
@@ -72,10 +76,12 @@
     return null;
   }
 
-  async function apply(x,m){
+  async function apply(x,m,fingerprint){
     const r=m.row,auth=await authoritativeMeta(r),strong=['isbn','sourceId','stage','year','edition'].includes(m.confidence);
     const next={...x};let changed=false;
     const set=(k,v)=>{v=String(v??'').trim();if(!v)return;if(String(next[k]??'').trim()!==v){next[k]=v;changed=true}};
+
+    /* La identidad estructural procede del Maestro reconstruido (incluye etapa histórica Novaro). */
     set('publisher',r.publisher||x.publisher);
     set('catalogHeader',r.catalogHeader||r.series||x.catalogHeader||x.series);
     set('series',r.series||r.catalogHeader||x.series||x.catalogHeader);
@@ -86,14 +92,18 @@
     if(!next.isbn&&r.isbn)set('isbn',r.isbn);
     if(!next.barcode&&r.barcode)set('barcode',r.barcode);
     if(!next.sourceId&&r.sourceId)set('sourceId',r.sourceId);
-    /* Título: Tebeosfera manda si aporta uno usable; en su defecto completar vacíos desde Maestro. */
-    const at=String(auth?.title||'').replace(/\s*[|·-]\s*Tebeosfera.*$/i,'').trim();
+
+    /* Tebeosfera manda en título cuando existe una coincidencia fuerte. */
+    const at=String(auth?.tebeosferaTitle||auth?.title||'').replace(/\s*[|·-]\s*Tebeosfera.*$/i,'').trim();
     if(at&&at.length<=180&&strong)set('title',at);
     else if(!next.title&&r.title)set('title',r.title);
     if(!next.publicationDate&&(auth?.publicationDate||r.publicationDate))set('publicationDate',auth?.publicationDate||r.publicationDate);
     if(!next.pages&&(auth?.pages||r.pages))set('pages',auth?.pages||r.pages);
-    next.masterReconciledId=String(r.id||r.sourceId||'');next.masterReconciledAt=new Date().toISOString();
-    if(changed)await putStore('comics',next);else if(next.masterReconciledId!==x.masterReconciledId)await putStore('comics',next);
+
+    next.masterReconciledId=String(r.id||r.sourceId||'');
+    next.masterReconciledAt=new Date().toISOString();
+    next.masterReconciledFingerprint=fingerprint;
+    if(changed||next.masterReconciledId!==x.masterReconciledId||x.masterReconciledFingerprint!==fingerprint)await putStore('comics',next);
     return changed;
   }
 
@@ -107,8 +117,8 @@
   async function run(force=false){
     if(running||window.__mcCoverRepairRunning||document.visibilityState==='hidden')return last;
     const comics=await allStore('comics');if(!comics.length)return last;
-    const idx=await mcSEMasterIndex(),snapshot=String(idx.snapshot||idx.generatedAt||'master');
-    let st=stateGet();if(force||st.snapshot!==snapshot)st={snapshot,publisherIndex:0,checked:0,matched:0,changed:0,ambiguous:0,errors:0,done:false};
+    const idx=await mcSEMasterIndex(),fingerprint=masterFingerprint(idx);
+    let st=stateGet();if(force||st.fingerprint!==fingerprint)st={fingerprint,publisherIndex:0,checked:0,matched:0,changed:0,ambiguous:0,errors:0,done:false};
     if(st.done&&!force){last={...st,publishers:st.publisherIndex||0};return last}
 
     const groups=new Map();for(const x of comics){if(!x?.publisher)continue;const k=n(pub(x.publisher));if(!groups.has(k))groups.set(k,{publisher:x.publisher,rows:[]});if(groups.get(k).rows.length<MAX_RECORDS_PER_PUBLISHER)groups.get(k).rows.push(x)}
@@ -121,7 +131,7 @@
       for(const x of g.rows){
         st.checked++;try{
           const m=choose(x,ix);if(!m)continue;if(m.ambiguous){st.ambiguous++;continue}
-          st.matched++;if(await apply(x,m)){st.changed++;changedThis++}
+          st.matched++;if(await apply(x,m,fingerprint)){st.changed++;changedThis++}
         }catch(e){console.warn('Catalog reconcile',x?.id,e);st.errors++}
       }
       st.publisherIndex++;stateSet(st);last={...st,publishers:list.length};
