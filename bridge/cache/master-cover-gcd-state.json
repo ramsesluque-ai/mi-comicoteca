@@ -1,12 +1,22 @@
 {
-  "fileIndex": 1,
-  "rowIndex": 166,
-  "scanned": 200,
+  "mode": "priority-v2",
+  "fileIndex": 0,
+  "rowIndex": 238,
+  "scanned": 238,
   "linked": 0,
   "passes": 0,
+  "priorityFiles": 42,
+  "reasons": {
+    "no_cover_api": 22,
+    "image_http_403": 5,
+    "api_http_429": 173
+  },
   "lastBatchChecked": 100,
   "lastBatchLinked": 0,
-  "lastBatchScanned": 100,
+  "lastBatchScanned": 102,
   "lastWorkers": 4,
-  "updatedAt": "2026-10-22T20:06:42Z"
+  "lastReasons": {
+    "api_http_429": 100
+  },
+  "updatedAt": "2026-10-22T20:09:20Z"
 }
