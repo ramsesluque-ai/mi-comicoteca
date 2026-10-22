@@ -26,6 +26,8 @@ jobs:
           fetch-depth: 0
       - name: Python dependencies
         run: pip install --quiet requests beautifulsoup4 pillow
+      - name: Tebeosfera authority
+        run: python bridge_tebeosfera_authority.py
       - name: Exact GCD sourceId cover
         run: python bridge_gcd_sourceid.py
       - name: Spanish ISBN fallback
