@@ -1,0 +1,69 @@
+name: Maestro static smoke
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'search-engine.js'
+      - 'master-static.js'
+      - 'master-data/**'
+      - 'index.html'
+      - 'sw.js'
+      - '.github/workflows/master-static-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: maestro-static-smoke
+  cancel-in-progress: true
+
+jobs:
+  browser-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Start static app
+        run: |
+          python3 -m http.server 8765 >/tmp/mc-http.log 2>&1 &
+          echo $! >/tmp/mc-http.pid
+      - name: Prepare Puppeteer
+        run: |
+          mkdir -p /tmp/mc-master-test
+          cd /tmp/mc-master-test
+          npm init -y >/dev/null 2>&1
+          npm install puppeteer-core@24 >/dev/null 2>&1
+          cat > test.cjs <<'NODE'
+          const puppeteer=require('puppeteer-core');
+          const fs=require('fs');
+          (async()=>{
+            const chrome=['/usr/bin/google-chrome','/usr/bin/google-chrome-stable','/usr/bin/chromium','/usr/bin/chromium-browser'].find(fs.existsSync);
+            if(!chrome)throw new Error('Chrome no disponible');
+            const browser=await puppeteer.launch({executablePath:chrome,headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
+            const page=await browser.newPage();
+            page.on('console',m=>console.log('BROWSER',m.type(),m.text()));
+            page.on('pageerror',e=>console.log('PAGEERROR',e.message));
+            await page.goto('http://127.0.0.1:8765/?master-smoke='+Date.now(),{waitUntil:'networkidle2',timeout:60000});
+            await page.waitForFunction(()=>typeof mcSESearch==='function'&&typeof mcSEMasterIndex==='function',{timeout:30000});
+            const stats=await page.evaluate(async()=>{const i=await mcSEMasterIndex();return {issues:i.totalIssues,series:i.totalSeries,publishers:i.totalPublishers,build:MC_SEARCH_BUILD}});
+            console.log('MASTER_STATS',JSON.stringify(stats));
+            if(stats.issues!==124039||stats.series!==5274||stats.publishers!==338)throw new Error('Cifras Maestro inesperadas');
+            const base={publisher:'ECC',catalogHeader:'All-Star Batman: Renacimiento',series:'All-Star Batman: Renacimiento',stage:'Renacimiento',startYear:'2016',issueNr:'1',issue:'1'};
+            const bySeries=await page.evaluate(async x=>await mcSESearch(x),base);
+            console.log('SERIES_RESULT',JSON.stringify(bySeries));
+            const c1=bySeries.find(c=>String(c?.data?.issueNr)==='1'&&c?.data?.coverUrl&&String(c?.data?.isbn)==='9788416945313');
+            if(!c1)throw new Error('Búsqueda serie+nº no devuelve All-Star Batman nº1 con portada');
+            const byIsbn=await page.evaluate(async x=>await mcSESearch({...x,isbn:'9788416945313'}),base);
+            console.log('ISBN_RESULT',JSON.stringify(byIsbn));
+            const c2=byIsbn.find(c=>String(c?.data?.issueNr)==='1'&&String(c?.data?.isbn)==='9788416945313'&&c?.data?.coverUrl);
+            if(!c2)throw new Error('Búsqueda ISBN no devuelve All-Star Batman nº1 con portada');
+            const cover=await page.evaluate(async u=>{try{const r=await fetch(u,{cache:'no-store'});const b=await r.blob();return{ok:r.ok,status:r.status,type:b.type,size:b.size}}catch(e){return{ok:false,error:String(e)}}},c2.data.coverUrl);
+            console.log('COVER_FETCH',JSON.stringify(cover));
+            if(!cover.ok||cover.size<5000)throw new Error('La portada no es descargable desde la app');
+            console.log('SMOKE_PASS true');
+            await browser.close();
+          })().catch(e=>{console.error('SMOKE_FAIL',e);process.exit(1)});
+          NODE
+      - name: Run browser test
+        run: node /tmp/mc-master-test/test.cjs
