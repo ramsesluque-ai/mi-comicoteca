@@ -454,6 +454,19 @@
     "sourceUrl": "https://covers.openlibrary.org/b/id/10502686-L.jpg",
     "title": ""
   },
+  "9788416152612": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/12331261-L.jpg",
+    "isbn": "9788416152612",
+    "issueNr": "[nn]",
+    "pages": "224",
+    "publicationDate": "2014-07-00",
+    "publisher": "ECC",
+    "series": "Grandes Autores de Batman: Doug Moench y Kelley Jones - Fundido en Negro",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/12331261-L.jpg",
+    "title": ""
+  },
   "9788416194414": {
     "_score": 12000,
     "coverUrl": "https://covers.openlibrary.org/b/id/7319914-L.jpg",
@@ -506,6 +519,32 @@
     "sourceUrl": "https://covers.openlibrary.org/b/id/8191675-L.jpg",
     "title": ""
   },
+  "9788416255474": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/7319833-L.jpg",
+    "isbn": "9788416255474",
+    "issueNr": "[nn]",
+    "pages": "64",
+    "publicationDate": "2014-10-01",
+    "publisher": "ECC",
+    "series": "Grandes Autores de Batman: La Broma Asesina",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/7319833-L.jpg",
+    "title": ""
+  },
+  "9788416255559": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/12325060-L.jpg",
+    "isbn": "9788416255559",
+    "issueNr": "[nn]",
+    "pages": "200",
+    "publicationDate": "2014-12-00",
+    "publisher": "ECC",
+    "series": "Grandes Autores de Batman: Doug Moench y Kelley Jones - La Conexión Deadman",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/12325060-L.jpg",
+    "title": ""
+  },
   "9788416303175": {
     "_score": 12000,
     "coverUrl": "https://covers.openlibrary.org/b/id/8255294-L.jpg",
@@ -517,6 +556,19 @@
     "series": "Astro City: Vida en la Gran Ciudad",
     "source": "Backfill · OpenLibrary",
     "sourceUrl": "https://covers.openlibrary.org/b/id/8255294-L.jpg",
+    "title": ""
+  },
+  "9788416374618": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/7427395-L.jpg",
+    "isbn": "9788416374618",
+    "issueNr": "[4]",
+    "pages": "96",
+    "publicationDate": "2015-04-00",
+    "publisher": "ECC",
+    "series": "El Intrépido Batman",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/7427395-L.jpg",
     "title": ""
   },
   "9788416475582": {
@@ -610,6 +662,32 @@
     "sourceUrl": "https://covers.openlibrary.org/b/id/8760610-L.jpg",
     "title": "¡Raptado!"
   },
+  "9788416581351": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/12848885-L.jpg",
+    "isbn": "9788416581351",
+    "issueNr": "[5]",
+    "pages": "136",
+    "publicationDate": "2016-01-00",
+    "publisher": "ECC",
+    "series": "El Intrépido Batman",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/12848885-L.jpg",
+    "title": ""
+  },
+  "9788416746811": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/12848888-L.jpg",
+    "isbn": "9788416746811",
+    "issueNr": "[6]",
+    "pages": "96",
+    "publicationDate": "2016-07-00",
+    "publisher": "ECC",
+    "series": "El Intrépido Batman",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/12848888-L.jpg",
+    "title": ""
+  },
   "9788416840229": {
     "_score": 12000,
     "coverUrl": "https://covers.openlibrary.org/b/id/10671498-L.jpg",
@@ -660,6 +738,19 @@
     "series": "El tesoro del Cisne Negro",
     "source": "Backfill · OpenLibrary",
     "sourceUrl": "https://covers.openlibrary.org/b/id/10301664-L.jpg",
+    "title": ""
+  },
+  "9788416901036": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/12848886-L.jpg",
+    "isbn": "9788416901036",
+    "issueNr": "[7]",
+    "pages": "96",
+    "publicationDate": "2016-10-00",
+    "publisher": "ECC",
+    "series": "El Intrépido Batman",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/12848886-L.jpg",
     "title": ""
   },
   "9788416945313": {
@@ -739,6 +830,19 @@
     "source": "Bridge · MilComics",
     "sourceUrl": "https://www.milcomics.com/comic-batman/all-star-batman-05-renacimiento-79680.html",
     "title": "Comprar All-Star Batman 05 (Renacimiento) - Mil Comics: Tienda de cómics y figuras Marvel, DC Comics, Star Wars, Tintín"
+  },
+  "9788417071653": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/12848893-L.jpg",
+    "isbn": "9788417071653",
+    "issueNr": "[9]",
+    "pages": "96",
+    "publicationDate": "2017-05-00",
+    "publisher": "ECC",
+    "series": "El Intrépido Batman",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/12848893-L.jpg",
+    "title": ""
   },
   "9788417106218": {
     "_score": 16100,
@@ -831,6 +935,19 @@
     "sourceUrl": "https://covers.openlibrary.org/b/id/12327085-L.jpg",
     "title": ""
   },
+  "9788417644666": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/12327475-L.jpg",
+    "isbn": "9788417644666",
+    "issueNr": "25",
+    "pages": "52",
+    "publicationDate": "2018-12-00",
+    "publisher": "ECC",
+    "series": "Batman: Renacimiento",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/12327475-L.jpg",
+    "title": ""
+  },
   "9788417787202": {
     "_score": 12000,
     "coverUrl": "https://covers.openlibrary.org/b/id/13914450-L.jpg",
@@ -844,6 +961,19 @@
     "sourceUrl": "https://covers.openlibrary.org/b/id/13914450-L.jpg",
     "title": "Batman e Hijo"
   },
+  "9788417960926": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/11165842-L.jpg",
+    "isbn": "9788417960926",
+    "issueNr": "[nn]",
+    "pages": "148",
+    "publicationDate": "2019-10-00",
+    "publisher": "ECC",
+    "series": "Bizarro",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/11165842-L.jpg",
+    "title": ""
+  },
   "9788418101427": {
     "_score": 12000,
     "coverUrl": "https://covers.openlibrary.org/b/id/10953819-L.jpg",
@@ -855,6 +985,19 @@
     "series": "Claudio et Lucia contre l'agence FAKE",
     "source": "Backfill · OpenLibrary",
     "sourceUrl": "https://covers.openlibrary.org/b/id/10953819-L.jpg",
+    "title": ""
+  },
+  "9788418180583": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/10550936-L.jpg",
+    "isbn": "9788418180583",
+    "issueNr": "0",
+    "pages": "228",
+    "publicationDate": "2020-03-00",
+    "publisher": "ECC",
+    "series": "Biblioteca Sandman",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/10550936-L.jpg",
     "title": ""
   },
   "9788418225529": {
@@ -935,6 +1078,71 @@
     "sourceUrl": "https://covers.openlibrary.org/b/id/14049733-L.jpg",
     "title": ""
   },
+  "9788418326592": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/13914452-L.jpg",
+    "isbn": "9788418326592",
+    "issueNr": "1",
+    "pages": "244",
+    "publicationDate": "2020-09-00",
+    "publisher": "ECC",
+    "series": "Biblioteca Sandman",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/13914452-L.jpg",
+    "title": ""
+  },
+  "9788418382475": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/13477257-L.jpg",
+    "isbn": "9788418382475",
+    "issueNr": "2",
+    "pages": "244",
+    "publicationDate": "2020-11-00",
+    "publisher": "ECC",
+    "series": "Biblioteca Sandman",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/13477257-L.jpg",
+    "title": ""
+  },
+  "9788418475740": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/13477259-L.jpg",
+    "isbn": "9788418475740",
+    "issueNr": "3",
+    "pages": "164",
+    "publicationDate": "2021-01-00",
+    "publisher": "ECC",
+    "series": "Biblioteca Sandman",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/13477259-L.jpg",
+    "title": ""
+  },
+  "9788418569043": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/10848758-L.jpg",
+    "isbn": "9788418569043",
+    "issueNr": "2",
+    "pages": "52",
+    "publicationDate": "2021-02-00",
+    "publisher": "ECC",
+    "series": "Batman: Tres Jokers",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/10848758-L.jpg",
+    "title": ""
+  },
+  "9788418569661": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/13477270-L.jpg",
+    "isbn": "9788418569661",
+    "issueNr": "4",
+    "pages": "228",
+    "publicationDate": "2021-03-00",
+    "publisher": "ECC",
+    "series": "Biblioteca Sandman",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/13477270-L.jpg",
+    "title": ""
+  },
   "9788418589331": {
     "_score": 11100,
     "coverUrl": "https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/covers/gcd-2719147-battlefields-1-9.webp",
@@ -987,6 +1195,19 @@
     "sourceUrl": "https://covers.openlibrary.org/b/id/13914317-L.jpg",
     "title": ""
   },
+  "9788418660740": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/13477272-L.jpg",
+    "isbn": "9788418660740",
+    "issueNr": "5",
+    "pages": "196",
+    "publicationDate": "2021-05-00",
+    "publisher": "ECC",
+    "series": "Biblioteca Sandman",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/13477272-L.jpg",
+    "title": ""
+  },
   "9788418742156": {
     "_score": 12000,
     "coverUrl": "https://covers.openlibrary.org/b/id/13914316-L.jpg",
@@ -1024,6 +1245,19 @@
     "series": "Batman / Fortnite: Punto cero",
     "source": "Backfill · OpenLibrary",
     "sourceUrl": "https://covers.openlibrary.org/b/id/13914305-L.jpg",
+    "title": ""
+  },
+  "9788418862243": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/13478715-L.jpg",
+    "isbn": "9788418862243",
+    "issueNr": "23",
+    "pages": "352",
+    "publicationDate": "2021-09-00",
+    "publisher": "ECC",
+    "series": "Dorohedoro",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/13478715-L.jpg",
     "title": ""
   },
   "9788419428202": {
