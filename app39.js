@@ -1,5 +1,5 @@
 'use strict';
-/* v51: renderSeries respeta TODOS los filtros visuales después de la unificación v50. */
+/* v52: filtros de Colecciones + progreso calculado siempre contra el total real del Maestro. */
 (function(){
   if(!window.mcCollectionIdentityV50||typeof allStore!=='function')return;
   const api=window.mcCollectionIdentityV50;
@@ -22,10 +22,12 @@
     return r;
   }
 
-  async function renderSeriesV51(){
+  async function renderSeriesV52(){
     const all=await allStore('comics');
+    /* IMPORTANTE: el Maestro se carga con TODO el catálogo local para obtener el total real
+       de cada colección. Los filtros solo deciden qué colecciones se muestran. */
+    const st=await api.currentStatic(all);
     const filtered=applyFilters(all);
-    const st=await api.currentStatic(filtered.length?filtered:all);
     const m={};
     for(const x of filtered){
       const k=api.resolvedKey(x,st);
@@ -48,6 +50,7 @@
     try{CoverVault?.hydrate?.()}catch{}
   }
 
-  renderSeries=renderSeriesV51;window.renderSeries=renderSeriesV51;
+  renderSeries=renderSeriesV52;window.renderSeries=renderSeriesV52;
   window.mcSeriesFilterV51=applyFilters;
+  window.mcSeriesProgressV52=true;
 })();
