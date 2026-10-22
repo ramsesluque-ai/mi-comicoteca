@@ -1,0 +1,8 @@
+{
+  "batch": 250,
+  "rounds": 12,
+  "workers": 5,
+  "mode": "tebeosfera-first-all-identities",
+  "requestedAt": "2026-10-23T00:16:00+02:00",
+  "reason": "Sustituye el lote antiguo bloqueado y continúa el barrido nocturno completo"
+}
