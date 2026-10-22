@@ -1,0 +1,9 @@
+{
+  "batch": 250,
+  "rounds": 12,
+  "workers": 5,
+  "mode": "tebeosfera-first-all-identities",
+  "priority": ["Novaro","Vértice","Bruguera","Zinco","Forum","Planeta / DeAgostini","Panini","ECC","Salvat","Norma","Glénat","Toutain","Toray","Maga","Ferma","Hispano Americana"],
+  "requestedAt": "2026-10-23T00:14:00+02:00",
+  "reason": "Barrido nocturno: Tebeosfera como autoridad principal, incluyendo fichas sin ISBN; guardar progreso tras cada ronda"
+}
