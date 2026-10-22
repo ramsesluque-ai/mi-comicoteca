@@ -1,0 +1,76 @@
+name: Search smoke test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/search-smoke-test.yml'
+  workflow_dispatch:
+
+jobs:
+  browser-search-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare browser test
+        run: |
+          mkdir -p /tmp/mc-smoke
+          cd /tmp/mc-smoke
+          npm init -y >/dev/null 2>&1
+          npm install puppeteer-core@24 >/dev/null 2>&1
+          cat > test.cjs <<'NODE'
+          const puppeteer = require('puppeteer-core');
+          const fs = require('fs');
+          (async()=>{
+            const chrome = ['/usr/bin/google-chrome','/usr/bin/google-chrome-stable','/usr/bin/chromium','/usr/bin/chromium-browser'].find(fs.existsSync);
+            if(!chrome) throw new Error('Chrome/Chromium no encontrado en runner');
+            const browser = await puppeteer.launch({executablePath:chrome,headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
+            const page = await browser.newPage();
+            page.on('console',m=>console.log('BROWSER_CONSOLE',m.type(),m.text()));
+            page.on('pageerror',e=>console.log('BROWSER_PAGEERROR',e.message));
+            page.on('requestfailed',r=>console.log('REQUEST_FAILED',r.url(),r.failure()?.errorText||''));
+            await page.setCacheEnabled(false);
+            await page.goto('https://ramsesluque-ai.github.io/mi-comicoteca/?smoke='+Date.now(),{waitUntil:'networkidle2',timeout:60000});
+            await page.evaluate(async()=>{if('serviceWorker' in navigator){const regs=await navigator.serviceWorker.getRegistrations();for(const r of regs)await r.unregister();}});
+            const sourceTests = await page.evaluate(async()=>{
+              const urls={
+                gcd:'https://www.comics.org/api/series/name/All-Star%20Batman%3A%20Renacimiento/issue/1/',
+                ol:'https://openlibrary.org/api/books?bibkeys=ISBN%3A9788416945313&format=json&jscmd=data',
+                gb:'https://www.googleapis.com/books/v1/volumes?q=isbn%3A9788416945313&maxResults=5',
+                teb:'https://www.tebeosfera.com/buscador/ALL-STAR+BATMAN/',
+                jina:'https://r.jina.ai/https://www.tebeosfera.com/buscador/ALL-STAR+BATMAN/'
+              };
+              const out={};
+              for(const [k,u] of Object.entries(urls)){
+                try{
+                  const r=await fetch(u,{cache:'no-store'});
+                  const text=await r.text();
+                  out[k]={ok:r.ok,status:r.status,type:r.type,acao:r.headers.get('access-control-allow-origin'),sample:text.slice(0,500)};
+                }catch(e){out[k]={error:String(e)}}
+              }
+              return out;
+            });
+            console.log('SOURCE_TESTS',JSON.stringify(sourceTests,null,2));
+            const functions = await page.evaluate(()=>({
+              build: window.MC_SEARCH_BUILD || null,
+              hasSearch: typeof window.mcSESearch,
+              hasIsbn: typeof window.mcSELookupIsbn,
+              hasForm: typeof window.mcFormComic
+            }));
+            console.log('FUNCTIONS',JSON.stringify(functions));
+            const testInput={publisher:'ecc',catalogHeader:'All-Star Batman: Renacimiento',series:'All-Star Batman: Renacimiento',stage:'',startYear:'2016',issueNr:'1',issue:'1',isbn:'9788416945313',title:''};
+            const isbnResult = await page.evaluate(async x=>{
+              try{return await window.mcSELookupIsbn(x.isbn,x)}catch(e){return {error:String(e),stack:e?.stack||''}}
+            },testInput);
+            console.log('ISBN_RESULT',JSON.stringify(isbnResult,null,2));
+            const searchResult = await page.evaluate(async x=>{
+              try{return await window.mcSESearch(x)}catch(e){return [{error:String(e),stack:e?.stack||''}]}
+            },testInput);
+            console.log('SEARCH_RESULT',JSON.stringify(searchResult,null,2));
+            const pass=Array.isArray(searchResult)&&searchResult.some(c=>String(c?.data?.issueNr||'')==='1'&&c?.data?.coverUrl&&(/9788416945313/.test(String(c?.data?.isbn||''))||/all-star/i.test(String(c?.data?.title||c?.data?.series||''))));
+            console.log('SMOKE_PASS',pass);
+            await browser.close();
+            if(!pass)process.exit(1);
+          })().catch(e=>{console.error(e);process.exit(2)});
+          NODE
+      - name: Run browser smoke test
+        run: node /tmp/mc-smoke/test.cjs
