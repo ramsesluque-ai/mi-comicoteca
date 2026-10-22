@@ -1,0 +1,49 @@
+name: Audit Novaro Batman
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/audit_novaro_batman.py'
+      - 'master-data/publishers/novaro-*.json'
+      - '.github/workflows/audit-novaro-batman.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: audit-novaro-batman
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    if: github.actor != 'github-actions[bot]' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Generate audit
+        run: python scripts/audit_novaro_batman.py
+      - name: Validate stages
+        run: |
+          python - <<'PY'
+          import json,sys
+          d=json.load(open('master-data/audit-novaro-batman.json'))
+          print('BATMAN NOVARO',d['totalMatchedIssues'],'issues /',d['groups'],'groups')
+          stages=sorted(set(x.get('stage','') for x in d['collections'] if x.get('stage')))
+          print('STAGES',stages)
+          if d['totalMatchedIssues'] < 20: sys.exit('Batman Novaro audit unexpectedly small')
+          PY
+      - name: Commit audit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add master-data/audit-novaro-batman.json
+          if git diff --cached --quiet; then
+            echo 'Audit unchanged'
+          else
+            git commit -m 'Actualiza auditoría Batman Novaro'
+            git push origin main
+          fi
