@@ -1,0 +1,41 @@
+name: Search bridge
+
+on:
+  push:
+    branches: [bridge-data]
+    paths:
+      - 'bridge/requests/**.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: comicoteca-search-bridge
+  cancel-in-progress: false
+
+jobs:
+  search:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout bridge branch
+        uses: actions/checkout@v6
+        with:
+          ref: bridge-data
+          fetch-depth: 0
+      - name: Python dependencies
+        run: pip install --quiet requests beautifulsoup4 pillow
+      - name: Search bibliographic sources
+        run: python bridge_worker.py
+      - name: Save result cache
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add bridge/results bridge/cache bridge/covers
+          if git diff --cached --quiet; then
+            echo 'No new result files'
+          else
+            git commit -m 'Actualiza caché bibliográfica MI COMICOTECA'
+            git push origin bridge-data
+          fi
