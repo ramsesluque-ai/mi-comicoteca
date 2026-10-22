@@ -1,5 +1,5 @@
 {
   "batch": 200,
-  "reason": "Segunda pasada tras validar 55% de acierto en el primer lote",
-  "run": 4
+  "reason": "Backfill global rápido con OpenLibrary y Google Books por ISBN exacto; fuentes españolas quedan para segunda pasada de huecos",
+  "run": 5
 }
