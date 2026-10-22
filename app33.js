@@ -1,5 +1,5 @@
 'use strict';
-/* v45: completar portadas en lote = identidad exacta. Nunca internaliza una URL externa solo por existir. */
+/* v47: completar portadas en lote = identidad exacta con equivalencias históricas controladas. */
 (function(){
   if(typeof mcSESearch!=='function'||!window.AutoCover||!window.CoverVault)return;
 
@@ -12,6 +12,33 @@
   const canonPub=v=>typeof mcSECanonPub==='function'?mcSECanonPub(v):String(v??'').trim();
   const url=v=>String(v??'').trim().replace(/^http:/i,'https:');
 
+  /*
+   * La cabecera editorial puede variar entre Catálogo, GCD/Tebeosfera y portada.
+   * Normalizamos SOLO equivalencias históricas inequívocas; la etapa sigue siendo
+   * un discriminador independiente, para no mezclar Águila/Avestruz/Colibrí.
+   */
+  function seriesIdentity(v){
+    let s=n(v)
+      .replace(/[‐‑–—]/g,'-')
+      .replace(/\b(el\s+)?hombre\s+murcielago\b/g,'batman')
+      .replace(/\bbatman\s+el\s+batman\b/g,'batman')
+      .replace(/\b(el\s+)?hombre\s+arana\b/g,'spiderman')
+      .replace(/\bspider[-\s]?man\b/g,'spiderman')
+      .replace(/\bsuper[-\s]?man\b/g,'superman')
+      .replace(/\bserie\s+(aguila|avestruz|colibri)\b/g,' ')
+      .replace(/\b(formato\s+)?(aguila|avestruz|colibri)\b/g,' ')
+      .replace(/\bnovaro\b|\bediciones?\b|\beditorial\b/g,' ')
+      .replace(/[^a-z0-9áéíóúüñ]+/gi,' ')
+      .replace(/\s+/g,' ')
+      .trim();
+    return s;
+  }
+
+  function sameSeries(a,b){
+    const A=seriesIdentity(a),B=seriesIdentity(b);
+    return !!A&&!!B&&A===B;
+  }
+
   function exactCandidate(x,c){
     const d=c?.data||{};
     if(!url(d.coverUrl))return false;
@@ -22,7 +49,7 @@
     if(!xIssue||!dIssue||xIssue!==dIssue)return false;
     if(!x?.publisher||!d.publisher||n(canonPub(x.publisher))!==n(canonPub(d.publisher)))return false;
     const xs=x?.catalogHeader||x?.series||'',ds=d.series||'';
-    if(!xs||!ds||n(xs)!==n(ds))return false;
+    if(!xs||!ds||!sameSeries(xs,ds))return false;
 
     /* Sin ISBN exigimos además al menos un discriminador de edición y que coincida exactamente. */
     let discriminators=0;
@@ -77,4 +104,5 @@
   };
 
   window.mcStrictCoverMatch=exactCandidate;
+  window.mcSeriesIdentity=seriesIdentity;
 })();
