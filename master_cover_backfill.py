@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse,json,re,time,unicodedata
+from concurrent.futures import ThreadPoolExecutor,as_completed
 from pathlib import Path
 from urllib.parse import quote_plus,urljoin
 import requests
@@ -8,13 +9,13 @@ from bs4 import BeautifulSoup
 ROOT=Path(__file__).resolve().parent
 OVERLAY=ROOT/'bridge'/'cache'/'master-cover-overrides.json'
 STATE=ROOT/'bridge'/'cache'/'master-cover-backfill-state.json'
-S=requests.Session();S.headers.update({'User-Agent':'Mozilla/5.0 Chrome/153 MI-COMICOTECA-MASTER/1.1','Accept-Language':'es-ES,es;q=0.9'})
+HEADERS={'User-Agent':'Mozilla/5.0 Chrome/153 MI-COMICOTECA-MASTER/1.2','Accept-Language':'es-ES,es;q=0.9'}
 
 def code(v):return re.sub(r'[^0-9Xx]','',str(v or '')).upper()
 def norm(v):
  s=unicodedata.normalize('NFD',str(v or ''));return ''.join(c for c in s if unicodedata.category(c)!='Mn').lower()
-def get(url,timeout=18):
- try:return S.get(url,timeout=timeout,allow_redirects=True)
+def get(url,timeout=14):
+ try:return requests.get(url,headers=HEADERS,timeout=timeout,allow_redirects=True)
  except Exception:return None
 def openlibrary(isbn):
  key='ISBN:'+isbn;r=get('https://openlibrary.org/api/books?bibkeys='+quote_plus(key)+'&format=json&jscmd=data')
@@ -41,7 +42,7 @@ def milcomics(isbn):
  for a in s.find_all('a',href=True):
   u=urljoin(r.url,a.get('href'));hint=norm((a.get_text(' ',strip=True) or '')+' '+u)
   if 'milcomics.com' in u and u not in links and ('comic' in hint or 'renacimiento' in hint):links.append(u)
- for u in links[:10]:
+ for u in links[:8]:
   rr=get(u)
   if not rr or rr.status_code!=200:continue
   ss=BeautifulSoup(rr.text,'html.parser');txt=code(ss.get_text(' ',strip=True))
@@ -60,11 +61,11 @@ def load_json(path,default):
  try:return json.loads(path.read_text(encoding='utf-8'))
  except:return default
 def main():
- ap=argparse.ArgumentParser();ap.add_argument('--master',required=True);ap.add_argument('--batch',type=int,default=80);a=ap.parse_args()
+ ap=argparse.ArgumentParser();ap.add_argument('--master',required=True);ap.add_argument('--batch',type=int,default=80);ap.add_argument('--workers',type=int,default=8);a=ap.parse_args()
  files=sorted(Path(a.master).glob('*.json'));OVERLAY.parent.mkdir(parents=True,exist_ok=True)
  overlay=load_json(OVERLAY,{});state=load_json(STATE,{'fileIndex':0,'rowIndex':0,'scanned':0,'linked':0,'passes':0})
- fi=int(state.get('fileIndex') or 0);ri=int(state.get('rowIndex') or 0);checked=0;linked=0;scanned_this=0;max_scan=max(a.batch*100,5000)
- while checked<a.batch and files and scanned_this<max_scan:
+ fi=int(state.get('fileIndex') or 0);ri=int(state.get('rowIndex') or 0);scanned_this=0;max_scan=max(a.batch*100,5000);targets=[];seen=set()
+ while len(targets)<a.batch and files and scanned_this<max_scan:
   if fi>=len(files):fi=0;ri=0;state['passes']=int(state.get('passes') or 0)+1
   rows=load_json(files[fi],[])
   if not isinstance(rows,list):rows=[]
@@ -72,15 +73,23 @@ def main():
   r=rows[ri];ri+=1;scanned_this+=1;state['scanned']=int(state.get('scanned') or 0)+1
   if not isinstance(r,dict):continue
   isbn=code(r.get('isbn') or r.get('barcode'))
-  if len(isbn) not in (10,13):continue
+  if len(isbn) not in (10,13) or isbn in seen:continue
+  seen.add(isbn)
   if isbn in overlay and (overlay[isbn] or {}).get('coverUrl'):continue
-  checked+=1
-  hit=cover_for(isbn)
-  if not hit:continue
-  url,source=hit;overlay[isbn]=row_meta(r,isbn,url,source);linked+=1;state['linked']=int(state.get('linked') or 0)+1
-  print('LINKED',isbn,overlay[isbn]['series'],overlay[isbn]['issueNr'],source)
-  time.sleep(.12)
- state.update({'fileIndex':fi,'rowIndex':ri,'lastBatchChecked':checked,'lastBatchLinked':linked,'lastBatchScanned':scanned_this,'updatedAt':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime())})
+  targets.append((isbn,r))
+ linked=0
+ workers=max(1,min(int(a.workers or 8),12,len(targets) or 1))
+ with ThreadPoolExecutor(max_workers=workers) as ex:
+  futures={ex.submit(cover_for,isbn):(isbn,r) for isbn,r in targets}
+  for fut in as_completed(futures):
+   isbn,r=futures[fut]
+   try:hit=fut.result()
+   except Exception as e:
+    print('ERROR',isbn,repr(e));continue
+   if not hit:continue
+   url,source=hit;overlay[isbn]=row_meta(r,isbn,url,source);linked+=1;state['linked']=int(state.get('linked') or 0)+1
+   print('LINKED',isbn,overlay[isbn]['series'],overlay[isbn]['issueNr'],source)
+ state.update({'fileIndex':fi,'rowIndex':ri,'lastBatchChecked':len(targets),'lastBatchLinked':linked,'lastBatchScanned':scanned_this,'lastWorkers':workers,'updatedAt':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime())})
  OVERLAY.write_text(json.dumps(overlay,ensure_ascii=False,indent=2,sort_keys=True),encoding='utf-8')
  STATE.write_text(json.dumps(state,ensure_ascii=False,indent=2),encoding='utf-8')
  print('BACKFILL',json.dumps(state,ensure_ascii=False),'overlay',len(overlay))
