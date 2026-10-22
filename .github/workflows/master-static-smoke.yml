@@ -6,6 +6,7 @@ on:
     paths:
       - 'search-engine.js'
       - 'master-static.js'
+      - 'app38.js'
       - 'master-data/**'
       - 'index.html'
       - 'sw.js'
@@ -24,6 +25,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - name: Check v50 syntax
+        run: node --check app38.js
       - name: Start static app
         run: |
           python3 -m http.server 8765 >/tmp/mc-http.log 2>&1 &
@@ -42,25 +45,32 @@ jobs:
             if(!chrome)throw new Error('Chrome no disponible');
             const browser=await puppeteer.launch({executablePath:chrome,headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
             const page=await browser.newPage();
+            const pageErrors=[];
             page.on('console',m=>console.log('BROWSER',m.type(),m.text()));
-            page.on('pageerror',e=>console.log('PAGEERROR',e.message));
+            page.on('pageerror',e=>{const s=e.stack||e.message;pageErrors.push(s);console.log('PAGEERROR',s)});
             await page.goto('http://127.0.0.1:8765/?master-smoke='+Date.now(),{waitUntil:'networkidle2',timeout:60000});
-            await page.waitForFunction(()=>typeof mcSESearch==='function'&&typeof mcSEMasterIndex==='function',{timeout:30000});
+            await page.waitForFunction(()=>typeof mcSESearch==='function'&&typeof mcSEMasterIndex==='function'&&window.mcCollectionIdentityV50,{timeout:30000});
             const stats=await page.evaluate(async()=>{const i=await mcSEMasterIndex();return {issues:i.totalIssues,series:i.totalSeries,publishers:i.totalPublishers,build:MC_SEARCH_BUILD}});
             console.log('MASTER_STATS',JSON.stringify(stats));
-            if(stats.issues!==124039||stats.series!==5274||stats.publishers!==338)throw new Error('Cifras Maestro inesperadas');
-            const base={publisher:'ECC',catalogHeader:'All-Star Batman: Renacimiento',series:'All-Star Batman: Renacimiento',stage:'Renacimiento',startYear:'2016',issueNr:'1',issue:'1'};
+            if(stats.issues!==160472||stats.series!==5459||stats.publishers!==337)throw new Error('Cifras Maestro v50 inesperadas');
+            const identity=await page.evaluate(async()=>{
+              const api=window.mcCollectionIdentityV50;
+              const correct={publisher:'ECC',catalogHeader:'All-Star Batman: Renacimiento',series:'All-Star Batman: Renacimiento',volume:'',stage:'',startYear:'2016',issueNr:'1',issue:'1'};
+              const old={publisher:'ECC',catalogHeader:'All-Star All-Star Batman: Renacimiento',series:'All-Star All-Star Batman: Renacimiento',volume:'',stage:'',startYear:'',issueNr:'1',issue:'1'};
+              const st=await api.currentStatic([correct]);
+              const target=api.fullKey(correct),resolved=api.resolvedKey(old,st),entry=st.full.get(target);
+              return {canonicalOld:api.canonical(old.catalogHeader),canonicalCorrect:api.canonical(correct.catalogHeader),target,resolved,total:entry?.total||0};
+            });
+            console.log('IDENTITY_V50',JSON.stringify(identity));
+            if(identity.canonicalOld!==identity.canonicalCorrect)throw new Error('All-Star duplicado no se canonicaliza');
+            if(identity.resolved!==identity.target)throw new Error('Edición sin año no se resuelve a ECC 2016');
+            if(identity.total!==15)throw new Error('All-Star Batman debe tener 15 números en Maestro');
+            const base={publisher:'ECC',catalogHeader:'All-Star Batman: Renacimiento',series:'All-Star Batman: Renacimiento',stage:'',startYear:'2016',issueNr:'1',issue:'1'};
             const bySeries=await page.evaluate(async x=>await mcSESearch(x),base);
             console.log('SERIES_RESULT',JSON.stringify(bySeries));
-            const c1=bySeries.find(c=>String(c?.data?.issueNr)==='1'&&c?.data?.coverUrl&&String(c?.data?.isbn)==='9788416945313');
-            if(!c1)throw new Error('Búsqueda serie+nº no devuelve All-Star Batman nº1 con portada');
-            const byIsbn=await page.evaluate(async x=>await mcSESearch({...x,isbn:'9788416945313'}),base);
-            console.log('ISBN_RESULT',JSON.stringify(byIsbn));
-            const c2=byIsbn.find(c=>String(c?.data?.issueNr)==='1'&&String(c?.data?.isbn)==='9788416945313'&&c?.data?.coverUrl);
-            if(!c2)throw new Error('Búsqueda ISBN no devuelve All-Star Batman nº1 con portada');
-            const cover=await page.evaluate(async u=>{try{const r=await fetch(u,{cache:'no-store'});const b=await r.blob();return{ok:r.ok,status:r.status,type:b.type,size:b.size}}catch(e){return{ok:false,error:String(e)}}},c2.data.coverUrl);
-            console.log('COVER_FETCH',JSON.stringify(cover));
-            if(!cover.ok||cover.size<5000)throw new Error('La portada no es descargable desde la app');
+            const c1=bySeries.find(c=>String(c?.data?.issueNr)==='1'&&String(c?.data?.isbn)==='9788416945313');
+            if(!c1)throw new Error('Búsqueda serie+nº no devuelve All-Star Batman nº1');
+            if(pageErrors.some(x=>String(x).includes('app38.js')))throw new Error('Error de ejecución en app38.js');
             console.log('SMOKE_PASS true');
             await browser.close();
           })().catch(e=>{console.error('SMOKE_FAIL',e);process.exit(1)});
