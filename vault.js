@@ -15,10 +15,7 @@
  const apiUrl=k=>`https://api.github.com/repos/${OWNER}/${REPO}/contents/covers/${safe(k)}.enc.json`;
  let objectUrls=new Map(),inflight=new Map(),lastUploadAt=0,persistAsked=false;
  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
- async function ensurePersistent(){
-   if(persistAsked)return;persistAsked=true;
-   try{if(navigator.storage?.persisted&&await navigator.storage.persisted())return;if(navigator.storage?.persist)await navigator.storage.persist()}catch{}
- }
+ async function ensurePersistent(){if(persistAsked)return;persistAsked=true;try{if(navigator.storage?.persisted&&await navigator.storage.persisted())return;if(navigator.storage?.persist)await navigator.storage.persist()}catch{}}
  async function storageInfo(){try{const e=await navigator.storage?.estimate?.();return{usage:Number(e?.usage||0),quota:Number(e?.quota||0),persisted:!!(await navigator.storage?.persisted?.())}}catch{return{usage:0,quota:0,persisted:false}}}
  async function derive(p,salt,it=180000){const base=await crypto.subtle.importKey('raw',enc.encode(p),'PBKDF2',false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:it,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
  async function encryptBlob(blob){const p=pass();if(!p)throw Error('Introduce primero la clave de sincronización');const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12)),key=await derive(p,salt),plain=new Uint8Array(await blob.arrayBuffer()),ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},key,plain));return{v:1,alg:'AES-GCM',kdf:'PBKDF2-SHA256',iterations:180000,mime:blob.type||'image/webp',size:blob.size,salt:b64(salt),iv:b64(iv),ciphertext:b64(ct)}}
@@ -30,43 +27,14 @@
  async function fileSha(k){const t=token();if(!t)return null;const r=await fetch(apiUrl(k)+'?ref='+encodeURIComponent(BRANCH),{headers:{Accept:'application/vnd.github+json',Authorization:'Bearer '+t,'X-GitHub-Api-Version':'2022-11-28'},cache:'no-store'});if(r.status===404)return null;if(!r.ok)throw Error('No se pudo comprobar la portada central ('+r.status+')');return (await r.json()).sha||null}
  function history(){const now=Date.now();let a=[];try{a=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]')}catch{}a=(Array.isArray(a)?a:[]).map(Number).filter(t=>Number.isFinite(t)&&now-t<3600000);localStorage.setItem(HISTORY_KEY,JSON.stringify(a));return a}
  function markWrite(){const a=history();a.push(Date.now());localStorage.setItem(HISTORY_KEY,JSON.stringify(a))}
- async function upload(k,blob){
-   const t=token();if(!t)throw Error('Falta la credencial GitHub de escritura');if(!pass())throw Error('Falta la clave de sincronización');
-   const h=history();if(h.length>=MAX_HOUR)throw Error(`Límite de seguridad: ${h.length} portadas sincronizadas en la última hora`);
-   const gap=Date.now()-lastUploadAt;if(lastUploadAt&&gap<MIN_GAP_MS)await sleep(MIN_GAP_MS-gap);
-   const env=await encryptBlob(blob),sha=await fileSha(k),body={message:'Guarda portada '+k,content:b64(enc.encode(JSON.stringify(env))),branch:BRANCH};if(sha)body.sha=sha;
-   const r=await fetch(apiUrl(k),{method:'PUT',headers:{Accept:'application/vnd.github+json',Authorization:'Bearer '+t,'X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json'},body:JSON.stringify(body)});
-   if(!r.ok){let m='';try{m=(await r.json()).message}catch{}throw Error('No se pudo sincronizar la portada ('+r.status+'): '+m)}
-   lastUploadAt=Date.now();markWrite();return true
- }
+ async function upload(k,blob){const t=token();if(!t)throw Error('Falta la credencial GitHub de escritura');if(!pass())throw Error('Falta la clave de sincronización');const h=history();if(h.length>=MAX_HOUR)throw Error(`Límite de seguridad: ${h.length} portadas sincronizadas en la última hora`);const gap=Date.now()-lastUploadAt;if(lastUploadAt&&gap<MIN_GAP_MS)await sleep(MIN_GAP_MS-gap);const env=await encryptBlob(blob),sha=await fileSha(k),body={message:'Guarda portada '+k,content:b64(enc.encode(JSON.stringify(env))),branch:BRANCH};if(sha)body.sha=sha;const r=await fetch(apiUrl(k),{method:'PUT',headers:{Accept:'application/vnd.github+json',Authorization:'Bearer '+t,'X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json'},body:JSON.stringify(body)});if(!r.ok){let m='';try{m=(await r.json()).message}catch{}throw Error('No se pudo sincronizar la portada ('+r.status+'): '+m)}lastUploadAt=Date.now();markWrite();return true}
  async function remoteBlob(k){const r=await fetch(rawUrl(k)+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('Portada central no disponible');return decryptBlob(await r.json())}
  async function objectUrl(k){if(objectUrls.has(k))return objectUrls.get(k);if(inflight.has(k))return inflight.get(k);const p=(async()=>{let b=await cacheGet(k);if(!b){b=await remoteBlob(k);await cachePut(k,b)}const u=URL.createObjectURL(b);objectUrls.set(k,u);inflight.delete(k);return u})().catch(e=>{inflight.delete(k);throw e});inflight.set(k,p);return p}
- async function markLocal(comic,blob,sourceUrl){await cachePut(comic.id,blob);const updated={...comic,coverKey:comic.id,coverSourceUrl:sourceUrl,coverUrl:'',coverSyncPending:true};await putStore('comics',updated);return updated}
- async function syncOne(comic){
-   if(!comic?.id||!comic.coverKey)throw Error('Ficha sin portada local');
-   let blob=await cacheGet(comic.coverKey);
-   if(!blob&&/^https?:\/\//i.test(String(comic.coverSourceUrl||''))){blob=await fetchAndCompress(comic.coverSourceUrl);await cachePut(comic.coverKey,blob)}
-   if(!blob)throw Error('La copia local de la portada no está disponible');
-   await upload(comic.coverKey,blob);const updated={...comic,coverSyncPending:false,coverSyncedAt:new Date().toISOString()};await putStore('comics',updated);return updated
- }
- async function attach(comic,sourceUrl,opts={}){
-   if(!comic?.id)throw Error('Ficha no válida');const blob=await fetchAndCompress(sourceUrl);let updated=await markLocal(comic,blob,sourceUrl);
-   if(opts.sync===true&&pass()&&token()){try{updated=await syncOne(updated)}catch(e){console.warn('Portada guardada localmente; sincronización pendiente:',e)}}
-   return updated
- }
- async function attachFile(comic,file,opts={}){
-   if(!comic?.id)throw Error('Ficha no válida');const blob=await compress(file);let updated=await markLocal(comic,blob,'archivo local');
-   if(opts.sync===true&&pass()&&token()){try{updated=await syncOne(updated)}catch(e){console.warn('Portada guardada localmente; sincronización pendiente:',e)}}
-   return updated
- }
- async function syncPending(limit=30,onProgress){
-   if(!pass()||!token())throw Error('Carga la clave y la credencial GitHub en Sincronizar');
-   const rows=(await allStore('comics')).filter(x=>x.coverKey&&x.coverSyncPending===true),batch=rows.slice(0,Math.max(1,Math.min(Number(limit)||30,60)));let done=0,errors=0;
-   const prev=!!window.__mcCoverBatchRunning;window.__mcCoverBatchRunning=true;
-   try{for(const x of batch){try{await syncOne(x);done++}catch(e){console.warn('Sync cover',x.id,e);errors++;if(String(e?.message||e).includes('Límite de seguridad'))break}onProgress?.({done,errors,total:batch.length,remaining:Math.max(0,rows.length-done-errors)})}}
-   finally{window.__mcCoverBatchRunning=prev;setTimeout(()=>window.CloudSync?.schedule?.(),250)}
-   return{done,errors,total:batch.length,remaining:Math.max(0,rows.length-done-errors)}
- }
+ async function markLocal(comic,blob,sourceUrl){await cachePut(comic.id,blob);const updated={...comic,coverKey:comic.id,coverSourceUrl:sourceUrl,coverUrl:'',coverSyncPending:true,coverRejectedSourceUrl:'',coverRejectedAt:''};await putStore('comics',updated);return updated}
+ async function syncOne(comic){if(!comic?.id||!comic.coverKey)throw Error('Ficha sin portada local');let blob=await cacheGet(comic.coverKey);if(!blob&&/^https?:\/\//i.test(String(comic.coverSourceUrl||''))){blob=await fetchAndCompress(comic.coverSourceUrl);await cachePut(comic.coverKey,blob)}if(!blob)throw Error('La copia local de la portada no está disponible');await upload(comic.coverKey,blob);const updated={...comic,coverSyncPending:false,coverSyncedAt:new Date().toISOString()};await putStore('comics',updated);return updated}
+ async function attach(comic,sourceUrl,opts={}){if(!comic?.id)throw Error('Ficha no válida');const blob=await fetchAndCompress(sourceUrl);let updated=await markLocal(comic,blob,sourceUrl);if(opts.sync===true&&pass()&&token()){try{updated=await syncOne(updated)}catch(e){console.warn('Portada guardada localmente; sincronización pendiente:',e)}}return updated}
+ async function attachFile(comic,file,opts={}){if(!comic?.id)throw Error('Ficha no válida');const blob=await compress(file);let updated=await markLocal(comic,blob,'archivo local');if(opts.sync===true&&pass()&&token()){try{updated=await syncOne(updated)}catch(e){console.warn('Portada guardada localmente; sincronización pendiente:',e)}}return updated}
+ async function syncPending(limit=30,onProgress){if(!pass()||!token())throw Error('Carga la clave y la credencial GitHub en Sincronizar');const rows=(await allStore('comics')).filter(x=>x.coverKey&&x.coverSyncPending===true),batch=rows.slice(0,Math.max(1,Math.min(Number(limit)||30,60)));let done=0,errors=0;const prev=!!window.__mcCoverBatchRunning;window.__mcCoverBatchRunning=true;try{for(const x of batch){try{await syncOne(x);done++}catch(e){console.warn('Sync cover',x.id,e);errors++;if(String(e?.message||e).includes('Límite de seguridad'))break}onProgress?.({done,errors,total:batch.length,remaining:Math.max(0,rows.length-done-errors)})}}finally{window.__mcCoverBatchRunning=prev;setTimeout(()=>window.CloudSync?.schedule?.(),250)}return{done,errors,total:batch.length,remaining:Math.max(0,rows.length-done-errors)}}
  async function pendingCount(){return(await allStore('comics')).filter(x=>x.coverKey&&x.coverSyncPending===true).length}
  async function hydrate(root=document){const slots=[...root.querySelectorAll('.mc-cover-slot[data-cover-key]:not([data-loading])')];for(const el of slots){el.dataset.loading='1';const k=el.dataset.coverKey;objectUrl(k).then(u=>{const im=document.createElement('img');im.className=el.className.replace(/\bmc-cover-slot\b/g,'').replace(/\bcoverph\b/g,'').trim();im.src=u;im.alt='Portada';im.loading='lazy';im.decoding='async';el.replaceWith(im)}).catch(()=>{el.textContent='🔒 Portada guardada';el.classList.add('coverph')})}}
  const obs=new MutationObserver(()=>hydrate());window.addEventListener('load',()=>{obs.observe(document.body,{subtree:true,childList:true});ensurePersistent();hydrate()});
