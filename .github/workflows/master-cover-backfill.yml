@@ -31,26 +31,35 @@ jobs:
           fetch-depth: 1
       - name: Python dependencies
         run: pip install --quiet requests beautifulsoup4
-      - name: Read batch size
-        id: batch
+      - name: Read batch config
+        id: cfg
         run: |
           CMD=$(ls -1t bridge/backfill/commands/*.json 2>/dev/null | head -1)
           if [ -n "$CMD" ]; then
-            BATCH=$(python -c "import json;print(int(json.load(open('$CMD')).get('batch',80)))")
+            BATCH=$(python -c "import json;d=json.load(open('$CMD'));print(int(d.get('batch',80)))")
+            ROUNDS=$(python -c "import json;d=json.load(open('$CMD'));print(int(d.get('rounds',1)))")
           else
             BATCH=80
+            ROUNDS=1
           fi
           if [ "$BATCH" -gt 250 ]; then BATCH=250; fi
+          if [ "$ROUNDS" -gt 6 ]; then ROUNDS=6; fi
+          if [ "$ROUNDS" -lt 1 ]; then ROUNDS=1; fi
           echo "size=$BATCH" >> "$GITHUB_OUTPUT"
+          echo "rounds=$ROUNDS" >> "$GITHUB_OUTPUT"
       - name: Enrich Maestro covers
-        run: python master_cover_backfill.py --master _main/master-data/publishers --batch ${{ steps.batch.outputs.size }}
+        run: |
+          for i in $(seq 1 ${{ steps.cfg.outputs.rounds }}); do
+            echo "=== RONDA $i/${{ steps.cfg.outputs.rounds }} ==="
+            python master_cover_backfill.py --master _main/master-data/publishers --batch ${{ steps.cfg.outputs.size }}
+          done
       - name: Save overlay and cursor
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add bridge/cache/master-cover-overrides.json bridge/cache/master-cover-backfill-state.json
           if git diff --cached --quiet; then
-            echo 'No changes in this batch'
+            echo 'No changes in this run'
           else
             git commit -m 'Backfill progresivo de portadas del Maestro'
             git pull --rebase origin bridge-data
