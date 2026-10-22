@@ -1,5 +1,5 @@
 {
-  "batch": 200,
-  "reason": "Backfill rápido por ISBN exacto tras serializar todas las escrituras del overlay",
-  "run": 6
+  "batch": 250,
+  "reason": "Backfill continuo de portadas del Maestro por ISBN exacto",
+  "run": 7
 }
