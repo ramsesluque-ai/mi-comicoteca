@@ -1,5 +1,5 @@
 {
-  "batch": 80,
-  "reason": "Primer lote con consultas paralelas y cursor persistente",
-  "run": 3
+  "batch": 200,
+  "reason": "Segunda pasada tras validar 55% de acierto en el primer lote",
+  "run": 4
 }
