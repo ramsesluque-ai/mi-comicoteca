@@ -1,5 +1,5 @@
 {
   "batch": 200,
-  "reason": "Backfill global rápido con OpenLibrary y Google Books por ISBN exacto; fuentes españolas quedan para segunda pasada de huecos",
-  "run": 5
+  "reason": "Backfill rápido por ISBN exacto tras serializar todas las escrituras del overlay",
+  "run": 6
 }
