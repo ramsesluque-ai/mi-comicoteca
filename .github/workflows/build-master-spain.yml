@@ -28,8 +28,15 @@ jobs:
           fetch-depth: 0
       - name: Python dependencies
         run: pip install --quiet requests duckdb
+      - name: Preserve manual/batch enrichments
+        run: |
+          mkdir -p /tmp/mc-master-enrichment
+          if [ -f master-data/cover-overrides.json ]; then cp master-data/cover-overrides.json /tmp/mc-master-enrichment/cover-overrides.json; fi
       - name: Build Spain master
         run: python scripts/build_master_spain.py
+      - name: Restore enrichments
+        run: |
+          if [ -f /tmp/mc-master-enrichment/cover-overrides.json ]; then cp /tmp/mc-master-enrichment/cover-overrides.json master-data/cover-overrides.json; fi
       - name: Validate master
         run: |
           python - <<'PY'
