@@ -1,5 +1,5 @@
 {
   "batch": 80,
-  "reason": "Relanza primer lote validado con workflow ya registrado",
-  "run": 2
+  "reason": "Primer lote con consultas paralelas y cursor persistente",
+  "run": 3
 }
