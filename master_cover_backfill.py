@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 ROOT=Path(__file__).resolve().parent
 OVERLAY=ROOT/'bridge'/'cache'/'master-cover-overrides.json'
 STATE=ROOT/'bridge'/'cache'/'master-cover-backfill-state.json'
-S=requests.Session();S.headers.update({'User-Agent':'Mozilla/5.0 Chrome/153 MI-COMICOTECA-MASTER/1.0','Accept-Language':'es-ES,es;q=0.9'})
+S=requests.Session();S.headers.update({'User-Agent':'Mozilla/5.0 Chrome/153 MI-COMICOTECA-MASTER/1.1','Accept-Language':'es-ES,es;q=0.9'})
 
 def code(v):return re.sub(r'[^0-9Xx]','',str(v or '')).upper()
 def norm(v):
@@ -63,13 +63,13 @@ def main():
  ap=argparse.ArgumentParser();ap.add_argument('--master',required=True);ap.add_argument('--batch',type=int,default=80);a=ap.parse_args()
  files=sorted(Path(a.master).glob('*.json'));OVERLAY.parent.mkdir(parents=True,exist_ok=True)
  overlay=load_json(OVERLAY,{});state=load_json(STATE,{'fileIndex':0,'rowIndex':0,'scanned':0,'linked':0,'passes':0})
- fi=int(state.get('fileIndex') or 0);ri=int(state.get('rowIndex') or 0);checked=0;linked=0
- while checked<a.batch and files:
+ fi=int(state.get('fileIndex') or 0);ri=int(state.get('rowIndex') or 0);checked=0;linked=0;scanned_this=0;max_scan=max(a.batch*100,5000)
+ while checked<a.batch and files and scanned_this<max_scan:
   if fi>=len(files):fi=0;ri=0;state['passes']=int(state.get('passes') or 0)+1
   rows=load_json(files[fi],[])
   if not isinstance(rows,list):rows=[]
   if ri>=len(rows):fi+=1;ri=0;continue
-  r=rows[ri];ri+=1;state['scanned']=int(state.get('scanned') or 0)+1
+  r=rows[ri];ri+=1;scanned_this+=1;state['scanned']=int(state.get('scanned') or 0)+1
   if not isinstance(r,dict):continue
   isbn=code(r.get('isbn') or r.get('barcode'))
   if len(isbn) not in (10,13):continue
@@ -80,7 +80,7 @@ def main():
   url,source=hit;overlay[isbn]=row_meta(r,isbn,url,source);linked+=1;state['linked']=int(state.get('linked') or 0)+1
   print('LINKED',isbn,overlay[isbn]['series'],overlay[isbn]['issueNr'],source)
   time.sleep(.12)
- state.update({'fileIndex':fi,'rowIndex':ri,'lastBatchChecked':checked,'lastBatchLinked':linked,'updatedAt':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime())})
+ state.update({'fileIndex':fi,'rowIndex':ri,'lastBatchChecked':checked,'lastBatchLinked':linked,'lastBatchScanned':scanned_this,'updatedAt':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime())})
  OVERLAY.write_text(json.dumps(overlay,ensure_ascii=False,indent=2,sort_keys=True),encoding='utf-8')
  STATE.write_text(json.dumps(state,ensure_ascii=False,indent=2),encoding='utf-8')
  print('BACKFILL',json.dumps(state,ensure_ascii=False),'overlay',len(overlay))
