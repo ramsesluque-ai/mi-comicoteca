@@ -18,7 +18,6 @@ concurrency:
 
 jobs:
   audit:
-    if: github.actor != 'github-actions[bot]' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -26,7 +25,7 @@ jobs:
           fetch-depth: 0
       - name: Generate audit
         run: python scripts/audit_novaro_batman.py
-      - name: Validate stages
+      - name: Validate normalized stages
         run: |
           python - <<'PY'
           import json,sys
@@ -35,6 +34,10 @@ jobs:
           stages=sorted(set(x.get('stage','') for x in d['collections'] if x.get('stage')))
           print('STAGES',stages)
           if d['totalMatchedIssues'] < 20: sys.exit('Batman Novaro audit unexpectedly small')
+          for expected in ('Serie Águila','Serie Avestruz','Serie Colibrí'):
+            if expected not in stages: sys.exit('Missing normalized stage: '+expected)
+          bad=[x for x in d['collections'] if 'serie avestruz' in x.get('catalogHeader','').lower() or 'serie colibr' in x.get('catalogHeader','').lower()]
+          if bad: sys.exit('Stage still embedded in catalogHeader: '+repr(bad[:3]))
           PY
       - name: Commit audit
         run: |
@@ -44,6 +47,7 @@ jobs:
           if git diff --cached --quiet; then
             echo 'Audit unchanged'
           else
-            git commit -m 'Actualiza auditoría Batman Novaro'
+            git commit -m 'Actualiza auditoría Batman Novaro normalizada'
+            git pull --rebase origin main
             git push origin main
           fi
