@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 ROOT=Path(__file__).resolve().parent
 OVERLAY=ROOT/'bridge'/'cache'/'master-cover-overrides.json'
 STATE=ROOT/'bridge'/'cache'/'master-cover-backfill-state.json'
-HEADERS={'User-Agent':'Mozilla/5.0 Chrome/153 MI-COMICOTECA-MASTER/1.3','Accept-Language':'es-ES,es;q=0.9'}
+HEADERS={'User-Agent':'Mozilla/5.0 Chrome/153 MI-COMICOTECA-MASTER/1.4','Accept-Language':'es-ES,es;q=0.9'}
 
 def code(v):return re.sub(r'[^0-9Xx]','',str(v or '')).upper()
 def norm(v):
@@ -36,14 +36,14 @@ def googlebooks(isbn):
   if u:return u.replace('http:','https:'),'Google Books'
  return None
 def milcomics(isbn):
- r=get('https://www.milcomics.com/busqueda?controller=search&s='+quote_plus(isbn))
+ r=get('https://www.milcomics.com/busqueda?controller=search&s='+quote_plus(isbn),timeout=18)
  if not r or r.status_code!=200:return None
  s=BeautifulSoup(r.text,'html.parser');links=[]
  for a in s.find_all('a',href=True):
   u=urljoin(r.url,a.get('href'));hint=norm((a.get_text(' ',strip=True) or '')+' '+u)
-  if 'milcomics.com' in u and u not in links and ('comic' in hint or 'renacimiento' in hint):links.append(u)
- for u in links[:8]:
-  rr=get(u)
+  if 'milcomics.com' in u and u not in links and ('comic' in hint or 'renacimiento' in hint or 'descatalog' in hint):links.append(u)
+ for u in links[:10]:
+  rr=get(u,timeout=18)
   if not rr or rr.status_code!=200:continue
   ss=BeautifulSoup(rr.text,'html.parser');txt=code(ss.get_text(' ',strip=True))
   if isbn not in txt:continue
@@ -51,9 +51,8 @@ def milcomics(isbn):
   if img:return urljoin(u,img).replace('http:','https:'),'MilComics'
  return None
 def cover_for(isbn):
- # Backfill global: sólo fuentes rápidas y exactas por ISBN. Las fuentes españolas
- # más costosas se reservan para la segunda pasada de huecos / búsquedas por serie.
- for fn in (openlibrary,googlebooks):
+ # Orden de coste: índices abiertos rápidos y, si fallan, fuente española exacta por ISBN.
+ for fn in (openlibrary,googlebooks,milcomics):
   hit=fn(isbn)
   if hit:return hit
  return None
@@ -80,7 +79,7 @@ def main():
   if isbn in overlay and (overlay[isbn] or {}).get('coverUrl'):continue
   targets.append((isbn,r))
  linked=0
- workers=max(1,min(int(a.workers or 8),12,len(targets) or 1))
+ workers=max(1,min(int(a.workers or 8),8,len(targets) or 1))
  with ThreadPoolExecutor(max_workers=workers) as ex:
   futures={ex.submit(cover_for,isbn):(isbn,r) for isbn,r in targets}
   for fut in as_completed(futures):
