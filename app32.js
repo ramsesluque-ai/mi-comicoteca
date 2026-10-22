@@ -1,5 +1,5 @@
 'use strict';
-/* v44: Maestro -> Catálogo automático, local-first y solo con identidad exacta. */
+/* v44/v46: Maestro -> Catálogo automático, local-first y solo con identidad exacta. */
 (function(){
   if(!window.CoverVault||typeof allStore!=='function'||typeof mcSEOverrides!=='function')return;
 
@@ -30,7 +30,7 @@
   }
 
   async function run(){
-    if(running||document.visibilityState==='hidden'||!navigator.onLine)return last;
+    if(running||window.__mcCoverRepairRunning||document.visibilityState==='hidden'||!navigator.onLine)return last;
     running=true;
     const prevBatch=!!window.__mcCoverBatchRunning;
     window.__mcCoverBatchRunning=true;
@@ -75,7 +75,6 @@
     timer=setTimeout(()=>run(),Math.max(100,Number(delay)||800));
   }
 
-  /* Cada refresco del overlay puede aportar nuevas portadas al catálogo particular. */
   if(typeof window.mcRefreshMasterCoverOverlay==='function'){
     const baseRefresh=window.mcRefreshMasterCoverOverlay;
     window.mcRefreshMasterCoverOverlay=async function(...args){
@@ -85,7 +84,6 @@
     };
   }
 
-  /* Si el usuario recupera su colección desde la nube, reconciliarla inmediatamente. */
   if(window.CloudSync?.pull){
     const basePull=window.CloudSync.pull;
     window.CloudSync.pull=async function(...args){
