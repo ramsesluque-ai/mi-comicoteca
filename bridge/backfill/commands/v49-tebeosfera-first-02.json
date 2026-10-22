@@ -1,0 +1,7 @@
+{
+  "batch": 250,
+  "rounds": 6,
+  "mode": "tebeosfera-first-all-identities",
+  "priority": ["Novaro","Vértice","Bruguera","Zinco","Forum","Planeta / DeAgostini","Panini","ECC"],
+  "requestedAt": "2026-10-22T21:35:00Z"
+}
