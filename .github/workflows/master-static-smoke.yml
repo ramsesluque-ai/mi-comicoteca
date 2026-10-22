@@ -70,7 +70,7 @@ jobs:
             console.log('SERIES_RESULT',JSON.stringify(bySeries));
             const c1=bySeries.find(c=>String(c?.data?.issueNr)==='1'&&String(c?.data?.isbn)==='9788416945313');
             if(!c1)throw new Error('Búsqueda serie+nº no devuelve All-Star Batman nº1');
-            if(pageErrors.some(x=>String(x).includes('app38.js')))throw new Error('Error de ejecución en app38.js');
+            if(pageErrors.length)throw new Error('Errores JavaScript en página: '+pageErrors.join(' | '));
             console.log('SMOKE_PASS true');
             await browser.close();
           })().catch(e=>{console.error('SMOKE_FAIL',e);process.exit(1)});
