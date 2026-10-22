@@ -1,4 +1,17 @@
 {
+  "8402094627": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/11550565-L.jpg",
+    "isbn": "8402094627",
+    "issueNr": "1",
+    "pages": "68",
+    "publicationDate": "1983-05-00",
+    "publisher": "Bruguera",
+    "series": "Firmado por...",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/11550565-L.jpg",
+    "title": "Yo, Robot"
+  },
   "8496587088": {
     "_score": 12000,
     "coverUrl": "https://covers.openlibrary.org/b/id/13975530-L.jpg",
@@ -76,6 +89,45 @@
     "source": "Backfill · OpenLibrary",
     "sourceUrl": "https://covers.openlibrary.org/b/id/13975520-L.jpg",
     "title": "El discípulo"
+  },
+  "9788412007350": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/12038917-L.jpg",
+    "isbn": "9788412007350",
+    "issueNr": "[nn]",
+    "pages": "272",
+    "publicationDate": "2020-00-00",
+    "publisher": "Autsaider Cómics",
+    "series": "Primavera para Madrid",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/12038917-L.jpg",
+    "title": ""
+  },
+  "9788415051244": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/6679409-L.jpg",
+    "isbn": "9788415051244",
+    "issueNr": "[nn]",
+    "pages": "",
+    "publicationDate": "2010-09-00",
+    "publisher": "Bang Ediciones",
+    "series": "El Ángel de la retirada",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/6679409-L.jpg",
+    "title": ""
+  },
+  "9788415051329": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/7445647-L.jpg",
+    "isbn": "9788415051329",
+    "issueNr": "[nn]",
+    "pages": "",
+    "publicationDate": "2011-11-00",
+    "publisher": "Bang Ediciones",
+    "series": "Aventuras de un oficinista japonés",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/7445647-L.jpg",
+    "title": ""
   },
   "9788415225126": {
     "_score": 12000,
@@ -168,6 +220,45 @@
     "sourceUrl": "https://covers.openlibrary.org/b/id/7283851-L.jpg",
     "title": ""
   },
+  "9788415685265": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/7263254-L.jpg",
+    "isbn": "9788415685265",
+    "issueNr": "[nn]",
+    "pages": "",
+    "publicationDate": "2013-00-00",
+    "publisher": "Astiberri",
+    "series": "Panorama. La novela gráfica española hoy",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/7263254-L.jpg",
+    "title": ""
+  },
+  "9788415685272": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/7270538-L.jpg",
+    "isbn": "9788415685272",
+    "issueNr": "[2]",
+    "pages": "112",
+    "publicationDate": "2013-06-00",
+    "publisher": "Astiberri",
+    "series": "Grandville",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/7270538-L.jpg",
+    "title": "Mon Amour"
+  },
+  "9788415685364": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/7352559-L.jpg",
+    "isbn": "9788415685364",
+    "issueNr": "[nn]",
+    "pages": "336",
+    "publicationDate": "2013-11-00",
+    "publisher": "Astiberri",
+    "series": "Los surcos del azar",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/7352559-L.jpg",
+    "title": ""
+  },
   "9788415685746": {
     "_score": 12000,
     "coverUrl": "https://covers.openlibrary.org/b/id/7346038-L.jpg",
@@ -180,6 +271,32 @@
     "source": "Backfill · OpenLibrary",
     "sourceUrl": "https://covers.openlibrary.org/b/id/7346038-L.jpg",
     "title": "El alcaudón"
+  },
+  "9788415685883": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/7355580-L.jpg",
+    "isbn": "9788415685883",
+    "issueNr": "[3]",
+    "pages": "112",
+    "publicationDate": "2015-02-00",
+    "publisher": "Astiberri",
+    "series": "Grandville",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/7355580-L.jpg",
+    "title": "Bête Noire"
+  },
+  "9788415685890": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/7355581-L.jpg",
+    "isbn": "9788415685890",
+    "issueNr": "[4]",
+    "pages": "112",
+    "publicationDate": "2015-03-00",
+    "publisher": "Astiberri",
+    "series": "Grandville",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/7355581-L.jpg",
+    "title": "Noël"
   },
   "9788416074037": {
     "_score": 12000,
@@ -233,6 +350,58 @@
     "sourceUrl": "https://covers.openlibrary.org/b/id/13975463-L.jpg",
     "title": ""
   },
+  "9788416114917": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/10502686-L.jpg",
+    "isbn": "9788416114917",
+    "issueNr": "[nn]",
+    "pages": "",
+    "publicationDate": "2017-11-00",
+    "publisher": "Bang Ediciones",
+    "series": "Infiniment",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/10502686-L.jpg",
+    "title": ""
+  },
+  "9788416251001": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/15202581-L.jpg",
+    "isbn": "9788416251001",
+    "issueNr": "[nn]",
+    "pages": "144",
+    "publicationDate": "2015-12-00",
+    "publisher": "Astiberri",
+    "series": "La Casa",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/15202581-L.jpg",
+    "title": ""
+  },
+  "9788416251513": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/8497493-L.jpg",
+    "isbn": "9788416251513",
+    "issueNr": "[nn]",
+    "pages": "",
+    "publicationDate": "2016-00-00",
+    "publisher": "Astiberri",
+    "series": "Lamia",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/8497493-L.jpg",
+    "title": ""
+  },
+  "9788416251971": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/8191675-L.jpg",
+    "isbn": "9788416251971",
+    "issueNr": "[nn]",
+    "pages": "180",
+    "publicationDate": "2017-03-00",
+    "publisher": "Astiberri",
+    "series": "Cosmonauta",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/8191675-L.jpg",
+    "title": ""
+  },
   "9788416486137": {
     "_score": 12000,
     "coverUrl": "https://covers.openlibrary.org/b/id/8151219-L.jpg",
@@ -283,6 +452,45 @@
     "series": "Viento Mágico",
     "source": "Backfill · OpenLibrary",
     "sourceUrl": "https://covers.openlibrary.org/b/id/13949090-L.jpg",
+    "title": ""
+  },
+  "9788416880058": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/10874566-L.jpg",
+    "isbn": "9788416880058",
+    "issueNr": "1",
+    "pages": "144",
+    "publicationDate": "2017-02-00",
+    "publisher": "Astiberri",
+    "series": "Bitch Planet",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/10874566-L.jpg",
+    "title": ""
+  },
+  "9788416880591": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/11286934-L.jpg",
+    "isbn": "9788416880591",
+    "issueNr": "2",
+    "pages": "152",
+    "publicationDate": "2018-01-00",
+    "publisher": "Astiberri",
+    "series": "Bitch Planet",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/11286934-L.jpg",
+    "title": ""
+  },
+  "9788416880874": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/10301664-L.jpg",
+    "isbn": "9788416880874",
+    "issueNr": "[nn]",
+    "pages": "252",
+    "publicationDate": "2018-12-00",
+    "publisher": "Astiberri",
+    "series": "El tesoro del Cisne Negro",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/10301664-L.jpg",
     "title": ""
   },
   "9788416945313": {
@@ -363,6 +571,19 @@
     "sourceUrl": "https://www.milcomics.com/comic-batman/all-star-batman-06-renacimiento-88209.html",
     "title": "Comprar All-Star Batman 06 (Renacimiento) - Mil Comics: Tienda de cómics y figuras Marvel, DC Comics, Star Wars, Tintín"
   },
+  "9788418101427": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/10953819-L.jpg",
+    "isbn": "9788418101427",
+    "issueNr": "[nn]",
+    "pages": "",
+    "publicationDate": "2021-04-00",
+    "publisher": "Bang Ediciones",
+    "series": "Claudio et Lucia contre l'agence FAKE",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/10953819-L.jpg",
+    "title": ""
+  },
   "9788492615292": {
     "_score": 12000,
     "coverUrl": "https://covers.openlibrary.org/b/id/13624850-L.jpg",
@@ -374,6 +595,58 @@
     "series": "Tarde en McBurger's",
     "source": "Backfill · OpenLibrary",
     "sourceUrl": "https://covers.openlibrary.org/b/id/13624850-L.jpg",
+    "title": ""
+  },
+  "9788492769131": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/15120706-L.jpg",
+    "isbn": "9788492769131",
+    "issueNr": "1",
+    "pages": "432",
+    "publicationDate": "2009-00-00",
+    "publisher": "Astiberri",
+    "series": "Una vida errante",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/15120706-L.jpg",
+    "title": ""
+  },
+  "9788492769148": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/13756127-L.jpg",
+    "isbn": "9788492769148",
+    "issueNr": "2",
+    "pages": "416",
+    "publicationDate": "2009-00-00",
+    "publisher": "Astiberri",
+    "series": "Una vida errante",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/13756127-L.jpg",
+    "title": ""
+  },
+  "9788492769810": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/7089362-L.jpg",
+    "isbn": "9788492769810",
+    "issueNr": "[nn]",
+    "pages": "136",
+    "publicationDate": "2010-11-00",
+    "publisher": "Astiberri",
+    "series": "El invierno del dibujante",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/7089362-L.jpg",
+    "title": ""
+  },
+  "9788493508807": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/10874514-L.jpg",
+    "isbn": "9788493508807",
+    "issueNr": "[nn]",
+    "pages": "",
+    "publicationDate": "2006-00-00",
+    "publisher": "Astiberri",
+    "series": "Shenzhen",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/10874514-L.jpg",
     "title": ""
   },
   "9788496587519": {
@@ -479,6 +752,32 @@
     "source": "Backfill · OpenLibrary",
     "sourceUrl": "https://covers.openlibrary.org/b/id/13975497-L.jpg",
     "title": "El hombre del saco"
+  },
+  "9788496815056": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/7152149-L.jpg",
+    "isbn": "9788496815056",
+    "issueNr": "[nn]",
+    "pages": "",
+    "publicationDate": "2005-00-00",
+    "publisher": "Astiberri",
+    "series": "Pyongyang",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/7152149-L.jpg",
+    "title": ""
+  },
+  "9788496815124": {
+    "_score": 12000,
+    "coverUrl": "https://covers.openlibrary.org/b/id/13755737-L.jpg",
+    "isbn": "9788496815124",
+    "issueNr": "[nn]",
+    "pages": "",
+    "publicationDate": "2007-00-00",
+    "publisher": "Astiberri",
+    "series": "Entender el cómic : el arte invisible",
+    "source": "Backfill · OpenLibrary",
+    "sourceUrl": "https://covers.openlibrary.org/b/id/13755737-L.jpg",
+    "title": ""
   },
   "9788496992016": {
     "_score": 12000,

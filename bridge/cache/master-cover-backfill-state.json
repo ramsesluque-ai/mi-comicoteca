@@ -1,12 +1,12 @@
 {
-  "fileIndex": 21,
-  "rowIndex": 10,
-  "scanned": 2191,
-  "linked": 44,
+  "fileIndex": 30,
+  "rowIndex": 2502,
+  "scanned": 9472,
+  "linked": 67,
   "passes": 0,
-  "lastBatchChecked": 80,
-  "lastBatchLinked": 44,
-  "lastBatchScanned": 2191,
+  "lastBatchChecked": 200,
+  "lastBatchLinked": 23,
+  "lastBatchScanned": 7281,
   "lastWorkers": 8,
-  "updatedAt": "2026-10-22T18:38:05Z"
+  "updatedAt": "2026-10-22T18:44:59Z"
 }
