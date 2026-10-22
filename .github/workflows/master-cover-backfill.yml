@@ -1,0 +1,58 @@
+name: Master cover backfill
+
+on:
+  push:
+    branches: [bridge-data]
+    paths:
+      - 'bridge/backfill/commands/**.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: comicoteca-master-cover-backfill
+  cancel-in-progress: true
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout bridge-data
+        uses: actions/checkout@v6
+        with:
+          ref: bridge-data
+          fetch-depth: 0
+      - name: Checkout Maestro main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          path: _main
+          fetch-depth: 1
+      - name: Python dependencies
+        run: pip install --quiet requests beautifulsoup4
+      - name: Read batch size
+        id: batch
+        run: |
+          CMD=$(ls -1t bridge/backfill/commands/*.json 2>/dev/null | head -1)
+          if [ -n "$CMD" ]; then
+            BATCH=$(python -c "import json;print(int(json.load(open('$CMD')).get('batch',80)))")
+          else
+            BATCH=80
+          fi
+          if [ "$BATCH" -gt 250 ]; then BATCH=250; fi
+          echo "size=$BATCH" >> "$GITHUB_OUTPUT"
+      - name: Enrich Maestro covers
+        run: python master_cover_backfill.py --master _main/master-data/publishers --batch ${{ steps.batch.outputs.size }}
+      - name: Save overlay and cursor
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add bridge/cache/master-cover-overrides.json bridge/cache/master-cover-backfill-state.json
+          if git diff --cached --quiet; then
+            echo 'No changes in this batch'
+          else
+            git commit -m 'Backfill progresivo de portadas del Maestro'
+            git pull --rebase origin bridge-data
+            git push origin bridge-data
+          fi
