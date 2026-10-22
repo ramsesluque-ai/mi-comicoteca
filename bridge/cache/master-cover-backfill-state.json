@@ -1,12 +1,13 @@
 {
-  "fileIndex": 58,
-  "rowIndex": 2100,
-  "scanned": 147695,
-  "linked": 931,
-  "passes": 1,
-  "lastBatchChecked": 250,
+  "fileIndex": 0,
+  "rowIndex": 0,
+  "scanned": 0,
+  "linked": 0,
+  "passes": 0,
+  "lastBatchChecked": 0,
   "lastBatchLinked": 0,
-  "lastBatchScanned": 779,
-  "lastWorkers": 8,
-  "updatedAt": "2026-10-22T20:51:21Z"
+  "lastBatchScanned": 0,
+  "lastWorkers": 0,
+  "rebuild": "v48-tebeosfera-authority",
+  "updatedAt": "2026-10-22T21:20:00Z"
 }
