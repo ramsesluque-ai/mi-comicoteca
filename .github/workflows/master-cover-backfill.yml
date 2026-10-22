@@ -11,8 +11,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: comicoteca-master-cover-backfill
-  cancel-in-progress: true
+  group: comicoteca-cover-overlay-writer
+  cancel-in-progress: false
 
 jobs:
   backfill:
