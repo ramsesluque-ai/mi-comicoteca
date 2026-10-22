@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - 'scripts/build_master_spain.py'
+      - 'scripts/augment_master_historical.py'
       - '.github/workflows/build-master-spain.yml'
   schedule:
     - cron: '20 4 2 * *'
@@ -34,6 +35,8 @@ jobs:
           if [ -f master-data/cover-overrides.json ]; then cp master-data/cover-overrides.json /tmp/mc-master-enrichment/cover-overrides.json; fi
       - name: Build Spain master
         run: python scripts/build_master_spain.py
+      - name: Add historical Spanish-language supplements
+        run: python scripts/augment_master_historical.py
       - name: Restore enrichments
         run: |
           if [ -f /tmp/mc-master-enrichment/cover-overrides.json ]; then cp /tmp/mc-master-enrichment/cover-overrides.json master-data/cover-overrides.json; fi
@@ -46,6 +49,11 @@ jobs:
           d=json.loads(p.read_text())
           print('MASTER', d['totalIssues'], 'issues /', d['totalSeries'], 'series /', d['totalPublishers'], 'publishers')
           if d['totalIssues'] < 1000: sys.exit('Master unexpectedly small')
+          supplements=d.get('historicalSupplements') or []
+          if 'Novaro' not in supplements: sys.exit('Historical Novaro supplement missing')
+          novaro=next((x for x in d.get('publishers',[]) if x.get('publisher')=='Novaro'),None)
+          if not novaro or novaro.get('issues',0)<100: sys.exit('Novaro master unexpectedly small')
+          print('NOVARO',novaro)
           PY
       - name: Commit generated master
         run: |
@@ -55,6 +63,6 @@ jobs:
           if git diff --cached --quiet; then
             echo 'Maestro sin cambios'
           else
-            git commit -m 'Actualiza Maestro España desde GCD 20261001'
+            git commit -m 'Actualiza Maestro España + histórico Novaro desde GCD 20261001'
             git push origin main
           fi
