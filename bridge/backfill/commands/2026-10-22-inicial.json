@@ -1,5 +1,5 @@
 {
   "batch": 250,
-  "reason": "Backfill continuo de portadas del Maestro por ISBN exacto",
-  "run": 7
+  "reason": "Backfill continuo Maestro con OpenLibrary, Google Books y MilComics por ISBN exacto",
+  "run": 8
 }
