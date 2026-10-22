@@ -1,4 +1,4 @@
-const CACHE='mi-comicoteca-v15-20261022';
+const CACHE='mi-comicoteca-v16-20261022';
 const ASSETS=['./','./index.html','./styles.css','./visual.css','./classic.css','./rich-theme.css','./ficha-search.css','./branding.css','./sync.css','./brand-logo.svg','./app1.js','./app2.js','./app3.js','./app4.js','./app5.js','./app6.js','./app7.js','./app8.js','./app9.js','./app10.js','./vault.js','./migration.js','./sync.js','./setup.js','./manifest.webmanifest','./icon.svg'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
