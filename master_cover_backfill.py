@@ -2,29 +2,70 @@
 import argparse,json,re,time,unicodedata
 from concurrent.futures import ThreadPoolExecutor,as_completed
 from pathlib import Path
-from urllib.parse import quote_plus,urljoin
+from urllib.parse import quote_plus,urljoin,urlparse,parse_qs,unquote
 import requests
 from bs4 import BeautifulSoup
 
 ROOT=Path(__file__).resolve().parent
 OVERLAY=ROOT/'bridge'/'cache'/'master-cover-overrides.json'
 STATE=ROOT/'bridge'/'cache'/'master-cover-backfill-state.json'
-HEADERS={'User-Agent':'Mozilla/5.0 Chrome/153 MI-COMICOTECA-MASTER/1.5','Accept-Language':'es-ES,es;q=0.9'}
+HEADERS={'User-Agent':'Mozilla/5.0 Chrome/153 MI-COMICOTECA-MASTER/2.0','Accept-Language':'es-ES,es;q=0.9'}
 S=requests.Session();S.headers.update(HEADERS)
 
 def code(v):return re.sub(r'[^0-9Xx]','',str(v or '')).upper()
 def norm(v):
  s=unicodedata.normalize('NFD',str(v or ''));return ''.join(c for c in s if unicodedata.category(c)!='Mn').lower()
-def get(url,timeout=12):
- try:return S.get(url,timeout=timeout,allow_redirects=True)
+def get(url,timeout=12,headers=None):
+ try:return S.get(url,timeout=timeout,allow_redirects=True,headers=headers or {})
  except Exception:return None
+
+def search_links(q,domains=None,limit=8):
+ out=[]
+ for base,selector in [('https://www.bing.com/search?q=','li.b_algo h2 a, h2 a'),('https://html.duckduckgo.com/html/?q=','a.result__a, a.result-link')]:
+  r=get(base+quote_plus(q),12,{'Accept':'text/html'})
+  if not r or r.status_code not in (200,202):continue
+  s=BeautifulSoup(r.text,'html.parser')
+  for a in s.select(selector):
+   u=a.get('href') or ''
+   if 'uddg=' in u:
+    try:u=unquote(parse_qs(urlparse(u).query).get('uddg',[''])[0])
+    except:pass
+   if not u.startswith(('http://','https://')):continue
+   host=urlparse(u).netloc.lower()
+   if domains and not any(d in host for d in domains):continue
+   if u not in out:out.append(u)
+   if len(out)>=limit:return out
+ return out
+
+def tebeosfera(isbn):
+ # Tebeosfera es autoridad. Si su página contiene el ISBN exacto, la portada se acepta
+ # aunque OpenLibrary/Google/MilComics no tengan ese registro.
+ for u in search_links(f'site:tebeosfera.com "{isbn}"',['tebeosfera.com'],10):
+  r=get(u,15)
+  if not r or r.status_code!=200:continue
+  s=BeautifulSoup(r.text,'html.parser');txt=code(s.get_text(' ',strip=True))
+  if isbn not in txt:continue
+  m=s.find('meta',attrs={'property':'og:image'});img=(m.get('content') or '').strip() if m else ''
+  if not img:
+   best=[]
+   for im in s.find_all('img'):
+    src=im.get('data-src') or im.get('data-original') or im.get('data-lazy') or im.get('src') or ''
+    src=urljoin(r.url,src);hint=norm(' '.join([im.get('alt') or '',im.get('title') or '',src]))
+    if not src.startswith(('http://','https://')):continue
+    score=(5 if any(x in hint for x in ('portada','cover','cubierta')) else 0)-(9 if 'logo' in hint else 0)
+    best.append((score,src))
+   if best:img=max(best,key=lambda z:z[0])[1]
+  if img:return img.replace('http:','https:'),'Tebeosfera',u
+ return None
+
 def openlibrary(isbn):
  key='ISBN:'+isbn;r=get('https://openlibrary.org/api/books?bibkeys='+quote_plus(key)+'&format=json&jscmd=data',10)
  if not r or r.status_code!=200:return None
  try:b=r.json().get(key) or {}
  except:return None
  c=b.get('cover') or {};u=c.get('large') or c.get('medium') or c.get('small')
- return (u.replace('http:','https:'), 'OpenLibrary') if u else None
+ return (u.replace('http:','https:'), 'OpenLibrary',u) if u else None
+
 def googlebooks(isbn):
  r=get('https://www.googleapis.com/books/v1/volumes?q='+quote_plus('isbn:'+isbn)+'&maxResults=5',10)
  if not r or r.status_code!=200:return None
@@ -34,10 +75,10 @@ def googlebooks(isbn):
   v=it.get('volumeInfo') or {};ids=v.get('industryIdentifiers') or []
   if not any(code(x.get('identifier'))==isbn for x in ids):continue
   im=v.get('imageLinks') or {};u=im.get('extraLarge') or im.get('large') or im.get('medium') or im.get('small') or im.get('thumbnail')
-  if u:return u.replace('http:','https:'),'Google Books'
+  if u:return u.replace('http:','https:'),'Google Books',u
  return None
+
 def milcomics(isbn):
- # Búsqueda estricta por ISBN y revisión de pocos candidatos: mismo nivel de seguridad, mucha menos latencia.
  r=get('https://www.milcomics.com/busqueda?controller=search&s='+quote_plus(isbn),12)
  if not r or r.status_code!=200:return None
  s=BeautifulSoup(r.text,'html.parser');links=[]
@@ -59,19 +100,21 @@ def milcomics(isbn):
   ss=BeautifulSoup(rr.text,'html.parser');txt=code(ss.get_text(' ',strip=True))
   if isbn not in txt:continue
   m=ss.find('meta',attrs={'property':'og:image'});img=(m.get('content') or '').strip() if m else ''
-  if img:return urljoin(u,img).replace('http:','https:'),'MilComics'
+  if img:return urljoin(u,img).replace('http:','https:'),'MilComics',u
  return None
+
 def cover_for(isbn):
- # Orden de coste: índices abiertos rápidos y, si fallan, fuente española exacta por ISBN.
- for fn in (openlibrary,googlebooks,milcomics):
+ for fn in (tebeosfera,openlibrary,googlebooks,milcomics):
   hit=fn(isbn)
   if hit:return hit
  return None
-def row_meta(r,isbn,url,source):
- return {'isbn':isbn,'title':r.get('title') or '', 'publisher':r.get('publisher') or '', 'series':r.get('catalogHeader') or r.get('series') or '', 'issueNr':str(r.get('issueNr') if r.get('issueNr') is not None else r.get('issue') or ''), 'publicationDate':r.get('publicationDate') or '', 'pages':r.get('pages') or '', 'coverUrl':url, 'sourceUrl':url, 'source':'Backfill · '+source, '_score':12000}
+
+def row_meta(r,isbn,url,source,source_url):
+ return {'isbn':isbn,'title':r.get('title') or '', 'publisher':r.get('publisher') or '', 'series':r.get('catalogHeader') or r.get('series') or '', 'volume':r.get('volume') or '', 'stage':r.get('stage') or '', 'startYear':str(r.get('startYear') or ''), 'issueNr':str(r.get('issueNr') if r.get('issueNr') is not None else r.get('issue') or ''), 'publicationDate':r.get('publicationDate') or '', 'pages':r.get('pages') or '', 'coverUrl':url, 'sourceUrl':source_url or url, 'source':'Backfill · '+source, '_score':30000 if source=='Tebeosfera' else 12000}
 def load_json(path,default):
  try:return json.loads(path.read_text(encoding='utf-8'))
  except:return default
+
 def main():
  ap=argparse.ArgumentParser();ap.add_argument('--master',required=True);ap.add_argument('--batch',type=int,default=80);ap.add_argument('--workers',type=int,default=8);a=ap.parse_args()
  files=sorted(Path(a.master).glob('*.json'));OVERLAY.parent.mkdir(parents=True,exist_ok=True)
@@ -87,19 +130,22 @@ def main():
   isbn=code(r.get('isbn') or r.get('barcode'))
   if len(isbn) not in (10,13) or isbn in seen:continue
   seen.add(isbn)
-  if isbn in overlay and (overlay[isbn] or {}).get('coverUrl'):continue
+  old=overlay.get(isbn) or {}
+  # Si ya es Tebeosfera, se considera definitivo. Si es otra fuente, permitimos mejorarla.
+  if old.get('coverUrl') and 'tebeosfera' in norm(old.get('source')):continue
   targets.append((isbn,r))
- linked=0
- workers=max(1,min(int(a.workers or 8),8,len(targets) or 1))
+ linked=0;workers=max(1,min(int(a.workers or 8),8,len(targets) or 1))
  with ThreadPoolExecutor(max_workers=workers) as ex:
   futures={ex.submit(cover_for,isbn):(isbn,r) for isbn,r in targets}
   for fut in as_completed(futures):
    isbn,r=futures[fut]
    try:hit=fut.result()
-   except Exception as e:
-    print('ERROR',isbn,repr(e));continue
+   except Exception as e:print('ERROR',isbn,repr(e));continue
    if not hit:continue
-   url,source=hit;overlay[isbn]=row_meta(r,isbn,url,source);linked+=1;state['linked']=int(state.get('linked') or 0)+1
+   url,source,source_url=hit
+   old=overlay.get(isbn) or {}
+   if old.get('coverUrl') and source!='Tebeosfera':continue
+   overlay[isbn]=row_meta(r,isbn,url,source,source_url);linked+=1;state['linked']=int(state.get('linked') or 0)+1
    print('LINKED',isbn,overlay[isbn]['series'],overlay[isbn]['issueNr'],source)
  state.update({'fileIndex':fi,'rowIndex':ri,'lastBatchChecked':len(targets),'lastBatchLinked':linked,'lastBatchScanned':scanned_this,'lastWorkers':workers,'updatedAt':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime())})
  OVERLAY.write_text(json.dumps(overlay,ensure_ascii=False,indent=2,sort_keys=True),encoding='utf-8')
