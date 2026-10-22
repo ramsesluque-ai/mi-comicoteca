@@ -1,0 +1,6 @@
+{
+  "batch": 30,
+  "rounds": 1,
+  "reason": "Muestra conservadora sin ISBN: serie + número + editorial + año sobre editoriales prioritarias",
+  "run": 1
+}
