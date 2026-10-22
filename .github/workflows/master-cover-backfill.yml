@@ -13,7 +13,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: comicoteca-master-cover-backfill
+  group: comicoteca-cover-overlay-writer
   cancel-in-progress: false
 
 jobs:
