@@ -9,23 +9,24 @@ from bs4 import BeautifulSoup
 ROOT=Path(__file__).resolve().parent
 OVERLAY=ROOT/'bridge'/'cache'/'master-cover-overrides.json'
 STATE=ROOT/'bridge'/'cache'/'master-cover-backfill-state.json'
-HEADERS={'User-Agent':'Mozilla/5.0 Chrome/153 MI-COMICOTECA-MASTER/1.4','Accept-Language':'es-ES,es;q=0.9'}
+HEADERS={'User-Agent':'Mozilla/5.0 Chrome/153 MI-COMICOTECA-MASTER/1.5','Accept-Language':'es-ES,es;q=0.9'}
+S=requests.Session();S.headers.update(HEADERS)
 
 def code(v):return re.sub(r'[^0-9Xx]','',str(v or '')).upper()
 def norm(v):
  s=unicodedata.normalize('NFD',str(v or ''));return ''.join(c for c in s if unicodedata.category(c)!='Mn').lower()
-def get(url,timeout=14):
- try:return requests.get(url,headers=HEADERS,timeout=timeout,allow_redirects=True)
+def get(url,timeout=12):
+ try:return S.get(url,timeout=timeout,allow_redirects=True)
  except Exception:return None
 def openlibrary(isbn):
- key='ISBN:'+isbn;r=get('https://openlibrary.org/api/books?bibkeys='+quote_plus(key)+'&format=json&jscmd=data')
+ key='ISBN:'+isbn;r=get('https://openlibrary.org/api/books?bibkeys='+quote_plus(key)+'&format=json&jscmd=data',10)
  if not r or r.status_code!=200:return None
  try:b=r.json().get(key) or {}
  except:return None
  c=b.get('cover') or {};u=c.get('large') or c.get('medium') or c.get('small')
  return (u.replace('http:','https:'), 'OpenLibrary') if u else None
 def googlebooks(isbn):
- r=get('https://www.googleapis.com/books/v1/volumes?q='+quote_plus('isbn:'+isbn)+'&maxResults=5')
+ r=get('https://www.googleapis.com/books/v1/volumes?q='+quote_plus('isbn:'+isbn)+'&maxResults=5',10)
  if not r or r.status_code!=200:return None
  try:items=r.json().get('items') or []
  except:return None
@@ -36,14 +37,24 @@ def googlebooks(isbn):
   if u:return u.replace('http:','https:'),'Google Books'
  return None
 def milcomics(isbn):
- r=get('https://www.milcomics.com/busqueda?controller=search&s='+quote_plus(isbn),timeout=18)
+ # Búsqueda estricta por ISBN y revisión de pocos candidatos: mismo nivel de seguridad, mucha menos latencia.
+ r=get('https://www.milcomics.com/busqueda?controller=search&s='+quote_plus(isbn),12)
  if not r or r.status_code!=200:return None
  s=BeautifulSoup(r.text,'html.parser');links=[]
- for a in s.find_all('a',href=True):
-  u=urljoin(r.url,a.get('href'));hint=norm((a.get_text(' ',strip=True) or '')+' '+u)
-  if 'milcomics.com' in u and u not in links and ('comic' in hint or 'renacimiento' in hint or 'descatalog' in hint):links.append(u)
- for u in links[:10]:
-  rr=get(u,timeout=18)
+ selectors=['article.product-miniature a[href]','.product-miniature a[href]','.product-title a[href]','h2 a[href]','h3 a[href]']
+ for sel in selectors:
+  for a in s.select(sel):
+   u=urljoin(r.url,a.get('href') or '')
+   if 'milcomics.com' in u and u not in links:links.append(u)
+   if len(links)>=4:break
+  if links:break
+ if not links:
+  for a in s.find_all('a',href=True):
+   u=urljoin(r.url,a.get('href'));hint=norm((a.get_text(' ',strip=True) or '')+' '+u)
+   if 'milcomics.com' in u and u not in links and any(x in hint for x in ('comic','descatalog','renacimiento')):links.append(u)
+   if len(links)>=4:break
+ for u in links[:4]:
+  rr=get(u,12)
   if not rr or rr.status_code!=200:continue
   ss=BeautifulSoup(rr.text,'html.parser');txt=code(ss.get_text(' ',strip=True))
   if isbn not in txt:continue
