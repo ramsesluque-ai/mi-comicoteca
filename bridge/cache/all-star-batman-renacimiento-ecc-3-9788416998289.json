@@ -1,0 +1,17 @@
+{
+  "ok": false,
+  "requestId": "test-all-star-batman-3",
+  "cacheKey": "all-star-batman-renacimiento-ecc-3-9788416998289",
+  "query": {
+    "requestId": "test-all-star-batman-3",
+    "cacheKey": "all-star-batman-renacimiento-ecc-3-9788416998289",
+    "publisher": "ECC Ediciones",
+    "series": "All-Star Batman: Renacimiento",
+    "stage": "Renacimiento",
+    "startYear": "2016",
+    "issue": "3",
+    "isbn": "9788416998289"
+  },
+  "generatedAt": "2026-10-22T18:21:29Z",
+  "candidates": []
+}

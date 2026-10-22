@@ -1,0 +1,37 @@
+{
+  "ok": true,
+  "requestId": "test-all-star-batman-6",
+  "cacheKey": "all-star-batman-renacimiento-ecc-6-9788417106218",
+  "query": {
+    "requestId": "test-all-star-batman-6",
+    "cacheKey": "all-star-batman-renacimiento-ecc-6-9788417106218",
+    "publisher": "ECC Ediciones",
+    "series": "All-Star Batman: Renacimiento",
+    "stage": "Renacimiento",
+    "startYear": "2016",
+    "issue": "6",
+    "isbn": "9788417106218"
+  },
+  "generatedAt": "2026-10-22T18:22:33Z",
+  "candidates": [
+    {
+      "source": "MilComics",
+      "score": 16100,
+      "data": {
+        "title": "Comprar All-Star Batman 06 (Renacimiento) - Mil Comics: Tienda de cómics y figuras Marvel, DC Comics, Star Wars, Tintín",
+        "publisher": "Ecc Ediciones Encuadernacion ComiC-Book (grapa) Formato En Castellano EAN 978841",
+        "publicationDate": "2017-05-01",
+        "pages": "48.000",
+        "isbn": "9788417106218",
+        "series": "All-Star Batman: Renacimiento",
+        "issueNr": "6",
+        "coverUrl": "https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/covers/all-star-batman-renacimiento-ecc-6-9788417106218-1.webp",
+        "sourceUrl": "https://www.milcomics.com/comic-batman/all-star-batman-06-renacimiento-88209.html",
+        "originalCoverUrl": "https://www.milcomics.com/816858-thickbox_default/all-star-batman-06-renacimiento.jpg",
+        "coverUrls": [
+          "https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/covers/all-star-batman-renacimiento-ecc-6-9788417106218-1.webp"
+        ]
+      }
+    }
+  ]
+}

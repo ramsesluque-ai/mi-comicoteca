@@ -1,0 +1,37 @@
+{
+  "ok": true,
+  "requestId": "test-all-star-batman-4",
+  "cacheKey": "all-star-batman-renacimiento-ecc-4-9788417063504",
+  "query": {
+    "requestId": "test-all-star-batman-4",
+    "cacheKey": "all-star-batman-renacimiento-ecc-4-9788417063504",
+    "publisher": "ECC Ediciones",
+    "series": "All-Star Batman: Renacimiento",
+    "stage": "Renacimiento",
+    "startYear": "2016",
+    "issue": "4",
+    "isbn": "9788417063504"
+  },
+  "generatedAt": "2026-10-22T18:20:42Z",
+  "candidates": [
+    {
+      "source": "MilComics",
+      "score": 16100,
+      "data": {
+        "title": "Comprar All-Star Batman 04 (Renacimiento) - Mil Comics: Tienda de cómics y figuras Marvel, DC Comics, Star Wars, Tintín",
+        "publisher": "Ecc Ediciones Encuadernacion ComiC-Book (grapa) Formato En Castellano EAN 978841",
+        "publicationDate": "2017-03-01",
+        "pages": "32.000",
+        "isbn": "9788417063504",
+        "series": "All-Star Batman: Renacimiento",
+        "issueNr": "4",
+        "coverUrl": "https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/covers/all-star-batman-renacimiento-ecc-4-9788417063504-1.webp",
+        "sourceUrl": "https://www.milcomics.com/comic-batman/all-star-batman-04-renacimiento-79513.html",
+        "originalCoverUrl": "https://www.milcomics.com/1058117-thickbox_default/all-star-batman-04-renacimiento.jpg",
+        "coverUrls": [
+          "https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/covers/all-star-batman-renacimiento-ecc-4-9788417063504-1.webp"
+        ]
+      }
+    }
+  ]
+}
