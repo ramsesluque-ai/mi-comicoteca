@@ -1,8 +1,11 @@
 {
   "snapshot": "20261001",
-  "issues": 124039,
-  "series": 5274,
-  "publishers": 338,
+  "issues": 160472,
+  "series": 5459,
+  "publishers": 337,
+  "historicalSupplements": [
+    "Novaro"
+  ],
   "priority": [
     {
       "publisher": "Aleta",
@@ -242,10 +245,19 @@
     {
       "publisher": "Novaro",
       "slug": "novaro",
-      "issues": 113,
-      "series": 4,
+      "issues": 36567,
+      "series": 191,
       "chunks": [
-        "publishers/novaro-001.json"
+        "publishers/novaro-001.json",
+        "publishers/novaro-002.json",
+        "publishers/novaro-003.json",
+        "publishers/novaro-004.json",
+        "publishers/novaro-005.json",
+        "publishers/novaro-006.json",
+        "publishers/novaro-007.json",
+        "publishers/novaro-008.json",
+        "publishers/novaro-009.json",
+        "publishers/novaro-010.json"
       ],
       "priority": true
     },
