@@ -76,11 +76,6 @@ jobs:
               git pull --rebase origin bridge-data
               git push origin HEAD:bridge-data
             fi
-            python - <<'PY'
-          import json
-          p='bridge/cache/master-cover-backfill-state.json'
-          d=json.load(open(p))
-          print('PROGRESS scanned=',d.get('scanned',0),'linked=',d.get('linked',0),'last=',d.get('lastBatchLinked',0),'Tebeosfera=',d.get('lastBatchTebeosfera',0),'passes=',d.get('passes',0))
-          PY
+            python -c "import json;d=json.load(open('bridge/cache/master-cover-backfill-state.json'));print('PROGRESS scanned=',d.get('scanned',0),'linked=',d.get('linked',0),'last=',d.get('lastBatchLinked',0),'Tebeosfera=',d.get('lastBatchTebeosfera',0),'passes=',d.get('passes',0))"
             sleep 10
           done
