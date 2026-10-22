@@ -1,0 +1,57 @@
+{
+  "ok": true,
+  "requestId": "test-gcd-sourceid-battlefields-1",
+  "cacheKey": "gcd-2719147-battlefields-1",
+  "query": {
+    "requestId": "test-gcd-sourceid-battlefields-1",
+    "cacheKey": "gcd-2719147-battlefields-1",
+    "sourceId": "2719147",
+    "publisher": "Aleta",
+    "series": "Battlefields",
+    "stage": "",
+    "startYear": "2015",
+    "issue": "1",
+    "isbn": ""
+  },
+  "generatedAt": "2026-10-22T18:48:52Z",
+  "candidates": [
+    {
+      "source": "MilComics",
+      "score": 11100,
+      "data": {
+        "title": "Comprar Battlefields Vol. 01: Las brujas de la noche - Mil Comics: Tienda de cómics y figuras Marvel, DC Comics, Star Wars, Tintín",
+        "publisher": "Aleta Ediciones Encuadernacion Rústica (tapa Blanda) Formato Color EAN 978841607",
+        "publicationDate": "2020-12-01",
+        "pages": "36.000",
+        "isbn": "9788416074662",
+        "series": "Battlefields",
+        "issueNr": "1",
+        "coverUrl": "https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/covers/gcd-2719147-battlefields-1-8.webp",
+        "sourceUrl": "https://www.milcomics.com/comic-americano/battlefields-vol-01-las-brujas-de-la-noche-55523.html",
+        "originalCoverUrl": "https://www.milcomics.com/863069-thickbox_default/battlefields-vol-01-las-brujas-de-la-noche.jpg",
+        "coverUrls": [
+          "https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/covers/gcd-2719147-battlefields-1-8.webp"
+        ]
+      }
+    },
+    {
+      "source": "MilComics",
+      "score": 11100,
+      "data": {
+        "title": "Comprar Battlefields Integral 01: Las brujas de la noche - Mil Comics: Tienda de cómics y figuras Marvel, DC Comics, Star Wars, Tintín",
+        "publisher": "Aleta Ediciones Encuadernacion Cartoné (tapa Dura) Formato Color EAN 97884185893",
+        "publicationDate": "2024-11-01",
+        "pages": "36.000",
+        "isbn": "9788418589331",
+        "series": "Battlefields",
+        "issueNr": "1",
+        "coverUrl": "https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/covers/gcd-2719147-battlefields-1-9.webp",
+        "sourceUrl": "https://www.milcomics.com/comic-americano/battlefields-integral-01-las-brujas-de-la-noche-162524.html",
+        "originalCoverUrl": "https://www.milcomics.com/1453629-thickbox_default/battlefields-integral-01-las-brujas-de-la-noche.jpg",
+        "coverUrls": [
+          "https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/covers/gcd-2719147-battlefields-1-9.webp"
+        ]
+      }
+    }
+  ]
+}
