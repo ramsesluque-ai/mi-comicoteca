@@ -1,5 +1,6 @@
 {
   "batch": 250,
-  "reason": "Backfill continuo Maestro con OpenLibrary, Google Books y MilComics por ISBN exacto",
-  "run": 8
+  "rounds": 4,
+  "reason": "Backfill continuo Maestro: 4 rondas de 250 con OpenLibrary, Google Books y MilComics por ISBN exacto",
+  "run": 9
 }
