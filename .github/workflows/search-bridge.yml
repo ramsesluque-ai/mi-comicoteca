@@ -39,5 +39,6 @@ jobs:
             echo 'No new result files'
           else
             git commit -m 'Actualiza caché bibliográfica MI COMICOTECA'
+            git pull --rebase origin bridge-data
             git push origin bridge-data
           fi
