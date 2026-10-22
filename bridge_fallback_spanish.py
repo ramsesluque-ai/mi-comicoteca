@@ -8,11 +8,11 @@ from bs4 import BeautifulSoup
 from PIL import Image
 
 ROOT=Path(__file__).resolve().parent
-REQ=ROOT/'bridge'/'requests'; RES=ROOT/'bridge'/'results'; CACHE=ROOT/'bridge'/'cache'; COVERS=ROOT/'bridge'/'covers'
+REQ=ROOT/'bridge'/'requests'; RES=ROOT/'bridge'/'results'; CACHE=ROOT/'bridge'/'cache'; COVERS=ROOT/'bridge'/'covers'; MANUAL=ROOT/'bridge'/'manual_sources.json'
 for p in (REQ,RES,CACHE,COVERS): p.mkdir(parents=True,exist_ok=True)
 OWNER='ramsesluque-ai'; REPO='mi-comicoteca'; BRANCH='bridge-data'
 DOMAINS=['tienda.dreamers.es','librotea.eldiario.es','fnac.es','iberlibro.com']
-S=requests.Session();S.headers.update({'User-Agent':'Mozilla/5.0 Chrome/153 MI-COMICOTECA/2.1','Accept-Language':'es-ES,es;q=0.9'})
+S=requests.Session();S.headers.update({'User-Agent':'Mozilla/5.0 Chrome/153 MI-COMICOTECA/2.2','Accept-Language':'es-ES,es;q=0.9'})
 
 def digits(s):return re.sub(r'[^0-9Xx]','',str(s or '')).upper()
 def norm(s):
@@ -48,15 +48,12 @@ def page_candidate(url,q):
  title=(s.find('meta',attrs={'property':'og:title'}) or {}).get('content','') if s else ''
  if not title:title=s.title.get_text(' ',strip=True) if s.title else ''
  issue=str(q.get('issue') or '')
- if issue and not re.search(r'(?:#|n[úu]m\.?|batman\s*)\s*0*'+re.escape(issue)+r'(?!\d)',norm(title+' '+text[:5000]),re.I):
-  if qi not in digits(text):return None
- img=''
- m=s.find('meta',attrs={'property':'og:image'})
+ img='';m=s.find('meta',attrs={'property':'og:image'})
  if m:img=clean(m.get('content'),url)
  if not img:
   best=[]
   for im in s.find_all('img'):
-   src=clean(im.get('data-src') or im.get('src') or '',url); hint=norm(' '.join([im.get('alt') or '',im.get('title') or '',src]))
+   src=clean(im.get('data-src') or im.get('src') or '',url);hint=norm(' '.join([im.get('alt') or '',im.get('title') or '',src]))
    if not src:continue
    score=(5 if 'portada' in hint or 'cover' in hint else 0)+(4 if 'all-star' in hint else 0)-(8 if 'logo' in hint else 0)
    best.append((score,src))
@@ -72,16 +69,20 @@ def save_cover(url,key):
   return f'https://raw.githubusercontent.com/{OWNER}/{REPO}/{BRANCH}/bridge/covers/{name}'
  except:return ''
 def main():
+ try:manual=json.loads(MANUAL.read_text(encoding='utf-8')) if MANUAL.exists() else {}
+ except:manual={}
  for rp in sorted(REQ.glob('*.json')):
   q=json.loads(rp.read_text(encoding='utf-8'));rid=str(q.get('requestId') or rp.stem);res=RES/f'{rid}.json'
   if res.exists():
    try:
     old=json.loads(res.read_text(encoding='utf-8'))
     if old.get('ok') and old.get('candidates'):continue
-   except:old={}
+   except:pass
   isbn=digits(q.get('isbn'))
   if not isbn:continue
-  urls=search(f'"{isbn}" "{q.get("series","")}" comic portada')+search(f'"{isbn}"')
+  urls=[]
+  if manual.get(isbn):urls.append(manual[isbn])
+  urls+=search(f'"{isbn}" "{q.get("series","")}" comic portada')+search(f'"{isbn}"')
   cand=None
   for u in dict.fromkeys(urls):
    cand=page_candidate(u,q)
