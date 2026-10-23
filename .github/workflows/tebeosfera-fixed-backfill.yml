@@ -1,0 +1,81 @@
+name: Tebeosfera fixed backfill
+
+on:
+  push:
+    branches: [bridge-data]
+    paths:
+      - 'bridge/fixed-backfill/commands/**.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: comicoteca-tebeosfera-fixed-v2
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout bridge-data
+        uses: actions/checkout@v6
+        with:
+          ref: bridge-data
+          fetch-depth: 0
+      - name: Checkout Maestro main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          path: _main
+          fetch-depth: 1
+      - name: Python dependencies
+        run: pip install --quiet requests beautifulsoup4 pillow
+      - name: Read config
+        id: cfg
+        shell: bash
+        run: |
+          CMD=$(ls -1t bridge/fixed-backfill/commands/*.json | head -1)
+          BATCH=$(python -c "import json;d=json.load(open('$CMD'));print(int(d.get('batch',20)))")
+          PUBLISHER=$(python -c "import json;d=json.load(open('$CMD'));print(str(d.get('publisher','Bruguera')))" )
+          WORKERS=$(python -c "import json;d=json.load(open('$CMD'));print(int(d.get('workers',2)))")
+          RESET=$(python -c "import json;d=json.load(open('$CMD'));print('true' if d.get('reset',True) else 'false')")
+          [ "$BATCH" -gt 40 ] && BATCH=40
+          [ "$WORKERS" -gt 3 ] && WORKERS=3
+          echo "batch=$BATCH" >> "$GITHUB_OUTPUT"
+          echo "publisher=$PUBLISHER" >> "$GITHUB_OUTPUT"
+          echo "workers=$WORKERS" >> "$GITHUB_OUTPUT"
+          echo "reset=$RESET" >> "$GITHUB_OUTPUT"
+      - name: Resolve and download Tebeosfera covers
+        shell: bash
+        run: |
+          RESET_ARG=''
+          if [ '${{ steps.cfg.outputs.reset }}' = 'true' ]; then RESET_ARG='--reset'; fi
+          python master_cover_tebeosfera_fast.py \
+            --master _main/master-data/publishers \
+            --publisher '${{ steps.cfg.outputs.publisher }}' \
+            --batch '${{ steps.cfg.outputs.batch }}' \
+            --workers '${{ steps.cfg.outputs.workers }}' \
+            $RESET_ARG
+          echo '--- RESULT STATE ---'
+          cat bridge/cache/master-cover-tebeosfera-state.json
+      - name: Require real Tebeosfera links
+        run: |
+          python - <<'PY'
+          import json,sys
+          p='bridge/cache/master-cover-tebeosfera-state.json'
+          d=json.load(open(p))
+          linked=int(d.get('lastBatchLinked') or 0)
+          print('REAL_LINKED',linked)
+          if linked < 1:
+              sys.exit('No real Tebeosfera covers were linked; refusing to publish an empty result')
+          PY
+      - name: Save real covers to bridge-data
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add bridge/cache/master-cover-overrides.json bridge/cache/master-cover-tebeosfera-state.json bridge/covers
+          git commit -m 'Load verified Tebeosfera covers into Maestro'
+          git pull --rebase origin bridge-data
+          git push origin HEAD:bridge-data
