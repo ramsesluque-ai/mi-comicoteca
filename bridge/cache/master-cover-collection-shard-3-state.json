@@ -1,1 +1,1 @@
-{"shard":3,"shardCount":4,"cursor":900,"groupsTotal":924,"groupsProcessed":900,"collectionsHit":238,"collectionsMiss":636,"collectionsAmbiguous":26,"linked":4215,"lastBatch":150,"lastLinked":1192,"masterRows":160472,"complete":false,"updatedAt":"2026-10-23T18:51:52Z"}
+{"shard":3,"shardCount":4,"cursor":924,"groupsTotal":924,"groupsProcessed":924,"collectionsHit":248,"collectionsMiss":650,"collectionsAmbiguous":26,"linked":4342,"lastBatch":24,"lastLinked":127,"masterRows":160472,"complete":true,"updatedAt":"2026-10-23T18:52:07Z"}
