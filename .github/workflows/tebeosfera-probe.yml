@@ -16,23 +16,39 @@ jobs:
     steps:
       - name: Install probe dependencies
         run: pip install --quiet requests beautifulsoup4
-      - name: Probe Tebeosfera ISBN input and query
+      - name: Execute real Tebeosfera ISBN query
         run: |
           python - <<'PY'
           import requests,re,html
           from bs4 import BeautifulSoup
+          from urllib.parse import urljoin
           S=requests.Session(); S.headers.update({'User-Agent':'Mozilla/5.0 Chrome/153','Accept-Language':'es-ES,es;q=0.9','X-Requested-With':'XMLHttpRequest','Referer':'https://www.tebeosfera.com/buscador-avanzado/'})
-          base='https://www.tebeosfera.com/neko/php/ajax/buscador_avanzado_ajax.php'
-          fields=S.get(base,params={'action':'campos','datos':'T3_numeros','contador':'1','tabla':'T3_numeros','web':'1'},timeout=30).text
-          fs=BeautifulSoup(fields,'html.parser')
-          wanted={}
-          for o in fs.select('#select_1 option'):
-            label=o.get_text(' ',strip=True)
-            if label in ['ISBN / DL / DOI / ...','Título','Colección','Nº','Editorial','Año']:
-              wanted[label]=o.get('value') or ''
-          print('WANTED',wanted)
-          for label,val in wanted.items():
-            r=S.get(base,params={'action':'input','datos':val,'contador':'2','tabla':'T3_numeros','web':'1'},timeout=30)
-            print('\nINPUT',label,'STATUS',r.status_code,'LEN',len(r.text))
-            print(re.sub(r'\s+',' ',html.unescape(r.text))[:14000])
+          isbn='9788417147648'
+          cond='isbn-deposito-issn-ean-doi-cdu-otro_registro/T/L/N///'
+          # This is the same DOM fragment that the advanced search builds in div_consulta_avanzada.
+          query=f'''<select id="select_0" class="ba_tabla"><option value="T3_numeros" selected>Números</option></select>
+          <select id="select_1n"><option value="si" selected>SÍ</option></select>
+          <select id="select_1" class="ba_condiciones"><option value="{cond}" selected>ISBN / DL / DOI / ...</option></select>
+          <input id="select_2" class="ba_valor" value="{isbn}" />'''
+          ep='https://www.tebeosfera.com/neko/php/ajax/buscador_avanzado_graba_consulta.php?web=1'
+          r=S.post(ep,data={'tabla':'T3_numeros','query':query,'puede_grabar_consulta':'no','asignacion_etiquetas':'no','tipo_consulta':'s','anno_dedicacion':''},timeout=30)
+          print('SAVE STATUS',r.status_code,'BODY',repr(r.text[:500]))
+          token=r.text.strip()
+          if not token: raise SystemExit('No query token returned')
+          u='https://www.tebeosfera.com/resultados-avanzados/'+token+'.html'
+          rr=S.get(u,timeout=30)
+          print('RESULT STATUS',rr.status_code,'URL',rr.url,'LEN',len(rr.text))
+          print('RESULT HEAD',re.sub(r'\s+',' ',html.unescape(rr.text[:12000])))
+          s=BeautifulSoup(rr.text,'html.parser')
+          links=[]
+          for a in s.select('a[href]'):
+            href=urljoin(rr.url,a.get('href') or '')
+            if '/numeros/' in href and href.endswith('.html') and href not in links: links.append(href)
+          print('NUMBER LINKS',len(links),links[:20])
+          for href in links[:10]:
+            p=S.get(href,timeout=30); ps=BeautifulSoup(p.text,'html.parser')
+            title=(ps.find('meta',attrs={'property':'og:title'}) or {}).get('content','')
+            img=(ps.find('meta',attrs={'property':'og:image'}) or {}).get('content','')
+            text=' '.join(ps.stripped_strings)
+            print('MATCH',href,'TITLE',title,'IMG',img,'HASISBN',isbn in re.sub(r'[^0-9Xx]','',text))
           PY
