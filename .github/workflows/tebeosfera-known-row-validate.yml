@@ -1,0 +1,46 @@
+name: Tebeosfera known row validate
+
+on:
+  push:
+    branches: [bridge-data]
+    paths:
+      - 'bridge/known-row/**.json'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: bridge-data
+      - name: Python dependencies
+        run: pip install --quiet requests beautifulsoup4 pillow
+      - name: Resolve known Tebeosfera row end to end
+        run: |
+          python - <<'PY'
+          import json, os
+          import master_cover_tebeosfera_fast as f
+          row={
+            'sourceId':'known-bruguera-alegres-13',
+            'catalogHeader':'Alegres Historietas',
+            'series':'Alegres Historietas',
+            'publisher':'Bruguera',
+            'issueNr':'13',
+            'startYear':'1970',
+            'publicationDate':'1971',
+            'title':'Anacleto: Misión imposible'
+          }
+          print('DIRECT_URLS', f.direct_issue_links(row))
+          hit=f.fast_resolve(row)
+          print('KNOWN_ROW_HIT', json.dumps(hit, ensure_ascii=False))
+          if not hit or 'tebeosfera' not in (hit.get('source') or '').lower():
+            raise SystemExit('Known Tebeosfera row did not resolve')
+          path='bridge/covers/tebeosfera-known-bruguera-alegres-13.webp'
+          print('KNOWN_ROW_FILE', path, os.path.exists(path), os.path.getsize(path) if os.path.exists(path) else 0)
+          if not os.path.exists(path) or os.path.getsize(path)<1000:
+            raise SystemExit('Cover WebP was not produced')
+          PY
