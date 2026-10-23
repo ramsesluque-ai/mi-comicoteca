@@ -14,30 +14,50 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Inspect exact Tebeosfera query builders
+      - name: Install dependencies
+        run: pip install --quiet requests beautifulsoup4
+      - name: Execute raw Tebeosfera ISBN query
         run: |
           python - <<'PY'
           import requests,re
-          S=requests.Session();S.headers.update({'User-Agent':'Mozilla/5.0 Chrome/153','Accept-Language':'es-ES,es;q=0.9'})
-          js=S.get('https://www.tebeosfera.com/neko/js/buscador_avanzado.js',timeout=30).text
-          def func(name):
-            p=js.find('function '+name+'(')
-            if p<0:
-              print('NOT FOUND',name);return
-            b=js.find('{',p);depth=0;quote=None;esc=False
-            for i in range(b,len(js)):
-              ch=js[i]
-              if quote:
-                if esc:esc=False
-                elif ch=='\\':esc=True
-                elif ch==quote:quote=None
-                continue
-              if ch in ('\"',"'"):quote=ch;continue
-              if ch=='{':depth+=1
-              elif ch=='}':
-                depth-=1
-                if depth==0:
-                  print('\n===== '+name+' =====\n'+js[p:i+1]);return
-          for n in ['ba_monta_consulta','add_sql','ba_procesa_consulta','ba_comprueba_consulta','cargaJS']:
-            func(n)
+          from bs4 import BeautifulSoup
+          from urllib.parse import urljoin
+          S=requests.Session(); S.headers.update({
+            'User-Agent':'Mozilla/5.0 Chrome/153',
+            'Accept-Language':'es-ES,es;q=0.9',
+            'Referer':'https://www.tebeosfera.com/buscador-avanzado/'
+          })
+          # Establish the same session/cookies as the browser.
+          S.get('https://www.tebeosfera.com/buscador-avanzado/',timeout=30)
+          isbn='9788417147648'
+          consulta=(
+            "id from T3_numeros WHERE ("
+            f"isbn LIKE '%{isbn}%' || deposito LIKE '%{isbn}%' || issn LIKE '%{isbn}%' || "
+            f"ean LIKE '%{isbn}%' || doi LIKE '%{isbn}%' || cdu LIKE '%{isbn}%' || otro_registro LIKE '%{isbn}%' ) "
+          )
+          ep='https://www.tebeosfera.com/neko/php/ajax/buscador_avanzado_graba_consulta.php?web=1'
+          r=S.post(ep,data={'tabla':'T3_numeros','query':consulta,'puede_grabar_consulta':'no','asignacion_etiquetas':'no','tipo_consulta':'s','anno_dedicacion':''},timeout=30)
+          token=r.text.strip()
+          print('SAVE',r.status_code,'TOKEN',repr(token),'QUERY',consulta)
+          if not token: raise SystemExit('No token')
+          u=f'https://www.tebeosfera.com/resultados-avanzados/{token}.html'
+          rr=S.get(u,timeout=30,allow_redirects=True)
+          print('RESULT',rr.status_code,rr.url,'LEN',len(rr.text))
+          s=BeautifulSoup(rr.text,'html.parser')
+          links=[]
+          for a in s.select('a[href]'):
+            href=urljoin(rr.url,a.get('href') or '')
+            if '/numeros/' in href and href.endswith('.html') and href not in links:links.append(href)
+          print('NUMBER LINKS',len(links),links[:30])
+          exact=[]
+          for href in links[:40]:
+            p=S.get(href,timeout=30); ps=BeautifulSoup(p.text,'html.parser')
+            text=' '.join(ps.stripped_strings); compact=re.sub(r'[^0-9Xx]','',text)
+            title=(ps.find('meta',attrs={'property':'og:title'}) or {}).get('content','')
+            img=(ps.find('meta',attrs={'property':'og:image'}) or {}).get('content','')
+            hit=isbn in compact
+            print('ITEM',href,'TITLE',title[:160],'HASISBN',hit,'IMG',img[:220])
+            if hit:exact.append((href,title,img))
+          print('EXACT',exact)
+          if not exact: raise SystemExit('Exact ISBN not found')
           PY
