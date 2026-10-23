@@ -1,8 +1,8 @@
 {
   "mode": "priority-v2",
   "fileIndex": 0,
-  "rowIndex": 488,
-  "scanned": 488,
+  "rowIndex": 738,
+  "scanned": 738,
   "linked": 0,
   "passes": 0,
   "priorityFiles": 42,
@@ -18,6 +18,6 @@
   "lastReasons": {
     "api_http_429": 100
   },
-  "updatedAt": "2026-10-23T15:43:06Z",
+  "updatedAt": "2026-10-23T16:10:36Z",
   "phase": "gcd-sourceid-exact"
 }
