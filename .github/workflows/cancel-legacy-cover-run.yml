@@ -14,9 +14,9 @@ jobs:
   cancel:
     runs-on: ubuntu-latest
     steps:
-      - name: Force-cancel stale Tebeosfera cover rebuild
+      - name: Force-cancel superseded serial full sweep
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh api --method POST "repos/${GITHUB_REPOSITORY}/actions/runs/39997372684/force-cancel"
-          echo 'LEGACY_COVER_RUN_FORCE_CANCEL_REQUESTED'
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/actions/runs/40002212434/force-cancel" || true
+          echo 'SERIAL_FULL_SWEEP_FORCE_CANCEL_REQUESTED'
