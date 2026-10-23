@@ -1,0 +1,7 @@
+{
+  "action": "full-maestro-sharded-sweep",
+  "shards": 4,
+  "source": "Tebeosfera",
+  "mode": "validated-remote-cover-url",
+  "requestedAt": "2026-10-23T18:32:00Z"
+}
