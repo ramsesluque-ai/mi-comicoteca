@@ -1,4 +1,4 @@
-name: Master identity cover backfill
+name: Tebeosfera cover rebuild
 
 on:
   push:
@@ -11,57 +11,86 @@ permissions:
   contents: write
 
 concurrency:
-  group: comicoteca-cover-overlay-writer
+  group: comicoteca-tebeosfera-cover-rebuild
   cancel-in-progress: false
 
 jobs:
   backfill:
     runs-on: ubuntu-latest
+    timeout-minutes: 330
     steps:
       - name: Checkout bridge-data
         uses: actions/checkout@v6
         with:
           ref: bridge-data
           fetch-depth: 0
+
       - name: Checkout Maestro main
         uses: actions/checkout@v6
         with:
           ref: main
           path: _main
           fetch-depth: 1
+
       - name: Python dependencies
         run: pip install --quiet requests beautifulsoup4 pillow
+
       - name: Read config
         id: cfg
+        shell: bash
         run: |
           CMD=$(ls -1t bridge/identity-backfill/commands/*.json 2>/dev/null | head -1)
           if [ -n "$CMD" ]; then
-            BATCH=$(python -c "import json;d=json.load(open('$CMD'));print(int(d.get('batch',40)))")
+            BATCH=$(python -c "import json;d=json.load(open('$CMD'));print(int(d.get('batch',20)))")
             ROUNDS=$(python -c "import json;d=json.load(open('$CMD'));print(int(d.get('rounds',1)))")
+            WORKERS=$(python -c "import json;d=json.load(open('$CMD'));print(int(d.get('workers',2)))")
+            PUBLISHER=$(python -c "import json;d=json.load(open('$CMD'));print(str(d.get('publisher','')))" )
+            RESET=$(python -c "import json;d=json.load(open('$CMD'));print('true' if d.get('reset',False) else 'false')")
           else
-            BATCH=40
+            BATCH=20
             ROUNDS=1
+            WORKERS=2
+            PUBLISHER=''
+            RESET=false
           fi
-          if [ "$BATCH" -gt 60 ]; then BATCH=60; fi
-          if [ "$ROUNDS" -gt 3 ]; then ROUNDS=3; fi
+          if [ "$BATCH" -gt 80 ]; then BATCH=80; fi
+          if [ "$BATCH" -lt 1 ]; then BATCH=1; fi
+          if [ "$ROUNDS" -gt 6 ]; then ROUNDS=6; fi
           if [ "$ROUNDS" -lt 1 ]; then ROUNDS=1; fi
-          echo "size=$BATCH" >> "$GITHUB_OUTPUT"
+          if [ "$WORKERS" -gt 3 ]; then WORKERS=3; fi
+          if [ "$WORKERS" -lt 1 ]; then WORKERS=1; fi
+          echo "batch=$BATCH" >> "$GITHUB_OUTPUT"
           echo "rounds=$ROUNDS" >> "$GITHUB_OUTPUT"
-      - name: Enrich exact identity covers
+          echo "workers=$WORKERS" >> "$GITHUB_OUTPUT"
+          echo "publisher=$PUBLISHER" >> "$GITHUB_OUTPUT"
+          echo "reset=$RESET" >> "$GITHUB_OUTPUT"
+
+      - name: Rebuild covers from Tebeosfera
+        shell: bash
         run: |
-          for i in $(seq 1 ${{ steps.cfg.outputs.rounds }}); do
-            echo "=== IDENTITY RONDA $i/${{ steps.cfg.outputs.rounds }} ==="
-            python master_cover_identity_backfill.py --master _main/master-data/publishers --batch ${{ steps.cfg.outputs.size }}
+          RESET_ARG=''
+          if [ '${{ steps.cfg.outputs.reset }}' = 'true' ]; then RESET_ARG='--reset'; fi
+          for i in $(seq 1 '${{ steps.cfg.outputs.rounds }}'); do
+            echo "=== TEBEOSFERA RONDA $i/${{ steps.cfg.outputs.rounds }} ==="
+            python master_cover_tebeosfera_first.py \
+              --master _main/master-data/publishers \
+              --batch '${{ steps.cfg.outputs.batch }}' \
+              --workers '${{ steps.cfg.outputs.workers }}' \
+              --publisher '${{ steps.cfg.outputs.publisher }}' \
+              $RESET_ARG
+            RESET_ARG=''
           done
-      - name: Save overlay covers and cursor
+
+      - name: Save Tebeosfera covers and cursor
+        shell: bash
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add bridge/cache/master-cover-overrides.json bridge/cache/master-cover-identity-state.json bridge/covers
+          git add bridge/cache/master-cover-overrides.json bridge/cache/master-cover-tebeosfera-state.json bridge/covers
           if git diff --cached --quiet; then
             echo 'No changes in this run'
           else
-            git commit -m 'Backfill por identidad fuerte de portadas del Maestro'
+            git commit -m 'Backfill Tebeosfera-first de portadas del Maestro'
             git pull --rebase origin bridge-data
-            git push origin bridge-data
+            git push origin HEAD:bridge-data
           fi
