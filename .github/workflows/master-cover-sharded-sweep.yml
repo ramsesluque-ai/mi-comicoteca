@@ -5,6 +5,8 @@ on:
     branches: [bridge-data]
     paths:
       - 'bridge/sharded-sweep/commands/**.json'
+  schedule:
+    - cron: '37 */2 * * *'
   workflow_dispatch:
 
 permissions:
@@ -52,6 +54,20 @@ jobs:
           START=$SECONDS
           STATE="bridge/cache/master-cover-tebeosfera-shard-${{ matrix.shard }}-state.json"
           OVERLAY="bridge/cache/master-cover-shard-${{ matrix.shard }}-overrides.json"
+
+          if [ -f "$STATE" ]; then
+            ALREADY_DONE=$(python - "$STATE" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1]))
+          print('yes' if int(d.get('passes') or 0)>=1 else 'no')
+          PY
+            )
+            if [ "$ALREADY_DONE" = "yes" ]; then
+              echo "SHARD_${{ matrix.shard }}_ALREADY_COMPLETE"
+              exit 0
+            fi
+          fi
+
           while true; do
             ROUND=$((ROUND+1))
             echo "=== SHARD ${{ matrix.shard }} ROUND ${ROUND} ==="
