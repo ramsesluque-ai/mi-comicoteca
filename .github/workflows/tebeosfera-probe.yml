@@ -16,7 +16,7 @@ jobs:
     steps:
       - name: Install dependencies
         run: pip install --quiet requests beautifulsoup4
-      - name: Resolve collection then issue in Tebeosfera
+      - name: Inspect publication result markup
         run: |
           python - <<'PY'
           import requests,re
@@ -25,38 +25,23 @@ jobs:
           S=requests.Session();S.headers.update({'User-Agent':'Mozilla/5.0 Chrome/153','Accept-Language':'es-ES,es;q=0.9','Referer':'https://www.tebeosfera.com/buscador-avanzado/'})
           S.get('https://www.tebeosfera.com/buscador-avanzado/',timeout=30)
           ep='https://www.tebeosfera.com/neko/php/ajax/buscador_avanzado_graba_consulta.php?web=1'
-          def advanced(table,query,kind):
-            r=S.post(ep,data={'tabla':table,'query':query,'puede_grabar_consulta':'no','asignacion_etiquetas':'no','tipo_consulta':'s','anno_dedicacion':''},timeout=30)
-            token=r.text.strip();print('\nSAVE',table,r.status_code,repr(token),query)
-            if not token:return []
-            rr=S.get(f'https://www.tebeosfera.com/resultados-avanzados/{token}.html',timeout=30,allow_redirects=True)
-            print('RESULT',rr.status_code,rr.url,'LEN',len(rr.text))
-            soup=BeautifulSoup(rr.text,'html.parser');links=[]
-            needle='/'+kind+'/'
-            for a in soup.select('a[href]'):
-              href=urljoin(rr.url,a.get('href') or '')
-              if needle in href and href.endswith('.html') and href not in links:links.append(href)
-            print('LINKS',len(links),links[:40]);return links
-          term='Batman'
-          qpub=("id from T3_publicaciones WHERE ("+
-                "titulo LIKE '%Batman%' || facial LIKE '%Batman%' || antetitulo LIKE '%Batman%' || subtitulo LIKE '%Batman%' || acreditado LIKE '%Batman%' || alternativo LIKE '%Batman%' ) ")
-          pubs=advanced('T3_publicaciones',qpub,'publicaciones')
-          candidates=[]
-          for href in pubs[:30]:
-            r=S.get(href,timeout=30);s=BeautifulSoup(r.text,'html.parser')
-            title=(s.find('meta',attrs={'property':'og:title'}) or {}).get('content','') or (s.title.get_text(' ',strip=True) if s.title else '')
-            text=' '.join(s.stripped_strings)
-            hid=s.select_one('input#FICHA_REG_ID,input[name="FICHA_REG_ID"]')
-            rid=(hid.get('value') if hid else '') or ''
-            print('PUB',rid,title[:180],href)
-            if '2016' in text and 'ECC' in text.upper() and ('ALL STAR' in text.upper() or 'RENACIMIENTO' in text.upper()):candidates.append((rid,title,href))
-          print('PUB CANDIDATES',candidates)
-          for rid,title,href in candidates[:10]:
-            if not rid:continue
-            qnum=f"id from T3_numeros WHERE publicacion = '{rid}'  AND numero = '8' "
-            nums=advanced('T3_numeros',qnum,'numeros')
-            for nurl in nums[:20]:
-              nr=S.get(nurl,timeout=30);ns=BeautifulSoup(nr.text,'html.parser');nt=' '.join(ns.stripped_strings)
-              ti=(ns.find('meta',attrs={'property':'og:title'}) or {}).get('content','');im=(ns.find('meta',attrs={'property':'og:image'}) or {}).get('content','')
-              print('NUM',ti,nurl,'IMG',im,'ISBN', '9788417147648' in re.sub(r'[^0-9Xx]','',nt))
+          q=("id from T3_publicaciones WHERE (titulo LIKE '%Batman%' || facial LIKE '%Batman%' || antetitulo LIKE '%Batman%' || subtitulo LIKE '%Batman%' || acreditado LIKE '%Batman%' || alternativo LIKE '%Batman%' ) ")
+          r=S.post(ep,data={'tabla':'T3_publicaciones','query':q,'puede_grabar_consulta':'no','asignacion_etiquetas':'no','tipo_consulta':'s','anno_dedicacion':''},timeout=30)
+          token=r.text.strip();print('TOKEN',repr(token))
+          rr=S.get(f'https://www.tebeosfera.com/resultados-avanzados/{token}.html',timeout=30,allow_redirects=True)
+          print('RESULT',rr.status_code,rr.url,'LEN',len(rr.text))
+          soup=BeautifulSoup(rr.text,'html.parser')
+          print('ANCHORS')
+          for i,a in enumerate(soup.select('a[href]')[:160]):
+            print(i,repr((a.get_text(' ',strip=True) or '')[:120]),repr(urljoin(rr.url,a.get('href') or '')))
+          print('ONCLICKS')
+          for i,e in enumerate(soup.select('[onclick]')[:80]):
+            print(i,repr((e.get_text(' ',strip=True) or '')[:80]),repr(e.get('onclick')))
+          print('INPUTS')
+          for i,e in enumerate(soup.select('input')[:80]):
+            print(i,e.get('name'),e.get('id'),e.get('value'))
+          txt=rr.text
+          for pat in [r'FICHA_REG_ID[^<]{0,100}',r'T3_publicaciones[^<]{0,160}',r'publicacion[^<]{0,160}',r'BATMAN[^<]{0,180}']:
+            vals=re.findall(pat,txt,re.I)
+            print('PATTERN',pat,'COUNT',len(vals));print('\n'.join(vals[:40]))
           PY
