@@ -1,5 +1,5 @@
 'use strict';
-/* Bóveda propia de portadas v2: copia local primero; sincronización cifrada separada y recuperable. */
+/* Bóveda propia de portadas v3: copia local primero; recuperación por fuente; sincronización cifrada separada. */
 (function(){
  const OWNER='ramsesluque-ai',REPO='mi-comicoteca',BRANCH='sync-data',CACHE='mi-comicoteca-cover-vault-v1';
  const PASS_KEY='mc_sync_pass_v1',TOKEN_KEY='mc_github_token_v1',HISTORY_KEY='mc_cover_write_history_v2';
@@ -29,14 +29,27 @@
  function markWrite(){const a=history();a.push(Date.now());localStorage.setItem(HISTORY_KEY,JSON.stringify(a))}
  async function upload(k,blob){const t=token();if(!t)throw Error('Falta la credencial GitHub de escritura');if(!pass())throw Error('Falta la clave de sincronización');const h=history();if(h.length>=MAX_HOUR)throw Error(`Límite de seguridad: ${h.length} portadas sincronizadas en la última hora`);const gap=Date.now()-lastUploadAt;if(lastUploadAt&&gap<MIN_GAP_MS)await sleep(MIN_GAP_MS-gap);const env=await encryptBlob(blob),sha=await fileSha(k),body={message:'Guarda portada '+k,content:b64(enc.encode(JSON.stringify(env))),branch:BRANCH};if(sha)body.sha=sha;const r=await fetch(apiUrl(k),{method:'PUT',headers:{Accept:'application/vnd.github+json',Authorization:'Bearer '+t,'X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json'},body:JSON.stringify(body)});if(!r.ok){let m='';try{m=(await r.json()).message}catch{}throw Error('No se pudo sincronizar la portada ('+r.status+'): '+m)}lastUploadAt=Date.now();markWrite();return true}
  async function remoteBlob(k){const r=await fetch(rawUrl(k)+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('Portada central no disponible');return decryptBlob(await r.json())}
- async function objectUrl(k){if(objectUrls.has(k))return objectUrls.get(k);if(inflight.has(k))return inflight.get(k);const p=(async()=>{let b=await cacheGet(k);if(!b){b=await remoteBlob(k);await cachePut(k,b)}const u=URL.createObjectURL(b);objectUrls.set(k,u);inflight.delete(k);return u})().catch(e=>{inflight.delete(k);throw e});inflight.set(k,p);return p}
+ async function objectUrl(k,sourceUrl=''){
+   if(objectUrls.has(k))return objectUrls.get(k);
+   if(inflight.has(k))return inflight.get(k);
+   const p=(async()=>{
+     let b=await cacheGet(k);
+     const src=String(sourceUrl||'').trim();
+     if(!b&&/^https?:\/\//i.test(src)){
+       try{b=await fetchAndCompress(src);await cachePut(k,b)}catch(e){console.warn('Recuperación desde fuente de portada',k,e)}
+     }
+     if(!b){b=await remoteBlob(k);await cachePut(k,b)}
+     const u=URL.createObjectURL(b);objectUrls.set(k,u);inflight.delete(k);return u;
+   })().catch(e=>{inflight.delete(k);throw e});
+   inflight.set(k,p);return p;
+ }
  async function markLocal(comic,blob,sourceUrl){await cachePut(comic.id,blob);const updated={...comic,coverKey:comic.id,coverSourceUrl:sourceUrl,coverUrl:'',coverSyncPending:true,coverRejectedSourceUrl:'',coverRejectedAt:''};await putStore('comics',updated);return updated}
  async function syncOne(comic){if(!comic?.id||!comic.coverKey)throw Error('Ficha sin portada local');let blob=await cacheGet(comic.coverKey);if(!blob&&/^https?:\/\//i.test(String(comic.coverSourceUrl||''))){blob=await fetchAndCompress(comic.coverSourceUrl);await cachePut(comic.coverKey,blob)}if(!blob)throw Error('La copia local de la portada no está disponible');await upload(comic.coverKey,blob);const updated={...comic,coverSyncPending:false,coverSyncedAt:new Date().toISOString()};await putStore('comics',updated);return updated}
  async function attach(comic,sourceUrl,opts={}){if(!comic?.id)throw Error('Ficha no válida');const blob=await fetchAndCompress(sourceUrl);let updated=await markLocal(comic,blob,sourceUrl);if(opts.sync===true&&pass()&&token()){try{updated=await syncOne(updated)}catch(e){console.warn('Portada guardada localmente; sincronización pendiente:',e)}}return updated}
  async function attachFile(comic,file,opts={}){if(!comic?.id)throw Error('Ficha no válida');const blob=await compress(file);let updated=await markLocal(comic,blob,'archivo local');if(opts.sync===true&&pass()&&token()){try{updated=await syncOne(updated)}catch(e){console.warn('Portada guardada localmente; sincronización pendiente:',e)}}return updated}
  async function syncPending(limit=30,onProgress){if(!pass()||!token())throw Error('Carga la clave y la credencial GitHub en Sincronizar');const rows=(await allStore('comics')).filter(x=>x.coverKey&&x.coverSyncPending===true),batch=rows.slice(0,Math.max(1,Math.min(Number(limit)||30,60)));let done=0,errors=0;const prev=!!window.__mcCoverBatchRunning;window.__mcCoverBatchRunning=true;try{for(const x of batch){try{await syncOne(x);done++}catch(e){console.warn('Sync cover',x.id,e);errors++;if(String(e?.message||e).includes('Límite de seguridad'))break}onProgress?.({done,errors,total:batch.length,remaining:Math.max(0,rows.length-done-errors)})}}finally{window.__mcCoverBatchRunning=prev;setTimeout(()=>window.CloudSync?.schedule?.(),250)}return{done,errors,total:batch.length,remaining:Math.max(0,rows.length-done-errors)}}
  async function pendingCount(){return(await allStore('comics')).filter(x=>x.coverKey&&x.coverSyncPending===true).length}
- async function hydrate(root=document){const slots=[...root.querySelectorAll('.mc-cover-slot[data-cover-key]:not([data-loading])')];for(const el of slots){el.dataset.loading='1';const k=el.dataset.coverKey;objectUrl(k).then(u=>{const im=document.createElement('img');im.className=el.className.replace(/\bmc-cover-slot\b/g,'').replace(/\bcoverph\b/g,'').trim();im.src=u;im.alt='Portada';im.loading='lazy';im.decoding='async';el.replaceWith(im)}).catch(()=>{el.textContent='🔒 Portada guardada';el.classList.add('coverph')})}}
+ async function hydrate(root=document){const slots=[...root.querySelectorAll('.mc-cover-slot[data-cover-key]:not([data-loading])')];for(const el of slots){el.dataset.loading='1';const k=el.dataset.coverKey,src=el.dataset.coverSource||'';objectUrl(k,src).then(u=>{const im=document.createElement('img');im.className=el.className.replace(/\bmc-cover-slot\b/g,'').replace(/\bcoverph\b/g,'').trim();im.src=u;im.alt='Portada';im.loading='lazy';im.decoding='async';el.replaceWith(im)}).catch(()=>{el.textContent='🔒 Portada guardada';el.classList.add('coverph')})}}
  const obs=new MutationObserver(()=>hydrate());window.addEventListener('load',()=>{obs.observe(document.body,{subtree:true,childList:true});ensurePersistent();hydrate()});
  window.CoverVault={attach,attachFile,syncOne,syncPending,pendingCount,objectUrl,hydrate,fetchAndCompress,storageInfo,ensurePersistent,hasCredentials:()=>!!(pass()&&token()),passReady:()=>!!pass(),tokenReady:()=>!!token()};
 })();
