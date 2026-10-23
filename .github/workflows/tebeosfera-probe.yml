@@ -14,10 +14,12 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
+      - name: Install probe dependencies
+        run: pip install --quiet requests beautifulsoup4
       - name: Probe direct Tebeosfera search
         run: |
           python - <<'PY'
-          import requests,re,html
+          import requests,re
           from urllib.parse import quote,urljoin
           from bs4 import BeautifulSoup
           S=requests.Session()
