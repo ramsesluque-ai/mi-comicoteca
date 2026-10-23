@@ -14,9 +14,9 @@ jobs:
   cancel:
     runs-on: ubuntu-latest
     steps:
-      - name: Force-cancel legacy mixed GCD cover run
+      - name: Force-cancel superseded slow fallback run
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh api --method POST "repos/${GITHUB_REPOSITORY}/actions/runs/40006377809/force-cancel" || true
-          echo 'LEGACY_MIXED_GCD_COVER_RUN_FORCE_CANCEL_REQUESTED'
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/actions/runs/40006463783/force-cancel" || true
+          echo 'SLOW_FALLBACK_RUN_FORCE_CANCEL_REQUESTED'
