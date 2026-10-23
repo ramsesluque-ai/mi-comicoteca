@@ -72,7 +72,7 @@ jobs:
           if [ '${{ steps.cfg.outputs.reset }}' = 'true' ]; then RESET_ARG='--reset'; fi
           for i in $(seq 1 '${{ steps.cfg.outputs.rounds }}'); do
             echo "=== TEBEOSFERA RONDA $i/${{ steps.cfg.outputs.rounds }} ==="
-            python master_cover_tebeosfera_first.py \
+            python master_cover_tebeosfera_fast.py \
               --master _main/master-data/publishers \
               --batch '${{ steps.cfg.outputs.batch }}' \
               --workers '${{ steps.cfg.outputs.workers }}' \
