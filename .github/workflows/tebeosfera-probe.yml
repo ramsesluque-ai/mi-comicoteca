@@ -16,29 +16,23 @@ jobs:
     steps:
       - name: Install probe dependencies
         run: pip install --quiet requests beautifulsoup4
-      - name: Probe real Tebeosfera advanced AJAX PHP
+      - name: Probe Tebeosfera ISBN input and query
         run: |
           python - <<'PY'
           import requests,re,html
           from bs4 import BeautifulSoup
           S=requests.Session(); S.headers.update({'User-Agent':'Mozilla/5.0 Chrome/153','Accept-Language':'es-ES,es;q=0.9','X-Requested-With':'XMLHttpRequest','Referer':'https://www.tebeosfera.com/buscador-avanzado/'})
           base='https://www.tebeosfera.com/neko/php/ajax/buscador_avanzado_ajax.php'
-          params={'action':'campos','datos':'T3_numeros','contador':'1','tabla':'T3_numeros','web':'1'}
-          r=S.get(base,params=params,timeout=30)
-          print('STEP1',r.status_code,r.url,'LEN',len(r.text))
-          print(re.sub(r'\s+',' ',html.unescape(r.text))[:18000])
-          soup=BeautifulSoup(r.text,'html.parser')
-          sel=soup.select_one('#select_1')
-          if not sel:
-            raise SystemExit('No select_1 returned')
-          print('\nFIELDS:')
-          likely=[]
-          for o in sel.select('option'):
-            label=o.get_text(' ',strip=True); val=o.get('value') or ''
-            print('FIELD',repr(label),repr(val))
-            if any(k in label.lower() for k in ['isbn','título','titulo','colección','coleccion','número','numero']): likely.append((label,val))
-          for label,val in likely[:14]:
-            rr=S.get(base,params={'action':'valores','datos':val,'contador':'2','tabla':'T3_numeros','web':'1'},timeout=30)
-            print('\nNEXT',label,'VAL',repr(val),'STATUS',rr.status_code,'LEN',len(rr.text))
-            print(re.sub(r'\s+',' ',html.unescape(rr.text))[:10000])
+          fields=S.get(base,params={'action':'campos','datos':'T3_numeros','contador':'1','tabla':'T3_numeros','web':'1'},timeout=30).text
+          fs=BeautifulSoup(fields,'html.parser')
+          wanted={}
+          for o in fs.select('#select_1 option'):
+            label=o.get_text(' ',strip=True)
+            if label in ['ISBN / DL / DOI / ...','Título','Colección','Nº','Editorial','Año']:
+              wanted[label]=o.get('value') or ''
+          print('WANTED',wanted)
+          for label,val in wanted.items():
+            r=S.get(base,params={'action':'input','datos':val,'contador':'2','tabla':'T3_numeros','web':'1'},timeout=30)
+            print('\nINPUT',label,'STATUS',r.status_code,'LEN',len(r.text))
+            print(re.sub(r'\s+',' ',html.unescape(r.text))[:14000])
           PY
