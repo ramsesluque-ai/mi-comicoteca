@@ -1,0 +1,68 @@
+name: Tebeosfera direct seed
+
+on:
+  push:
+    branches: [bridge-data]
+    paths:
+      - 'bridge/direct-seed/**.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: comicoteca-tebeosfera-direct-seed-v3
+  cancel-in-progress: false
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: bridge-data
+          fetch-depth: 0
+      - name: Python dependencies
+        run: pip install --quiet requests beautifulsoup4 pillow
+      - name: Download verified 2001 Bruguera covers from Tebeosfera
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          import master_cover_tebeosfera_fast as f
+          import master_cover_tebeosfera_first as m
+
+          overlay_path=Path('bridge/cache/master-cover-overrides.json')
+          overlay=json.loads(overlay_path.read_text(encoding='utf-8'))
+          linked=0
+          for issue,sid in enumerate(range(411497,411505), start=1):
+              row={
+                'sourceId':str(sid),
+                'catalogHeader':'2001: La Odisea Del Espacio',
+                'series':'2001: La Odisea Del Espacio',
+                'publisher':'Bruguera',
+                'issueNr':str(issue),
+                'startYear':'1978',
+                'publicationDate':'1978',
+                'title':'2001: La Odisea Del Espacio'
+              }
+              hit=f.fast_resolve(row)
+              print('SEED_RESULT',sid,issue,json.dumps(hit,ensure_ascii=False))
+              if not hit:
+                  continue
+              overlay['gcd:'+str(sid)]=hit
+              linked+=1
+          overlay_path.write_text(json.dumps(overlay,ensure_ascii=False,indent=2),encoding='utf-8')
+          Path('bridge/cache/tebeosfera-direct-seed-state.json').write_text(json.dumps({'publisher':'Bruguera','series':'2001: La Odisea Del Espacio','linked':linked,'expected':8},indent=2),encoding='utf-8')
+          print('SEED_LINKED',linked)
+          if linked < 1:
+              raise SystemExit('No Tebeosfera covers resolved')
+          PY
+      - name: Commit verified seed covers
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add bridge/cache/master-cover-overrides.json bridge/cache/tebeosfera-direct-seed-state.json bridge/covers
+          git commit -m 'Seed verified Tebeosfera covers for Bruguera 2001'
+          git pull --rebase origin bridge-data
+          git push origin HEAD:bridge-data
