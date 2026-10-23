@@ -12,35 +12,53 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v6
         with:
           ref: bridge-data
       - name: Python dependencies
         run: pip install --quiet requests beautifulsoup4 pillow
-      - name: Resolve known Tebeosfera row end to end
+      - name: Resolve known Tebeosfera rows end to end
         run: |
           python - <<'PY'
           import json, os
           import master_cover_tebeosfera_fast as f
-          row={
-            'sourceId':'known-bruguera-alegres-13',
-            'catalogHeader':'Alegres Historietas',
-            'series':'Alegres Historietas',
-            'publisher':'Bruguera',
-            'issueNr':'13',
-            'startYear':'1970',
-            'publicationDate':'1971',
-            'title':'Anacleto: Misión imposible'
-          }
-          print('DIRECT_URLS', f.direct_issue_links(row))
-          hit=f.fast_resolve(row)
-          print('KNOWN_ROW_HIT', json.dumps(hit, ensure_ascii=False))
-          if not hit or 'tebeosfera' not in (hit.get('source') or '').lower():
-            raise SystemExit('Known Tebeosfera row did not resolve')
-          path='bridge/covers/tebeosfera-known-bruguera-alegres-13.webp'
-          print('KNOWN_ROW_FILE', path, os.path.exists(path), os.path.getsize(path) if os.path.exists(path) else 0)
-          if not os.path.exists(path) or os.path.getsize(path)<1000:
-            raise SystemExit('Cover WebP was not produced')
+
+          rows=[
+            {
+              'sourceId':'known-bruguera-alegres-13',
+              'catalogHeader':'Alegres Historietas',
+              'series':'Alegres Historietas',
+              'publisher':'Bruguera',
+              'issueNr':'13',
+              'startYear':'1970',
+              'publicationDate':'1971',
+              'title':'Anacleto: Misión imposible'
+            },
+            {
+              'sourceId':'known-bruguera-2001-1',
+              'catalogHeader':'2001: La Odisea Del Espacio',
+              'series':'2001: La Odisea Del Espacio',
+              'publisher':'Bruguera',
+              'issueNr':'1',
+              'startYear':'1978',
+              'publicationDate':'1978',
+              'title':'2001: La Odisea Del Espacio'
+            }
+          ]
+
+          for row in rows:
+            print('ROW', row['sourceId'])
+            print('SLUGS', f.series_slugs(row))
+            print('DIRECT_URLS', f.direct_issue_links(row))
+            print('COLLECTION_LINKS', f.collection_issue_links(row))
+            hit=f.fast_resolve(row)
+            print('KNOWN_ROW_HIT', json.dumps(hit, ensure_ascii=False))
+            if not hit or 'tebeosfera' not in (hit.get('source') or '').lower():
+              raise SystemExit('Known Tebeosfera row did not resolve: '+row['sourceId'])
+            path='bridge/covers/tebeosfera-'+row['sourceId']+'.webp'
+            print('KNOWN_ROW_FILE', path, os.path.exists(path), os.path.getsize(path) if os.path.exists(path) else 0)
+            if not os.path.exists(path) or os.path.getsize(path)<1000:
+              raise SystemExit('Cover WebP was not produced: '+row['sourceId'])
           PY
