@@ -3,11 +3,11 @@
 
 Resolution order:
 1. Deterministic Tebeosfera /numeros URL from catalogue identity.
-2. Tebeosfera collection page links.
-3. Search-engine fallback restricted to tebeosfera.com/numeros.
+2. Tebeosfera /colecciones page links.
+3. Legacy collection paths when needed.
+4. Search-engine fallback restricted to tebeosfera.com/numeros.
 
-This keeps Tebeosfera as the source of truth while avoiding the expensive and
-unreliable dependency on Bing/DDG for normal cases.
+Tebeosfera remains the source of truth. ISBN is optional.
 """
 import re
 from urllib.parse import quote_plus, urlparse, parse_qs, unquote, urljoin
@@ -28,51 +28,92 @@ PUB_SLUG_ALIASES = {
 }
 
 
-def slug(v):
-    s = m.norm(v)
-    s = re.sub(r'\b(ediciones?|editorial)\b', ' ', s)
+def _clean_generic_words(s):
+    return re.sub(r'\b(ediciones?|editorial)\b', ' ', s, flags=re.I)
+
+
+def plain_slug(v):
+    s = _clean_generic_words(m.norm(v))
     s = re.sub(r'[^a-z0-9]+', '_', s).strip('_')
     return re.sub(r'_+', '_', s)
+
+
+def tebeosfera_slug_variants(v):
+    """Return conservative URL-slug variants used by Tebeosfera.
+
+    Tebeosfera sometimes preserves a full stop where the printed title has a
+    colon (e.g. "2001: La Odisea del Espacio" ->
+    "2001._la_odisea_del_espacio"). Keeping both variants avoids guessing a
+    single canonical spelling.
+    """
+    raw = _clean_generic_words(m.norm(v))
+    vals = []
+
+    def add(s):
+        s = re.sub(r'_+', '_', str(s or '')).strip('_')
+        if s and s not in vals:
+            vals.append(s)
+
+    add(re.sub(r'[^a-z0-9]+', '_', raw))
+
+    # Colon/semicolon punctuation is commonly represented by a dot before the
+    # underscore-separated remainder of the title.
+    punct = raw.replace(':', '.').replace(';', '.')
+    punct = re.sub(r'[^a-z0-9.]+', '_', punct)
+    punct = re.sub(r'\.+', '.', punct)
+    add(punct)
+
+    # Also retain literal dots already present in abbreviations/numeric titles.
+    dotted = re.sub(r'[^a-z0-9.]+', '_', raw)
+    dotted = re.sub(r'\.+', '.', dotted)
+    add(dotted)
+    return vals[:4]
 
 
 def publisher_slugs(pub):
     p = m.norm(pub)
     vals = []
+
     def add(x):
-        x = slug(x)
-        if x and x not in vals:
-            vals.append(x)
+        for s in tebeosfera_slug_variants(x):
+            if s and s not in vals:
+                vals.append(s)
+
     for key, aliases in PUB_SLUG_ALIASES.items():
         if m.norm(key) in p or p in m.norm(key):
             for a in aliases:
                 add(a)
     add(pub)
     add(re.sub(r'\b(s\.?a\.?|s\.?l\.?)\b', ' ', str(pub or ''), flags=re.I))
-    return vals[:5]
+    return vals[:6]
 
 
 def series_slugs(row):
     series = row.get('catalogHeader') or row.get('series') or ''
     stage = row.get('stage') or ''
     vals = []
+
     def add(x):
-        x = slug(x)
-        if x and x not in vals:
-            vals.append(x)
+        for s in tebeosfera_slug_variants(x):
+            if s and s not in vals:
+                vals.append(s)
+
     add(series)
     add(re.sub(r'\([^)]*\)', ' ', str(series)))
     add(re.sub(r'\b(vol\.?|volumen|serie|etapa)\s*\d+\b', ' ', str(series), flags=re.I))
     for v in m.variants(series, stage)[:4]:
         add(v)
-    return vals[:6]
+    return vals[:10]
 
 
 def years(row):
     vals = []
+
     def add(y):
         y = str(y or '').strip()
         if re.fullmatch(r'(?:19|20)\d{2}', y) and y not in vals:
             vals.append(y)
+
     add(row.get('startYear'))
     mm = re.search(r'((?:19|20)\d{2})', str(row.get('publicationDate') or ''))
     if mm:
@@ -92,33 +133,56 @@ def direct_issue_links(row):
                 u = f'{BASE}/numeros/{s}_{y}_{p}_{n}.html'
                 if u not in out:
                     out.append(u)
-    return out[:18]
+    return out[:30]
 
 
 def issue_href_matches(href, n):
-    return bool(re.search(r'_' + re.escape(str(n)) + r'\.html$', urlparse(href).path.lower()))
+    path = urlparse(href).path.lower()
+    return bool(re.search(r'_' + re.escape(str(n)) + r'\.html$', path))
+
+
+def _links_from_collection(url, n):
+    r = m.get(url, 10, {'Referer': BASE + '/'})
+    if not r or r.status_code != 200:
+        return []
+    soup = BeautifulSoup(r.text, 'html.parser')
+    out = []
+    for a in soup.select('a[href*="/numeros/"]'):
+        u = urljoin(r.url, a.get('href') or '')
+        label = m.norm(a.get_text(' ', strip=True))
+        if issue_href_matches(u, n) or re.search(r'(?<!\d)0*' + re.escape(str(n)) + r'(?!\d)', label):
+            if u not in out:
+                out.append(u)
+    return out
 
 
 def collection_issue_links(row):
     n = m.issue_num(row.get('issueNr') or row.get('issue'))
     if not n:
         return []
-    out = []
-    for s in series_slugs(row)[:3]:
-        for p in publisher_slugs(row.get('publisher') or '')[:3]:
-            for y in years(row)[:2]:
-                collection = f'{BASE}/obras/publicaciones/{s}_{p}_{y}.html'
-                r = m.get(collection, 10, {'Referer': BASE + '/'})
-                if not r or r.status_code != 200:
-                    continue
-                soup = BeautifulSoup(r.text, 'html.parser')
-                for a in soup.select('a[href*="/numeros/"]'):
-                    u = urljoin(r.url, a.get('href') or '')
-                    if issue_href_matches(u, n) and u not in out:
-                        out.append(u)
-                if out:
-                    return out[:8]
-    return out
+    ss = series_slugs(row)
+    ps = publisher_slugs(row.get('publisher') or '')
+    ys = years(row)
+
+    # Current canonical Tebeosfera collection format:
+    # /colecciones/2001._la_odisea_del_espacio_1978_bruguera.html
+    for s in ss[:6]:
+        for y in ys[:3]:
+            for p in ps[:4]:
+                u = f'{BASE}/colecciones/{s}_{y}_{p}.html'
+                found = _links_from_collection(u, n)
+                if found:
+                    return found[:12]
+
+    # Older pages still exist for some catalogue families.
+    for s in ss[:4]:
+        for p in ps[:3]:
+            for y in ys[:2]:
+                u = f'{BASE}/obras/publicaciones/{s}_{p}_{y}.html'
+                found = _links_from_collection(u, n)
+                if found:
+                    return found[:12]
+    return []
 
 
 def fast_search_links(query, limit=6):
