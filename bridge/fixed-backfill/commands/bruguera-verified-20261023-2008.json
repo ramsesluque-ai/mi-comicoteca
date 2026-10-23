@@ -1,0 +1,7 @@
+{
+  "publisher": "Bruguera",
+  "batch": 20,
+  "workers": 2,
+  "reset": true,
+  "reason": "Verified direct Tebeosfera URL resolver with punctuation and collection support"
+}
