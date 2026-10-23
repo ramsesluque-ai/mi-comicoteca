@@ -1,5 +1,5 @@
 'use strict';
-/* v48: Maestro -> Catálogo automático, local-first y solo con identidad exacta. */
+/* v55: Maestro -> Catálogo automático, incluyendo masterReconciledId exacto. */
 (function(){
   if(!window.CoverVault||typeof allStore!=='function'||typeof mcSEOverrides!=='function')return;
 
@@ -13,7 +13,8 @@
   function ownCatalog(x){return x&&x.status==='In Collection'&&!x.coverKey}
   function exactOverride(x,over){
     const isbn=code(x.isbn||x.barcode||'');if(isbn&&over[isbn]?.coverUrl)return over[isbn];
-    const sid=String(x.sourceId||'').trim();if(sid&&over['gcd:'+sid]?.coverUrl)return over['gcd:'+sid];
+    const sid=String(x.sourceId||'').trim().replace(/^gcd_/i,'');if(sid&&over['gcd:'+sid]?.coverUrl)return over['gcd:'+sid];
+    const rid=String(x.masterReconciledId||'').trim().replace(/^gcd_/i,'');if(rid&&over['gcd:'+rid]?.coverUrl)return over['gcd:'+rid];
     if(typeof window.mcMasterCompositeCoverKey==='function'){const k=window.mcMasterCompositeCoverKey(x);if(k&&over[k]?.coverUrl)return over[k]}
     if(typeof window.mcMasterCompositeCoverKeyNoVolume==='function'){const k=window.mcMasterCompositeCoverKeyNoVolume(x);if(k&&over[k]?.coverUrl)return over[k]}
     return null;
