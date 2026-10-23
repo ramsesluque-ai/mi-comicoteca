@@ -24,28 +24,31 @@ jobs:
           python - <<'PY'
           import requests
           from bs4 import BeautifulSoup
-          url='https://www.tebeosfera.com/numeros/alegres_historietas_1970_bruguera_13.html'
+          target='https://www.tebeosfera.com/numeros/alegres_historietas_1970_bruguera_13.html'
           headers={
             'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/153 Safari/537.36',
             'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
             'Accept-Language':'es-ES,es;q=0.9,en;q=0.7',
             'Referer':'https://www.tebeosfera.com/'
           }
-          r=requests.get(url,headers=headers,timeout=25,allow_redirects=True)
-          print('PROBE_STATUS',r.status_code)
-          print('PROBE_FINAL_URL',r.url)
-          print('PROBE_CONTENT_TYPE',r.headers.get('content-type'))
-          print('PROBE_BYTES',len(r.content))
-          if r.status_code==200:
-            s=BeautifulSoup(r.text,'html.parser')
-            print('PROBE_TITLE',s.title.get_text(' ',strip=True) if s.title else '')
-            mi=s.find('meta',attrs={'property':'og:image'})
-            print('PROBE_OG_IMAGE',(mi.get('content') or '') if mi else '')
-            imgs=[]
-            for im in s.find_all('img')[:30]:
-              src=im.get('data-src') or im.get('data-original') or im.get('src') or ''
-              if src: imgs.append(src)
-            print('PROBE_IMAGES',imgs[:10])
-          else:
-            print('PROBE_BODY',r.text[:500].replace('\n',' '))
+          for label,url in [('DIRECT',target),('READER','https://r.jina.ai/http://www.tebeosfera.com/numeros/alegres_historietas_1970_bruguera_13.html')]:
+            try:
+              r=requests.get(url,headers=headers,timeout=25,allow_redirects=True)
+              print(label+'_STATUS',r.status_code)
+              print(label+'_FINAL_URL',r.url)
+              print(label+'_CONTENT_TYPE',r.headers.get('content-type'))
+              print(label+'_BYTES',len(r.content))
+              print(label+'_HEAD',r.text[:400].replace('\n',' '))
+              if label=='DIRECT' and r.status_code==200:
+                s=BeautifulSoup(r.text,'html.parser')
+                print('DIRECT_TITLE',s.title.get_text(' ',strip=True) if s.title else '')
+                mi=s.find('meta',attrs={'property':'og:image'})
+                print('DIRECT_OG_IMAGE',(mi.get('content') or '') if mi else '')
+                imgs=[]
+                for im in s.find_all('img')[:50]:
+                  src=im.get('data-src') or im.get('data-original') or im.get('src') or ''
+                  if src: imgs.append(src)
+                print('DIRECT_IMAGES',imgs[:20])
+            except Exception as e:
+              print(label+'_ERROR',repr(e))
           PY
