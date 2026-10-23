@@ -19,7 +19,7 @@ concurrency:
 jobs:
   sweep:
     runs-on: ubuntu-latest
-    timeout-minutes: 330
+    timeout-minutes: 350
     steps:
       - name: Checkout bridge-data
         uses: actions/checkout@v6
@@ -45,22 +45,43 @@ jobs:
       - name: Sweep full Maestro from Tebeosfera
         shell: bash
         run: |
-          set -e
-          for ROUND in $(seq 1 20); do
-            echo "=== FULL TEBEOSFERA ROUND ${ROUND}/20 ==="
+          set -euo pipefail
+          ROUND=0
+          START=$SECONDS
+          while true; do
+            ROUND=$((ROUND+1))
+            echo "=== FULL TEBEOSFERA ROUND ${ROUND} ==="
+
+            # Always begin from the latest branch head. The full sweep writes its
+            # own overlay/state, so rebasing over interactive-search commits is safe.
+            git pull --rebase origin bridge-data
+
             python master_cover_tebeosfera_full.py \
               --master _main/master-data/publishers \
-              --batch 200 \
-              --workers 3
+              --batch 500 \
+              --workers 6
 
-            git add bridge/cache/master-cover-overrides.json \
+            git add bridge/cache/master-cover-full-overrides.json \
                     bridge/cache/master-cover-tebeosfera-full-state.json \
                     bridge/covers
 
             if ! git diff --cached --quiet; then
               git commit -m "Full Tebeosfera Maestro sweep round ${ROUND}"
-              git pull --rebase origin bridge-data
-              git push origin HEAD:bridge-data
+
+              PUSHED=false
+              for ATTEMPT in 1 2 3 4 5 6; do
+                git pull --rebase origin bridge-data
+                if git push origin HEAD:bridge-data; then
+                  PUSHED=true
+                  break
+                fi
+                echo "Push race ${ATTEMPT}; rebasing and retrying"
+                sleep $((ATTEMPT*2))
+              done
+              if [ "$PUSHED" != "true" ]; then
+                echo 'Unable to publish sweep progress after retries'
+                exit 1
+              fi
             fi
 
             DONE=$(python - <<'PY'
@@ -72,6 +93,13 @@ jobs:
             )
             if [ "$DONE" = "yes" ]; then
               echo 'FULL_TEBEOSFERA_PASS_COMPLETE'
+              break
+            fi
+
+            # Leave enough margin for Actions cleanup instead of being killed
+            # mid-batch. The next scheduled/manual run resumes from the cursor.
+            if [ $((SECONDS-START)) -ge 19000 ]; then
+              echo 'FULL_TEBEOSFERA_CHECKPOINT_EXIT'
               break
             fi
           done
