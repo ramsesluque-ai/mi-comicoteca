@@ -14,9 +14,9 @@ jobs:
   cancel:
     runs-on: ubuntu-latest
     steps:
-      - name: Force-cancel superseded serial full sweep
+      - name: Force-cancel superseded per-issue sharded sweep
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh api --method POST "repos/${GITHUB_REPOSITORY}/actions/runs/40002212434/force-cancel" || true
-          echo 'SERIAL_FULL_SWEEP_FORCE_CANCEL_REQUESTED'
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/actions/runs/40004172912/force-cancel" || true
+          echo 'PER_ISSUE_SHARDED_SWEEP_FORCE_CANCEL_REQUESTED'
