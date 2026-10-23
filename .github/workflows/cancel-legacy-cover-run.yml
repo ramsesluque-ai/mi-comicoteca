@@ -1,0 +1,22 @@
+name: Cancel legacy cover run
+
+on:
+  push:
+    branches: [bridge-data]
+    paths:
+      - 'bridge/maintenance/cancel-legacy-cover-run.json'
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  cancel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Force-cancel stale Tebeosfera cover rebuild
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/actions/runs/39997372684/force-cancel"
+          echo 'LEGACY_COVER_RUN_FORCE_CANCEL_REQUESTED'
