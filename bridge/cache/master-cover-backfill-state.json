@@ -1,15 +1,15 @@
 {
-  "fileIndex": 268,
-  "rowIndex": 871,
-  "scanned": 309246,
+  "fileIndex": 1,
+  "rowIndex": 2397,
+  "scanned": 323367,
   "linked": 967,
-  "passes": 1,
+  "passes": 2,
   "phase": "isbn-direct",
   "rebuild": "v54-tebeosfera-direct",
   "lastBatchChecked": 250,
   "lastBatchLinked": 0,
   "lastBatchTebeosfera": 0,
-  "lastBatchScanned": 10335,
+  "lastBatchScanned": 14121,
   "lastWorkers": 3,
-  "updatedAt": "2026-10-23T14:22:13Z"
+  "updatedAt": "2026-10-23T14:49:52Z"
 }
