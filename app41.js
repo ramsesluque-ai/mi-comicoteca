@@ -1,5 +1,5 @@
 'use strict';
-/* v56: la portada propia (coverKey) se pinta en toda la UI y no se pierde al guardar la ficha. */
+/* v57: portada propia en toda la UI + importación de portada desde archivo local en la ficha. */
 (function(){
   if(typeof img==='function'){
     const baseImg=img;
@@ -48,22 +48,62 @@
     };
   }
 
+  async function importLocalCover(input){
+    const file=input?.files?.[0];
+    if(!file)return;
+    input.value='';
+    if(!String(file.type||'').startsWith('image/'))return window.toast?.('Selecciona un archivo de imagen');
+    if(!window.CoverVault?.attachFile)return window.toast?.('La bóveda de portadas no está disponible');
+    try{
+      window.busy?.(true,'Guardando portada del ordenador…');
+      let record=null;
+      if(typeof window.mcPersistFormForCover==='function')record=await window.mcPersistFormForCover();
+      if(!record?.id){
+        const save=document.querySelector('#modal .modalfoot button[onclick*="saveComic"]');
+        const m=String(save?.getAttribute('onclick')||'').match(/saveComic\(['\"]([^'\"]+)['\"]\)/);
+        const id=m?.[1]||'';
+        record=id&&typeof getStore==='function'?await getStore('comics',id):null;
+      }
+      if(!record?.id)throw Error('No se pudo identificar la ficha abierta');
+      await window.CoverVault.attachFile(record,file,{sync:false});
+      try{window.CloudSync?.schedule?.()}catch{}
+      window.toast?.('Portada importada y guardada en esta ficha');
+      await window.editComic?.(record.id);
+    }catch(e){
+      console.error(e);
+      window.toast?.('No se pudo importar la portada: '+(e?.message||e));
+    }finally{
+      window.busy?.(false);
+    }
+  }
+  window.mcImportLocalCover=importLocalCover;
+
+  function enhanceCoverImport(){
+    const modal=document.getElementById('modal');
+    if(!modal||modal.classList.contains('hidden'))return;
+    const toolbar=modal.querySelector('.modalbody .formgrid .span4.toolbar');
+    if(!toolbar||toolbar.querySelector('[data-local-cover-import]'))return;
+    const box=document.createElement('div');
+    box.setAttribute('data-local-cover-import','');
+    box.style.cssText='display:flex;flex-wrap:wrap;gap:8px;align-items:center;width:100%;margin-top:8px';
+    box.innerHTML=`<input id="mcLocalCoverFile" type="file" accept="image/*" hidden onchange="mcImportLocalCover(this)"><button type="button" class="btn" onclick="document.getElementById('mcLocalCoverFile')?.click()">📁 Importar portada desde el ordenador</button><span class="muted small">La imagen se guarda primero en la bóveda local de la ficha.</span>`;
+    toolbar.appendChild(box);
+  }
+
   /* Compras también debe considerar una portada propia aunque coverUrl esté vacío. */
   if(typeof window.purchasesView==='function'){
     const basePurchases=window.purchasesView;
-    window.purchasesView=async function(){
-      const html=await basePurchases();
-      return html;
-    };
+    window.purchasesView=async function(){return await basePurchases()};
   }
 
-  /* Fuerza hidratación tras abrir ficha/listados, además del MutationObserver de vault.js. */
-  const kick=()=>setTimeout(()=>window.CoverVault?.hydrate?.(),0);
+  const kick=()=>setTimeout(()=>{window.CoverVault?.hydrate?.();enhanceCoverImport()},0);
   if(typeof window.renderCat==='function'){
     const b=window.renderCat;window.renderCat=renderCat=async function(...a){const r=await b.apply(this,a);kick();return r};
   }
   if(typeof window.editComic==='function'){
     const b=window.editComic;window.editComic=editComic=async function(...a){const r=await b.apply(this,a);kick();return r};
   }
+  const modal=document.getElementById('modal');
+  if(modal)new MutationObserver(kick).observe(modal,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
   window.addEventListener('load',kick);
 })();
