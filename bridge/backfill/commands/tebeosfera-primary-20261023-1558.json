@@ -1,0 +1,6 @@
+{
+  "batch": 120,
+  "rounds": 4,
+  "workers": 3,
+  "reason": "Tebeosfera primary authority; identity without ISBN + ISBN fallback"
+}
