@@ -57,7 +57,7 @@ jobs:
           echo "rounds=$ROUNDS" >> "$GITHUB_OUTPUT"
           echo "workers=$WORKERS" >> "$GITHUB_OUTPUT"
           echo "Config: batch=$BATCH rounds=$ROUNDS workers=$WORKERS"
-      - name: Enrich Maestro covers directly from Tebeosfera
+      - name: Enrich Maestro covers by exact GCD sourceId, then ISBN/Tebeosfera
         env:
           BATCH: ${{ steps.cfg.outputs.batch }}
           ROUNDS: ${{ steps.cfg.outputs.rounds }}
@@ -66,16 +66,19 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           for ROUND in $(seq 1 "$ROUNDS"); do
-            echo "===== TEBEOSFERA DIRECT ROUND $ROUND/$ROUNDS ====="
+            echo "===== GCD SOURCEID ROUND $ROUND/$ROUNDS ====="
+            python master_cover_backfill_gcd.py --master _main/master-data/publishers --batch "$BATCH" --workers "$WORKERS"
+            echo "===== TEBEOSFERA / ISBN ROUND $ROUND/$ROUNDS ====="
             python master_cover_backfill_direct.py --master _main/master-data/publishers --batch "$BATCH" --workers "$WORKERS"
-            git add bridge/cache/master-cover-overrides.json bridge/cache/master-cover-backfill-state.json
+            git add bridge/cache/master-cover-overrides.json bridge/cache/master-cover-backfill-state.json bridge/cache/master-cover-gcd-state.json
             if git diff --cached --quiet; then
               echo "Round $ROUND: no changes"
             else
-              git commit -m "Backfill directo Tebeosfera ronda $ROUND/$ROUNDS"
+              git commit -m "Backfill portadas exactas GCD + Tebeosfera ronda $ROUND/$ROUNDS"
               git pull --rebase origin bridge-data
               git push origin HEAD:bridge-data
             fi
-            python -c "import json;d=json.load(open('bridge/cache/master-cover-backfill-state.json'));print('PROGRESS scanned=',d.get('scanned',0),'linked=',d.get('linked',0),'last=',d.get('lastBatchLinked',0),'Tebeosfera=',d.get('lastBatchTebeosfera',0),'phase=',d.get('phase'))"
+            python -c "import json;d=json.load(open('bridge/cache/master-cover-gcd-state.json'));print('GCD PROGRESS scanned=',d.get('scanned',0),'linked=',d.get('linked',0),'last=',d.get('lastBatchLinked',0),'phase=',d.get('phase'))"
+            python -c "import json;d=json.load(open('bridge/cache/master-cover-backfill-state.json'));print('ISBN PROGRESS scanned=',d.get('scanned',0),'linked=',d.get('linked',0),'last=',d.get('lastBatchLinked',0),'Tebeosfera=',d.get('lastBatchTebeosfera',0),'phase=',d.get('phase'))"
             sleep 8
           done
