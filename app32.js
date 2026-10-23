@@ -1,11 +1,11 @@
 'use strict';
-/* v55: Maestro -> Catálogo automático, incluyendo masterReconciledId exacto. */
+/* v63: Maestro -> Catálogo automático; copia local cuando es posible y URL validada como respaldo visual. */
 (function(){
   if(!window.CoverVault||typeof allStore!=='function'||typeof mcSEOverrides!=='function')return;
 
   const MAX_PER_PASS=40;
   const failedThisSession=new Set();
-  let running=false,timer=null,last={checked:0,saved:0,errors:0,remaining:0};
+  let running=false,timer=null,last={checked:0,saved:0,remote:0,errors:0,remaining:0};
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   const code=v=>String(v??'').replace(/[^0-9Xx]/g,'').toUpperCase();
   const normUrl=v=>String(v||'').trim().replace(/^http:/i,'https:').replace(/[?#].*$/,'');
@@ -22,6 +22,12 @@
   function coverUrl(o){return String(o?.coverUrl||(Array.isArray(o?.coverUrls)?o.coverUrls[0]:'')||'').trim()}
   function rejectedSame(x,u){return !!u&&!!x?.coverRejectedSourceUrl&&normUrl(x.coverRejectedSourceUrl)===normUrl(u)}
 
+  async function keepRemoteVisible(x,u){
+    const updated={...x,coverUrl:u,coverSourceUrl:u,coverRemotePending:true};
+    await putStore('comics',updated);
+    return updated;
+  }
+
   async function run(){
     if(running||window.__mcCoverRepairRunning||window.__mcCatalogReconcileRunning||document.visibilityState==='hidden'||!navigator.onLine)return last;
     running=true;const prevBatch=!!window.__mcCoverBatchRunning;window.__mcCoverBatchRunning=true;
@@ -31,14 +37,19 @@
         if(!ownCatalog(x)||failedThisSession.has(String(x.id)))continue;
         const o=exactOverride(x,over),u=coverUrl(o);if(u&&!rejectedSame(x,u))targets.push({x,o,u});
       }
-      const batch=targets.slice(0,MAX_PER_PASS);let saved=0,errors=0;
+      const batch=targets.slice(0,MAX_PER_PASS);let saved=0,remote=0,errors=0;
       for(const {x,u} of batch){
         try{await window.CoverVault.attach(x,u,{sync:false});saved++}
-        catch(e){console.warn('Maestro -> Catálogo',x.id,e);failedThisSession.add(String(x.id));errors++}
+        catch(e){
+          console.warn('Maestro -> Catálogo: copia local no disponible; se conserva URL validada',x.id,e);
+          try{await keepRemoteVisible(x,u);remote++}catch(e2){console.warn('Maestro -> Catálogo',x.id,e2);errors++}
+          failedThisSession.add(String(x.id));
+        }
         await sleep(120);
       }
-      last={checked:batch.length,saved,errors,remaining:Math.max(0,targets.length-batch.length)};
-      if(saved&&typeof toast==='function')toast(`Maestro: ${saved} portada${saved===1?'':'s'} incorporada${saved===1?'':'s'} automáticamente a tu catálogo`);
+      last={checked:batch.length,saved,remote,errors,remaining:Math.max(0,targets.length-batch.length)};
+      const visible=saved+remote;
+      if(visible&&typeof toast==='function')toast(`Maestro: ${visible} portada${visible===1?'':'s'} incorporada${visible===1?'':'s'} automáticamente a tu catálogo`);
       if(last.remaining>0)schedule(1200);return last;
     }catch(e){console.warn('AutoMasterCover',e);return last}
     finally{window.__mcCoverBatchRunning=prevBatch;running=false;try{if(typeof window.renderCovers==='function'&&document.querySelector('#mcCoverControls'))await window.renderCovers()}catch{}}
