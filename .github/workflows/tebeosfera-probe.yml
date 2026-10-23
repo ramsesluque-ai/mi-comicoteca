@@ -17,28 +17,54 @@ jobs:
       - name: Probe Tebeosfera HTTP
         run: |
           python - <<'PY'
-          import requests,re
+          import requests,re,html
+          from urllib.parse import urljoin
           S=requests.Session()
           S.headers.update({
             'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36',
             'Accept-Language':'es-ES,es;q=0.9,en;q=0.6',
             'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8'
           })
-          urls=[
-            'https://www.tebeosfera.com/buscador-avanzado/',
-            'https://www.tebeosfera.com/numeros/puro_peru_2019_cesal.html',
-            'https://tebeosfera.com/buscador-avanzado/',
-          ]
-          for u in urls:
-            try:
-              r=S.get(u,timeout=30,allow_redirects=True)
-              print('URL',u,'STATUS',r.status_code,'FINAL',r.url,'LEN',len(r.text))
-              print('TITLE',re.findall(r'<title[^>]*>(.*?)</title>',r.text,re.I|re.S)[:1])
-              forms=re.findall(r'<form[^>]+action=["\']([^"\']+)',r.text,re.I)
-              print('FORMS',forms[:10])
-              names=re.findall(r'<(?:input|select)[^>]+name=["\']([^"\']+)',r.text,re.I)
-              print('FIELDS',names[:80])
-              print('HEAD',re.sub(r'\s+',' ',r.text[:1000]))
-            except Exception as e:
-              print('ERROR',u,repr(e))
+          u='https://www.tebeosfera.com/buscador-avanzado/'
+          r=S.get(u,timeout=30,allow_redirects=True)
+          print('SEARCH STATUS',r.status_code,'LEN',len(r.text))
+          txt=r.text
+          print('FORM TAGS')
+          for x in re.findall(r'<form\b[^>]*>',txt,re.I)[:20]: print(re.sub(r'\s+',' ',x)[:800])
+          print('SEARCH CONTROLS')
+          for name in ['busqueda','tabla_especifica','b_tipo_consulta','b_tabla_consulta','select_0','TIPO_RESULTADOS','hidden_buscador','hidden_buscador2']:
+            for m in re.finditer(name,txt,re.I):
+              a=max(0,m.start()-900);b=min(len(txt),m.end()+1600)
+              print('---',name,'---',re.sub(r'\s+',' ',html.unescape(txt[a:b]))[:2600])
+              break
+          scripts=[]
+          for src in re.findall(r'<script[^>]+src=["\']([^"\']+)',txt,re.I):
+            full=urljoin(r.url,src)
+            if full not in scripts:scripts.append(full)
+          print('SCRIPTS',len(scripts))
+          for s in scripts:
+            if any(k in s.lower() for k in ['busc','catalog','ficha','general','func','js']):
+              try:
+                rr=S.get(s,timeout=20)
+                body=rr.text
+                hits=[]
+                for pat in ['hidden_buscador','b_tipo_consulta','TIPO_RESULTADOS','ajax','buscador-avanzado','url:','fetch(']:
+                  if pat.lower() in body.lower():hits.append(pat)
+                if hits:
+                  print('SCRIPT',s,'STATUS',rr.status_code,'LEN',len(body),'HITS',hits)
+                  for pat in hits[:4]:
+                    mm=re.search(re.escape(pat),body,re.I)
+                    if mm:
+                      a=max(0,mm.start()-1000);b=min(len(body),mm.end()+2200)
+                      print('CTX',pat,re.sub(r'\s+',' ',body[a:b])[:3200])
+              except Exception as e: print('SCRIPT ERROR',s,repr(e))
+          # Also inspect a known number page to identify cover markup.
+          nurl='https://www.tebeosfera.com/numeros/puro_peru_2019_cesal.html'
+          nr=S.get(nurl,timeout=30)
+          print('NUMBER STATUS',nr.status_code,'LEN',len(nr.text))
+          for pat in ['og:image','portada','FICHA_REG_ID','NUMERO_RUTA']:
+            mm=re.search(re.escape(pat),nr.text,re.I)
+            if mm:
+              a=max(0,mm.start()-700);b=min(len(nr.text),mm.end()+1800)
+              print('NUMBER CTX',pat,re.sub(r'\s+',' ',html.unescape(nr.text[a:b]))[:2600])
           PY
