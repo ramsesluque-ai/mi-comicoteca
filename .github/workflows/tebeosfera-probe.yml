@@ -16,38 +16,29 @@ jobs:
     steps:
       - name: Install probe dependencies
         run: pip install --quiet requests beautifulsoup4
-      - name: Probe direct Tebeosfera search
+      - name: Inspect Tebeosfera advanced search API
         run: |
           python - <<'PY'
           import requests,re
-          from urllib.parse import quote,urljoin
-          from bs4 import BeautifulSoup
-          S=requests.Session()
-          S.headers.update({
-            'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36',
-            'Accept-Language':'es-ES,es;q=0.9,en;q=0.6',
-          })
-          def search(q):
-            slug=quote(q.replace('/',' ').replace(' ','_'),safe='_:-')
-            u='https://www.tebeosfera.com/buscador/'+slug+'/N%C3%BAmeros/'
-            r=S.get(u,timeout=30,allow_redirects=True)
-            print('\nQUERY',q,'STATUS',r.status_code,'FINAL',r.url,'LEN',len(r.text))
-            s=BeautifulSoup(r.text,'html.parser')
-            links=[]
-            for a in s.select('a[href]'):
-              href=urljoin(r.url,a.get('href') or '')
-              if '/numeros/' in href and href.endswith('.html') and href not in links:
-                links.append(href)
-            print('NUMBER LINKS',len(links))
-            for href in links[:20]:
-              rr=S.get(href,timeout=20)
-              ss=BeautifulSoup(rr.text,'html.parser')
-              title=(ss.find('meta',attrs={'property':'og:title'}) or {}).get('content','')
-              img=(ss.find('meta',attrs={'property':'og:image'}) or {}).get('content','')
-              text=' '.join(ss.stripped_strings)
-              print('ITEM',href,'TITLE',title[:140],'IMG',img[:180],'HASISBN',('9788417147648' in re.sub(r'[^0-9Xx]','',text)))
-            return links
-          search('9788417147648')
-          search('All-Star Batman Renacimiento')
-          search('All-Star Batman 8')
+          S=requests.Session(); S.headers.update({'User-Agent':'Mozilla/5.0 Chrome/153','Accept-Language':'es-ES,es;q=0.9'})
+          js=S.get('https://www.tebeosfera.com/neko/js/buscador_avanzado.js',timeout=30).text
+          print('JS LEN',len(js))
+          names=['ba_carga_next_div','ba_monta_consulta','ba_procesa_consulta','ba_procesa_campo','fin_de_la_consulta']
+          for name in names:
+            pos=js.find('function '+name)
+            if pos<0: pos=js.find(name)
+            print('\n===== ',name,' @ ',pos,' =====')
+            if pos>=0: print(js[pos:pos+6500])
+          # Probe the first dynamic step for T3_numeros using the AJAX call discovered in JS.
+          base='https://www.tebeosfera.com/neko/php/ajax/'
+          probes=[
+            ('buscador_avanzado.php',{'action':'campos','tabla':'T3_numeros','contador':'1','datos':'T3_numeros'}),
+            ('buscador_avanzado.php',{'action':'campos','tabla':'T3_numeros','contador':'1'}),
+            ('buscador_avanzado_carga.php',{'action':'campos','tabla':'T3_numeros','contador':'1','datos':'T3_numeros'}),
+          ]
+          for ep,data in probes:
+            try:
+              r=S.post(base+ep+'?web=1',data=data,timeout=30,headers={'Referer':'https://www.tebeosfera.com/buscador-avanzado/','X-Requested-With':'XMLHttpRequest'})
+              print('\nPOST',ep,'STATUS',r.status_code,'LEN',len(r.text),'BODY',re.sub(r'\s+',' ',r.text[:4000]))
+            except Exception as e: print('ERR',ep,repr(e))
           PY
