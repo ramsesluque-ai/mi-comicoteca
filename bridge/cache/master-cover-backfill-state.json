@@ -1,14 +1,14 @@
 {
   "fileIndex": 0,
-  "rowIndex": 3615,
-  "scanned": 3615,
+  "rowIndex": 3914,
+  "scanned": 3914,
   "linked": 0,
   "passes": 0,
   "lastBatchChecked": 250,
   "lastBatchLinked": 0,
-  "lastBatchScanned": 256,
+  "lastBatchScanned": 299,
   "lastWorkers": 5,
   "rebuild": "v49-tebeosfera-first-all-identities",
-  "updatedAt": "2026-10-23T01:14:47Z",
+  "updatedAt": "2026-10-23T01:35:27Z",
   "lastBatchTebeosfera": 0
 }
