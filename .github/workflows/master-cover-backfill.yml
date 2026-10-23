@@ -81,7 +81,7 @@ jobs:
 
             git add bridge/cache/master-cover-full-overrides.json \
                     bridge/cache/master-cover-tebeosfera-full-state.json \
-                    bridge/covers
+                    bridge/full-covers
 
             if ! git diff --cached --quiet; then
               git commit -m "Full Tebeosfera Maestro sweep round ${ROUND}"
