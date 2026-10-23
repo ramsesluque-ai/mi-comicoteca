@@ -1,0 +1,8 @@
+{
+  "batch": 8,
+  "rounds": 1,
+  "workers": 2,
+  "publisher": "Bruguera",
+  "reset": true,
+  "source": "Tebeosfera-first validation"
+}
