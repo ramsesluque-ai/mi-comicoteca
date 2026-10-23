@@ -1,0 +1,86 @@
+name: Tebeosfera fallback sweep
+
+on:
+  push:
+    branches: [bridge-data]
+    paths:
+      - 'bridge/fallback-sweep/commands/**.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: comicoteca-tebeosfera-fallback-sweep
+  cancel-in-progress: false
+
+jobs:
+  shard:
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - name: Checkout bridge-data
+        uses: actions/checkout@v6
+        with:
+          ref: bridge-data
+          fetch-depth: 0
+      - name: Checkout Maestro main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          path: _main
+          fetch-depth: 1
+      - name: Python dependencies
+        run: pip install --quiet requests beautifulsoup4 pillow
+      - name: Configure git
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+      - name: Resolve uncovered Tebeosfera covers shard ${{ matrix.shard }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          STATE="bridge/cache/master-cover-fallback-shard-${{ matrix.shard }}-state.json"
+          OVERLAY="bridge/cache/master-cover-fallback-shard-${{ matrix.shard }}-overrides.json"
+          START=$SECONDS
+          ROUND=0
+          while true; do
+            ROUND=$((ROUND+1))
+            git pull --rebase origin bridge-data
+            python master_cover_tebeosfera_fallback.py \
+              --master _main/master-data/publishers \
+              --shard-index '${{ matrix.shard }}' --shard-count 4 \
+              --batch 40 --workers 3
+            git add "$STATE" "$OVERLAY"
+            if ! git diff --cached --quiet; then
+              git commit -m "Tebeosfera fallback shard ${{ matrix.shard }} round ${ROUND}"
+              PUSHED=false
+              for ATTEMPT in 1 2 3 4 5 6 7 8 9 10; do
+                git pull --rebase origin bridge-data
+                if git push origin HEAD:bridge-data; then PUSHED=true; break; fi
+                sleep $((ATTEMPT*2))
+              done
+              [ "$PUSHED" = "true" ] || exit 1
+            fi
+            DONE=$(python - "$STATE" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1]))
+          print('yes' if d.get('complete') else 'no')
+          PY
+            )
+            if [ "$DONE" = "yes" ]; then
+              echo "FALLBACK_SHARD_${{ matrix.shard }}_COMPLETE"
+              break
+            fi
+            if [ $((SECONDS-START)) -ge 19000 ]; then
+              echo "FALLBACK_SHARD_${{ matrix.shard }}_CHECKPOINT_EXIT"
+              break
+            fi
+          done
+      - name: Show fallback state
+        if: always()
+        run: cat "bridge/cache/master-cover-fallback-shard-${{ matrix.shard }}-state.json" 2>/dev/null || true
