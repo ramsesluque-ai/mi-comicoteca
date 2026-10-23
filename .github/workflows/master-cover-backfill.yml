@@ -1,11 +1,83 @@
-name: Legacy master cover backfill (retired)
+name: Full Maestro Tebeosfera sweep
 
 on:
+  push:
+    branches: [bridge-data]
+    paths:
+      - 'bridge/full-sweep/commands/**.json'
+  schedule:
+    - cron: '17 */2 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
+concurrency:
+  group: comicoteca-full-tebeosfera-sweep
+  cancel-in-progress: false
+
 jobs:
-  retired:
+  sweep:
     runs-on: ubuntu-latest
+    timeout-minutes: 330
     steps:
-      - name: Retired
-        run: echo 'Retired. Use Tebeosfera cover rebuild as the single cover pipeline.'
+      - name: Checkout bridge-data
+        uses: actions/checkout@v6
+        with:
+          ref: bridge-data
+          fetch-depth: 0
+
+      - name: Checkout Maestro main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          path: _main
+          fetch-depth: 1
+
+      - name: Python dependencies
+        run: pip install --quiet requests beautifulsoup4 pillow
+
+      - name: Configure git
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+      - name: Sweep full Maestro from Tebeosfera
+        shell: bash
+        run: |
+          set -e
+          for ROUND in $(seq 1 20); do
+            echo "=== FULL TEBEOSFERA ROUND ${ROUND}/20 ==="
+            python master_cover_tebeosfera_full.py \
+              --master _main/master-data/publishers \
+              --batch 200 \
+              --workers 3
+
+            git add bridge/cache/master-cover-overrides.json \
+                    bridge/cache/master-cover-tebeosfera-full-state.json \
+                    bridge/covers
+
+            if ! git diff --cached --quiet; then
+              git commit -m "Full Tebeosfera Maestro sweep round ${ROUND}"
+              git pull --rebase origin bridge-data
+              git push origin HEAD:bridge-data
+            fi
+
+            DONE=$(python - <<'PY'
+          import json
+          p='bridge/cache/master-cover-tebeosfera-full-state.json'
+          d=json.load(open(p))
+          print('yes' if int(d.get('passes') or 0) >= 1 else 'no')
+          PY
+            )
+            if [ "$DONE" = "yes" ]; then
+              echo 'FULL_TEBEOSFERA_PASS_COMPLETE'
+              break
+            fi
+          done
+
+      - name: Show sweep state
+        if: always()
+        run: |
+          echo '--- FULL SWEEP STATE ---'
+          cat bridge/cache/master-cover-tebeosfera-full-state.json 2>/dev/null || true
