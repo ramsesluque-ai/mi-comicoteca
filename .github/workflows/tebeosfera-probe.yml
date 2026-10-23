@@ -16,48 +16,47 @@ jobs:
     steps:
       - name: Install dependencies
         run: pip install --quiet requests beautifulsoup4
-      - name: Execute raw Tebeosfera ISBN query
+      - name: Resolve collection then issue in Tebeosfera
         run: |
           python - <<'PY'
           import requests,re
           from bs4 import BeautifulSoup
           from urllib.parse import urljoin
-          S=requests.Session(); S.headers.update({
-            'User-Agent':'Mozilla/5.0 Chrome/153',
-            'Accept-Language':'es-ES,es;q=0.9',
-            'Referer':'https://www.tebeosfera.com/buscador-avanzado/'
-          })
-          # Establish the same session/cookies as the browser.
+          S=requests.Session();S.headers.update({'User-Agent':'Mozilla/5.0 Chrome/153','Accept-Language':'es-ES,es;q=0.9','Referer':'https://www.tebeosfera.com/buscador-avanzado/'})
           S.get('https://www.tebeosfera.com/buscador-avanzado/',timeout=30)
-          isbn='9788417147648'
-          consulta=(
-            "id from T3_numeros WHERE ("
-            f"isbn LIKE '%{isbn}%' || deposito LIKE '%{isbn}%' || issn LIKE '%{isbn}%' || "
-            f"ean LIKE '%{isbn}%' || doi LIKE '%{isbn}%' || cdu LIKE '%{isbn}%' || otro_registro LIKE '%{isbn}%' ) "
-          )
           ep='https://www.tebeosfera.com/neko/php/ajax/buscador_avanzado_graba_consulta.php?web=1'
-          r=S.post(ep,data={'tabla':'T3_numeros','query':consulta,'puede_grabar_consulta':'no','asignacion_etiquetas':'no','tipo_consulta':'s','anno_dedicacion':''},timeout=30)
-          token=r.text.strip()
-          print('SAVE',r.status_code,'TOKEN',repr(token),'QUERY',consulta)
-          if not token: raise SystemExit('No token')
-          u=f'https://www.tebeosfera.com/resultados-avanzados/{token}.html'
-          rr=S.get(u,timeout=30,allow_redirects=True)
-          print('RESULT',rr.status_code,rr.url,'LEN',len(rr.text))
-          s=BeautifulSoup(rr.text,'html.parser')
-          links=[]
-          for a in s.select('a[href]'):
-            href=urljoin(rr.url,a.get('href') or '')
-            if '/numeros/' in href and href.endswith('.html') and href not in links:links.append(href)
-          print('NUMBER LINKS',len(links),links[:30])
-          exact=[]
-          for href in links[:40]:
-            p=S.get(href,timeout=30); ps=BeautifulSoup(p.text,'html.parser')
-            text=' '.join(ps.stripped_strings); compact=re.sub(r'[^0-9Xx]','',text)
-            title=(ps.find('meta',attrs={'property':'og:title'}) or {}).get('content','')
-            img=(ps.find('meta',attrs={'property':'og:image'}) or {}).get('content','')
-            hit=isbn in compact
-            print('ITEM',href,'TITLE',title[:160],'HASISBN',hit,'IMG',img[:220])
-            if hit:exact.append((href,title,img))
-          print('EXACT',exact)
-          if not exact: raise SystemExit('Exact ISBN not found')
+          def advanced(table,query,kind):
+            r=S.post(ep,data={'tabla':table,'query':query,'puede_grabar_consulta':'no','asignacion_etiquetas':'no','tipo_consulta':'s','anno_dedicacion':''},timeout=30)
+            token=r.text.strip();print('\nSAVE',table,r.status_code,repr(token),query)
+            if not token:return []
+            rr=S.get(f'https://www.tebeosfera.com/resultados-avanzados/{token}.html',timeout=30,allow_redirects=True)
+            print('RESULT',rr.status_code,rr.url,'LEN',len(rr.text))
+            soup=BeautifulSoup(rr.text,'html.parser');links=[]
+            needle='/'+kind+'/'
+            for a in soup.select('a[href]'):
+              href=urljoin(rr.url,a.get('href') or '')
+              if needle in href and href.endswith('.html') and href not in links:links.append(href)
+            print('LINKS',len(links),links[:40]);return links
+          term='Batman'
+          qpub=("id from T3_publicaciones WHERE ("+
+                "titulo LIKE '%Batman%' || facial LIKE '%Batman%' || antetitulo LIKE '%Batman%' || subtitulo LIKE '%Batman%' || acreditado LIKE '%Batman%' || alternativo LIKE '%Batman%' ) ")
+          pubs=advanced('T3_publicaciones',qpub,'publicaciones')
+          candidates=[]
+          for href in pubs[:30]:
+            r=S.get(href,timeout=30);s=BeautifulSoup(r.text,'html.parser')
+            title=(s.find('meta',attrs={'property':'og:title'}) or {}).get('content','') or (s.title.get_text(' ',strip=True) if s.title else '')
+            text=' '.join(s.stripped_strings)
+            hid=s.select_one('input#FICHA_REG_ID,input[name="FICHA_REG_ID"]')
+            rid=(hid.get('value') if hid else '') or ''
+            print('PUB',rid,title[:180],href)
+            if '2016' in text and 'ECC' in text.upper() and ('ALL STAR' in text.upper() or 'RENACIMIENTO' in text.upper()):candidates.append((rid,title,href))
+          print('PUB CANDIDATES',candidates)
+          for rid,title,href in candidates[:10]:
+            if not rid:continue
+            qnum=f"id from T3_numeros WHERE publicacion = '{rid}'  AND numero = '8' "
+            nums=advanced('T3_numeros',qnum,'numeros')
+            for nurl in nums[:20]:
+              nr=S.get(nurl,timeout=30);ns=BeautifulSoup(nr.text,'html.parser');nt=' '.join(ns.stripped_strings)
+              ti=(ns.find('meta',attrs={'property':'og:title'}) or {}).get('content','');im=(ns.find('meta',attrs={'property':'og:image'}) or {}).get('content','')
+              print('NUM',ti,nurl,'IMG',im,'ISBN', '9788417147648' in re.sub(r'[^0-9Xx]','',nt))
           PY
