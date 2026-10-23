@@ -1,0 +1,8 @@
+{
+  "batch": 30,
+  "rounds": 1,
+  "workers": 2,
+  "mode": "tebeosfera-direct-isbn-first",
+  "reason": "Validar en lote la consulta avanzada directa ya comprobada con All-Star Batman 8",
+  "requestedAt": "2026-10-23T08:46:00+02:00"
+}
