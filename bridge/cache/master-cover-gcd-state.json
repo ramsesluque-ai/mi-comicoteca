@@ -1,8 +1,8 @@
 {
   "mode": "priority-v2",
   "fileIndex": 0,
-  "rowIndex": 238,
-  "scanned": 238,
+  "rowIndex": 488,
+  "scanned": 488,
   "linked": 0,
   "passes": 0,
   "priorityFiles": 42,
@@ -11,12 +11,13 @@
     "image_http_403": 5,
     "api_http_429": 173
   },
-  "lastBatchChecked": 100,
+  "lastBatchChecked": 250,
   "lastBatchLinked": 0,
-  "lastBatchScanned": 102,
-  "lastWorkers": 4,
+  "lastBatchScanned": 250,
+  "lastWorkers": 3,
   "lastReasons": {
     "api_http_429": 100
   },
-  "updatedAt": "2026-10-22T20:09:20Z"
+  "updatedAt": "2026-10-23T15:43:06Z",
+  "phase": "gcd-sourceid-exact"
 }
