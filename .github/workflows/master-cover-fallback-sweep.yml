@@ -5,6 +5,8 @@ on:
     branches: [bridge-data]
     paths:
       - 'bridge/fallback-sweep/commands/**.json'
+  schedule:
+    - cron: '53 */2 * * *'
   workflow_dispatch:
 
 permissions:
@@ -40,6 +42,35 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+      - name: Wait for fast collection sweep to finish
+        shell: bash
+        run: |
+          set -euo pipefail
+          for TRY in $(seq 1 900); do
+            git fetch origin bridge-data --quiet
+            READY=$(python - <<'PY'
+          import json,subprocess
+          ok=[]
+          for i in range(4):
+              p=f'bridge/cache/master-cover-collection-shard-{i}-state.json'
+              try:
+                  raw=subprocess.check_output(['git','show',f'origin/bridge-data:{p}'],text=True)
+                  d=json.loads(raw); ok.append(bool(d.get('complete')))
+              except Exception:
+                  ok.append(False)
+          print('yes' if all(ok) else 'no')
+          PY
+            )
+            if [ "$READY" = "yes" ]; then
+              echo 'FAST_COLLECTION_SWEEP_COMPLETE'
+              git reset --hard origin/bridge-data
+              exit 0
+            fi
+            echo "Fast collection sweep still running (${TRY}/900)"
+            sleep 20
+          done
+          echo 'Fast collection sweep did not complete inside guard window'
+          exit 1
       - name: Resolve uncovered Tebeosfera covers shard ${{ matrix.shard }}
         shell: bash
         run: |
