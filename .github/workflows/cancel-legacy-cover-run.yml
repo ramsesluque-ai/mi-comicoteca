@@ -14,9 +14,9 @@ jobs:
   cancel:
     runs-on: ubuntu-latest
     steps:
-      - name: Force-cancel superseded per-issue sharded sweep
+      - name: Force-cancel legacy mixed GCD cover run
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh api --method POST "repos/${GITHUB_REPOSITORY}/actions/runs/40004172912/force-cancel" || true
-          echo 'PER_ISSUE_SHARDED_SWEEP_FORCE_CANCEL_REQUESTED'
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/actions/runs/40006377809/force-cancel" || true
+          echo 'LEGACY_MIXED_GCD_COVER_RUN_FORCE_CANCEL_REQUESTED'
