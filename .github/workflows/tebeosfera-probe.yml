@@ -14,41 +14,21 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Install probe dependencies
-        run: pip install --quiet requests beautifulsoup4
-      - name: Execute real Tebeosfera ISBN query
+      - name: Inspect generated advanced query format
         run: |
           python - <<'PY'
-          import requests,re,html
-          from bs4 import BeautifulSoup
-          from urllib.parse import urljoin
-          S=requests.Session(); S.headers.update({'User-Agent':'Mozilla/5.0 Chrome/153','Accept-Language':'es-ES,es;q=0.9','X-Requested-With':'XMLHttpRequest','Referer':'https://www.tebeosfera.com/buscador-avanzado/'})
-          isbn='9788417147648'
-          cond='isbn-deposito-issn-ean-doi-cdu-otro_registro/T/L/N///'
-          # This is the same DOM fragment that the advanced search builds in div_consulta_avanzada.
-          query=f'''<select id="select_0" class="ba_tabla"><option value="T3_numeros" selected>Números</option></select>
-          <select id="select_1n"><option value="si" selected>SÍ</option></select>
-          <select id="select_1" class="ba_condiciones"><option value="{cond}" selected>ISBN / DL / DOI / ...</option></select>
-          <input id="select_2" class="ba_valor" value="{isbn}" />'''
-          ep='https://www.tebeosfera.com/neko/php/ajax/buscador_avanzado_graba_consulta.php?web=1'
-          r=S.post(ep,data={'tabla':'T3_numeros','query':query,'puede_grabar_consulta':'no','asignacion_etiquetas':'no','tipo_consulta':'s','anno_dedicacion':''},timeout=30)
-          print('SAVE STATUS',r.status_code,'BODY',repr(r.text[:500]))
-          token=r.text.strip()
-          if not token: raise SystemExit('No query token returned')
-          u='https://www.tebeosfera.com/resultados-avanzados/'+token+'.html'
-          rr=S.get(u,timeout=30)
-          print('RESULT STATUS',rr.status_code,'URL',rr.url,'LEN',len(rr.text))
-          print('RESULT HEAD',re.sub(r'\s+',' ',html.unescape(rr.text[:12000])))
-          s=BeautifulSoup(rr.text,'html.parser')
-          links=[]
-          for a in s.select('a[href]'):
-            href=urljoin(rr.url,a.get('href') or '')
-            if '/numeros/' in href and href.endswith('.html') and href not in links: links.append(href)
-          print('NUMBER LINKS',len(links),links[:20])
-          for href in links[:10]:
-            p=S.get(href,timeout=30); ps=BeautifulSoup(p.text,'html.parser')
-            title=(ps.find('meta',attrs={'property':'og:title'}) or {}).get('content','')
-            img=(ps.find('meta',attrs={'property':'og:image'}) or {}).get('content','')
-            text=' '.join(ps.stripped_strings)
-            print('MATCH',href,'TITLE',title,'IMG',img,'HASISBN',isbn in re.sub(r'[^0-9Xx]','',text))
+          import requests,re
+          S=requests.Session(); S.headers.update({'User-Agent':'Mozilla/5.0 Chrome/153','Accept-Language':'es-ES,es;q=0.9'})
+          js=S.get('https://www.tebeosfera.com/neko/js/buscador_avanzado.js',timeout=30).text
+          print('LEN',len(js))
+          for pat in ['div_consulta_avanzada','consulta_avanzada','innerHTML = consulta','innerHTML=consulta','ba_monta_consulta','add_sql']:
+            print('\n===== PATTERN',pat,'=====')
+            start=0
+            count=0
+            while True:
+              pos=js.find(pat,start)
+              if pos<0 or count>=12: break
+              a=max(0,pos-1800); b=min(len(js),pos+4200)
+              print('\nCTX',count,'POS',pos,'\n',js[a:b])
+              start=pos+len(pat); count+=1
           PY
