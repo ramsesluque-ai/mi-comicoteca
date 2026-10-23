@@ -1,8 +1,8 @@
 'use strict';
-/* v60: Maestro, Catálogo, Portadas y búsqueda comparten overlay fresco y portada persistente. */
+/* v61: Maestro, Catálogo, Portadas y búsqueda comparten overlay fresco y portada persistente. */
 (function(){
   if(typeof allStore!=='function')return;
-  let syncing=false,timer=null;
+  let syncing=false,timer=null,remoteRefreshing=false;
   const code=v=>String(v??'').replace(/[^0-9Xx]/g,'').toUpperCase();
   const normUrl=v=>String(v||'').trim().replace(/^http:/i,'https:').replace(/[?#].*$/,'');
 
@@ -33,11 +33,12 @@
     freshen();
     try{return typeof mcSEOverrides==='function'?await mcSEOverrides():{}}catch{return{}}
   }
-  async function syncCatalog(limit=120){
-    if(syncing||!window.CoverVault?.attach||document.visibilityState==='hidden'||!navigator.onLine)return;
+  async function syncCatalog(limit=500){
+    if(syncing||!window.CoverVault?.attach||document.visibilityState==='hidden'||!navigator.onLine)return {saved:0,checked:0};
     syncing=true;const prev=!!window.__mcCoverBatchRunning;window.__mcCoverBatchRunning=true;
+    let saved=0,checked=0;
     try{
-      const [over,rows]=await Promise.all([freshOverrides(),allStore('comics')]);let saved=0,checked=0;
+      const [over,rows]=await Promise.all([freshOverrides(),allStore('comics')]);
       for(const x of rows){
         if(checked>=limit)break;
         if(!x||x.coverKey)continue;
@@ -45,16 +46,32 @@
         if(!u)continue;
         if(x.coverRejectedSourceUrl&&normUrl(x.coverRejectedSourceUrl)===normUrl(u))continue;
         checked++;
-        try{await window.CoverVault.attach(x,u,{sync:false});saved++}catch(e){console.warn('v60 cover sync',x.id,e)}
+        try{await window.CoverVault.attach(x,u,{sync:false});saved++}catch(e){console.warn('v61 cover sync',x.id,e)}
       }
-      if(saved){try{window.CloudSync?.schedule?.()}catch{};try{window.toast?.(`${saved} portada${saved===1?'':'s'} del Maestro incorporada${saved===1?'':'s'} al catálogo`)}catch{}}
+      if(saved){
+        try{window.CloudSync?.schedule?.()}catch{}
+        try{window.toast?.(`${saved} portada${saved===1?'':'s'} del Maestro incorporada${saved===1?'':'s'} al catálogo`)}catch{}
+      }
+      return {saved,checked};
     }finally{window.__mcCoverBatchRunning=prev;syncing=false}
   }
   function schedule(delay=300){clearTimeout(timer);timer=setTimeout(()=>syncCatalog(),Math.max(50,Number(delay)||300))}
 
+  async function refreshRemoteAndSync(){
+    if(remoteRefreshing||document.visibilityState==='hidden'||!navigator.onLine)return;
+    remoteRefreshing=true;
+    try{
+      freshen();
+      try{await window.mcRefreshMasterCoverOverlay?.()}catch(e){console.warn('v61 overlay refresh',e)}
+      freshen();
+      const r=await syncCatalog(1000);
+      if(r?.saved){try{await window.CoverVault?.hydrate?.()}catch{};try{if(typeof render==='function')await render()}catch{}}
+    }finally{remoteRefreshing=false}
+  }
+
   if(typeof window.mcSearchFichaAll==='function'){
     const base=window.mcSearchFichaAll;
-    window.mcSearchFichaAll=async function(...a){freshen();try{await window.mcRefreshMasterCoverOverlay?.()}catch{}freshen();return base.apply(this,a)};
+    window.mcSearchFichaAll=async function(...a){await refreshRemoteAndSync();freshen();return base.apply(this,a)};
     window.mcSearchFichaData=window.mcSearchFichaAll;window.mcSearchFichaCover=window.mcSearchFichaAll;
     window.mcCompleteByCode=async function(){return window.mcSearchFichaAll()};
   }
@@ -70,7 +87,15 @@
     const base=window.renderCovers;
     window.renderCovers=renderCovers=async function(...a){const r=await base.apply(this,a);try{window.CoverVault?.hydrate?.()}catch{}schedule(100);return r};
   }
-  window.mcRefreshAllCoversV60=async function(){freshen();try{await window.mcRefreshMasterCoverOverlay?.()}catch{}freshen();await syncCatalog(500);try{await window.mcRepairExistingCovers?.rerun?.()}catch{}try{await render()}catch{}};
-  window.addEventListener('load',()=>{freshen();schedule(700);setTimeout(()=>schedule(0),5000)});
-  window.addEventListener('focus',()=>{freshen();schedule(250)});
+  window.mcRefreshAllCoversV60=refreshRemoteAndSync;
+  window.mcRefreshAllCoversV61=refreshRemoteAndSync;
+
+  window.addEventListener('load',()=>{
+    freshen();
+    setTimeout(()=>refreshRemoteAndSync(),700);
+    setTimeout(()=>refreshRemoteAndSync(),5000);
+  });
+  window.addEventListener('focus',()=>setTimeout(()=>refreshRemoteAndSync(),150));
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(()=>refreshRemoteAndSync(),250)});
+  setInterval(()=>{if(document.visibilityState==='visible'&&navigator.onLine)refreshRemoteAndSync()},45000);
 })();
