@@ -1,0 +1,40 @@
+name: Collection crawler smoke
+
+on:
+  push:
+    branches: [bridge-data]
+    paths:
+      - 'bridge/collection-smoke/**.json'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: bridge-data
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          path: _main
+      - run: pip install --quiet requests beautifulsoup4 pillow
+      - name: Process five real Maestro collections
+        run: |
+          rm -f bridge/cache/master-cover-collection-shard-0-state.json bridge/cache/master-cover-collection-shard-0-overrides.json
+          python master_cover_tebeosfera_collections.py \
+            --master _main/master-data/publishers \
+            --shard-index 0 --shard-count 4 --batch 5 --workers 2
+          echo '--- STATE ---'
+          cat bridge/cache/master-cover-collection-shard-0-state.json
+          echo '--- OVERLAY COUNT ---'
+          python - <<'PY'
+          import json
+          p='bridge/cache/master-cover-collection-shard-0-overrides.json'
+          d=json.load(open(p))
+          print('SMOKE_OVERLAY_COUNT',len(d))
+          for k,v in list(d.items())[:5]: print('SMOKE_ENTRY',k,v.get('series'),v.get('issueNr'),v.get('coverUrl'))
+          PY
