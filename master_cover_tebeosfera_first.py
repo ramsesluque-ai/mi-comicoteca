@@ -128,8 +128,8 @@ def year_of(row):
     y = str(row.get('startYear') or '').strip()
     if re.fullmatch(r'19\d\d|20\d\d', y):
         return y
-    m = re.match(r'^(19\d\d|20\d\d)', str(row.get('publicationDate') or ''))
-    return m.group(1) if m else ''
+    mm = re.match(r'^(19\d\d|20\d\d)', str(row.get('publicationDate') or ''))
+    return mm.group(1) if mm else ''
 
 
 def pub_ok(pub, text):
@@ -367,7 +367,7 @@ def main():
         targets.append(row)
 
     linked = 0
-    workers = max(1, min(int(a.workers or 2), 3, len(targets) or 1))
+    workers = max(1, min(int(a.workers or 2), 6, len(targets) or 1))
     with ThreadPoolExecutor(max_workers=workers) as ex:
         futures = {ex.submit(resolve, row): row for row in targets}
         for fut in as_completed(futures):
