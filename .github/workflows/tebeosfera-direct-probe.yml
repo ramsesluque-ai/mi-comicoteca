@@ -19,36 +19,41 @@ jobs:
           ref: bridge-data
       - name: Python dependencies
         run: pip install --quiet requests beautifulsoup4
-      - name: Probe known Tebeosfera issue
+      - name: Probe Tebeosfera collection issue/card structure
         run: |
           python - <<'PY'
-          import requests
+          import requests,re,json
           from bs4 import BeautifulSoup
-          target='https://www.tebeosfera.com/numeros/alegres_historietas_1970_bruguera_13.html'
-          headers={
-            'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/153 Safari/537.36',
-            'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-            'Accept-Language':'es-ES,es;q=0.9,en;q=0.7',
-            'Referer':'https://www.tebeosfera.com/'
-          }
-          for label,url in [('DIRECT',target),('READER','https://r.jina.ai/http://www.tebeosfera.com/numeros/alegres_historietas_1970_bruguera_13.html')]:
-            try:
-              r=requests.get(url,headers=headers,timeout=25,allow_redirects=True)
-              print(label+'_STATUS',r.status_code)
-              print(label+'_FINAL_URL',r.url)
-              print(label+'_CONTENT_TYPE',r.headers.get('content-type'))
-              print(label+'_BYTES',len(r.content))
-              print(label+'_HEAD',r.text[:400].replace('\n',' '))
-              if label=='DIRECT' and r.status_code==200:
-                s=BeautifulSoup(r.text,'html.parser')
-                print('DIRECT_TITLE',s.title.get_text(' ',strip=True) if s.title else '')
-                mi=s.find('meta',attrs={'property':'og:image'})
-                print('DIRECT_OG_IMAGE',(mi.get('content') or '') if mi else '')
-                imgs=[]
-                for im in s.find_all('img')[:50]:
-                  src=im.get('data-src') or im.get('data-original') or im.get('src') or ''
-                  if src: imgs.append(src)
-                print('DIRECT_IMAGES',imgs[:20])
-            except Exception as e:
-              print(label+'_ERROR',repr(e))
+          target='https://www.tebeosfera.com/colecciones/blanca_1961_bruguera.html'
+          h={'User-Agent':'Mozilla/5.0 Chrome/153','Accept-Language':'es-ES,es;q=0.9','Referer':'https://www.tebeosfera.com/'}
+          r=requests.get(target,headers=h,timeout=25,allow_redirects=True)
+          print('STATUS',r.status_code,'BYTES',len(r.content),'URL',r.url)
+          s=BeautifulSoup(r.text,'html.parser')
+          links=[]
+          for a in s.select('a[href*="/numeros/"]'):
+            href=a.get('href') or ''
+            if 'blanca_1961_bruguera_' not in href: continue
+            imgs=[]
+            for im in a.find_all('img'):
+              src=im.get('data-src') or im.get('data-original') or im.get('data-lazy') or im.get('src') or ''
+              if src: imgs.append(src)
+            parent=a.parent
+            pimgs=[]
+            if parent:
+              for im in parent.find_all('img'):
+                src=im.get('data-src') or im.get('data-original') or im.get('data-lazy') or im.get('src') or ''
+                if src: pimgs.append(src)
+            links.append({'href':href,'text':a.get_text(' ',strip=True)[:120],'imgs':imgs[:4],'parent_imgs':pimgs[:4],'parent_html':str(parent)[:900] if parent else ''})
+          print('ISSUE_LINKS',len(links))
+          print(json.dumps(links[:8],ensure_ascii=False,indent=2))
+          # Also print all image URLs whose nearby markup mentions this collection.
+          candidates=[]
+          for im in s.find_all('img'):
+            src=im.get('data-src') or im.get('data-original') or im.get('data-lazy') or im.get('src') or ''
+            if not src: continue
+            p=str(im.parent)[:1200] if im.parent else ''
+            if 'blanca_1961_bruguera_' in p:
+              candidates.append({'src':src,'alt':im.get('alt') or '','parent':p[:500]})
+          print('IMAGE_CANDIDATES',len(candidates))
+          print(json.dumps(candidates[:8],ensure_ascii=False,indent=2))
           PY
