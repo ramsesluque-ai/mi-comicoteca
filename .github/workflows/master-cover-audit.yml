@@ -1,0 +1,74 @@
+name: Maestro cover audit
+
+on:
+  push:
+    branches: [bridge-data]
+    paths:
+      - 'bridge/audit/commands/**.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: comicoteca-master-cover-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - name: Checkout bridge-data
+        uses: actions/checkout@v6
+        with:
+          ref: bridge-data
+          fetch-depth: 0
+      - name: Checkout Maestro main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          path: _main
+          fetch-depth: 1
+      - name: Wait for fallback completion
+        shell: bash
+        run: |
+          set -euo pipefail
+          for TRY in $(seq 1 900); do
+            git fetch origin bridge-data --quiet
+            READY=$(python - <<'PY'
+          import json,subprocess
+          flags=[]
+          for i in range(4):
+              p=f'bridge/cache/master-cover-fallback-shard-{i}-state.json'
+              try:
+                  raw=subprocess.check_output(['git','show',f'origin/bridge-data:{p}'],text=True)
+                  flags.append(bool(json.loads(raw).get('complete')))
+              except Exception: flags.append(False)
+          print('yes' if all(flags) else 'no')
+          PY
+            )
+            if [ "$READY" = "yes" ]; then
+              git reset --hard origin/bridge-data
+              exit 0
+            fi
+            echo "Fallback still running (${TRY}/900)"
+            sleep 20
+          done
+          exit 1
+      - name: Run final coverage audit
+        run: python master_cover_audit.py
+      - name: Publish audit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add bridge/cache/master-cover-audit.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'Audit final Maestro cover coverage'
+            for ATTEMPT in 1 2 3 4 5 6 7 8; do
+              git pull --rebase origin bridge-data
+              if git push origin HEAD:bridge-data; then exit 0; fi
+              sleep $((ATTEMPT*2))
+            done
+            exit 1
+          fi
