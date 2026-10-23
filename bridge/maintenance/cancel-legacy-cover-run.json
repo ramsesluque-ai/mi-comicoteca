@@ -1,4 +1,4 @@
 {
-  "runId": 40004172912,
-  "reason": "Superseded by collection-level Tebeosfera sweep"
+  "runId": 40006377809,
+  "reason": "Retired mixed GCD+Tebeosfera pipeline; Tebeosfera-only pipeline is authoritative"
 }
