@@ -19,38 +19,18 @@ jobs:
           ref: bridge-data
       - name: Python dependencies
         run: pip install --quiet requests beautifulsoup4
-      - name: Probe Tebeosfera AJAX gallery parameters
+      - name: Extract exact Tebeosfera AJAX request function
         run: |
           python - <<'PY'
-          import requests,re,json
-          from bs4 import BeautifulSoup
-          from urllib.parse import urljoin
-          base='https://www.tebeosfera.com/colecciones/blanca_1961_bruguera.html'
-          h={'User-Agent':'Mozilla/5.0 Chrome/153','Accept-Language':'es-ES,es;q=0.9','Referer':'https://www.tebeosfera.com/'}
-          r=requests.get(base,headers=h,timeout=25)
-          s=BeautifulSoup(r.text,'html.parser')
-          gal=s.select_one('[data-url*="NKgal_ajax.php"]')
-          print('GAL_ATTRS',json.dumps(dict(gal.attrs) if gal else {},ensure_ascii=False,default=str))
-          scripts=[]
-          for sc in s.find_all('script'):
-            src=sc.get('src')
-            if src: scripts.append(urljoin(base,src))
-          print('SCRIPT_COUNT',len(scripts))
-          for u in scripts:
-            if any(k in u.lower() for k in ['nkgal','gal','neko','ficha','coleccion']): print('SCRIPT',u)
-          needles=['NKgal_ajax.php','data-rpp','paginacion-modo','ejecutarBusqueda','NKgal_pagina','paginaActual','pagina','offset','rpp']
-          # Search inline HTML and downloaded JS assets for AJAX call construction.
-          docs=[('HTML',r.text)]
-          for u in scripts:
-            try:
-              rr=requests.get(u,headers=h,timeout=12)
-              if rr.status_code==200 and ('nkgal' in rr.text.lower() or 'ejecutarbusqueda' in rr.text.lower()): docs.append((u,rr.text))
-            except Exception: pass
-          for label,text in docs:
-            found=False
-            for needle in needles:
-              for m in list(re.finditer(re.escape(needle),text,re.I))[:4]:
-                found=True
-                print('SOURCE',label,'NEEDLE',needle,'CTX',text[max(0,m.start()-600):m.start()+1200].replace('\n',' ')[:1800])
-            if found: print('SOURCE_END',label)
+          import requests,re
+          u='https://www.tebeosfera.com/neko/clases/NKGAL/NKgal.js'
+          h={'User-Agent':'Mozilla/5.0 Chrome/153','Referer':'https://www.tebeosfera.com/'}
+          t=requests.get(u,headers=h,timeout=25).text
+          start=t.find('function NKgal_request_categoria')
+          if start<0: raise SystemExit('FUNCTION_NOT_FOUND')
+          nxt=t.find('\nfunction ',start+20)
+          if nxt<0: nxt=min(len(t),start+12000)
+          print('FUNCTION_START')
+          print(t[start:nxt])
+          print('FUNCTION_END')
           PY
