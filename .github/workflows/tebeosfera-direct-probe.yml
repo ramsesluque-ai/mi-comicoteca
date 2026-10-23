@@ -17,6 +17,8 @@ jobs:
       - uses: actions/checkout@v6
         with:
           ref: bridge-data
+      - name: Python dependencies
+        run: pip install --quiet requests beautifulsoup4
       - name: Probe known Tebeosfera issue
         run: |
           python - <<'PY'
