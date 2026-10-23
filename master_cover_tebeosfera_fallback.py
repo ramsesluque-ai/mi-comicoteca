@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Tebeosfera-only second pass for Maestro covers left uncovered."""
+"""Fast Tebeosfera-only second pass for Maestro covers left uncovered.
+
+This pass broadens deterministic collection URL variants and, only for very
+small residual groups, tries deterministic issue URLs. It deliberately avoids
+Bing/DDG and per-issue deep search so the whole Maestro can be swept to
+completion. Truly unresolved rows remain explicit for the final audit.
+"""
 import argparse,json,time
 from concurrent.futures import ThreadPoolExecutor,as_completed
 from pathlib import Path
@@ -9,7 +15,6 @@ import master_cover_tebeosfera_fast as f
 import master_cover_tebeosfera_first as m
 
 ROOT=Path(__file__).resolve().parent
-# Keep verified Tebeosfera URLs; never bulk-copy fallback images into GitHub.
 m.save_image=lambda url,sid:str(url or '').strip()
 
 def load(path,default):
@@ -30,8 +35,7 @@ def all_existing_overlays():
     return merged
 
 def collections_complete():
-    flags=[]
-    for i in range(4):flags.append(bool(load(ROOT/f'bridge/cache/master-cover-collection-shard-{i}-state.json',{}).get('complete')))
+    flags=[bool(load(ROOT/f'bridge/cache/master-cover-collection-shard-{i}-state.json',{}).get('complete')) for i in range(4)]
     return all(flags),flags
 
 def broader_candidates(row):
@@ -42,12 +46,12 @@ def broader_candidates(row):
             for p in ps[:6]:
                 u=f'{c.BASE}/colecciones/{s}_{y}_{p}.html'
                 if u not in out:out.append(u)
-    return out[:48]
+    return out[:36]
 
 def fetch_broad_collection(row):
     session=requests.Session();session.headers.update(c.HEADERS)
     for url in broader_candidates(row):
-        try:r=session.get(url,timeout=10,allow_redirects=True)
+        try:r=session.get(url,timeout=7,allow_redirects=True)
         except Exception:continue
         if r.status_code!=200:continue
         soup=c.BeautifulSoup(r.text,'html.parser')
@@ -57,6 +61,12 @@ def fetch_broad_collection(row):
         cards=c.extract_cards(container,r.url);cards=c.ajax_all(session,soup,gal,r.url,cards)
         if cards:return r.url,cards
     return '',{}
+
+def direct_issue(row):
+    sid=str(row.get('sourceId') or '').strip()
+    if not sid.isdigit():return None
+    try:return f.try_links(row,sid,f.direct_issue_links(row)[:8],'fallback-direct')
+    except Exception as e:print('FALLBACK_DIRECT_ERROR',sid,repr(e));return None
 
 def process_group(key,rows,existing):
     missing=[r for r in rows if 'gcd:'+str(r.get('sourceId') or '').strip() not in existing]
@@ -68,17 +78,16 @@ def process_group(key,rows,existing):
             if sid.isdigit() and card:
                 e=c.make_entry(row,card,url);e['source']='Tebeosfera · colección fallback';entries['gcd:'+sid]=e
     remaining=[r for r in missing if 'gcd:'+str(r.get('sourceId') or '').strip() not in entries]
-    for row in remaining[:30]:
-        sid=str(row.get('sourceId') or '').strip()
-        if not sid.isdigit():continue
-        try:hit=f.resolve(row)
-        except Exception as e:print('FALLBACK_ISSUE_ERROR',sid,repr(e));hit=None
-        if hit:
-            hit=dict(hit);hit['source']='Tebeosfera · fallback exacto';entries['gcd:'+sid]=hit
+    # Small residual groups can be checked cheaply with deterministic issue URLs.
+    if len(remaining)<=5:
+        for row in remaining:
+            sid=str(row.get('sourceId') or '').strip();hit=direct_issue(row)
+            if hit:
+                hit=dict(hit);hit['source']='Tebeosfera · fallback directo';entries['gcd:'+sid]=hit
     return key,entries,'hit' if entries else 'miss'
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument('--master',required=True);ap.add_argument('--shard-index',type=int,required=True);ap.add_argument('--shard-count',type=int,default=4);ap.add_argument('--batch',type=int,default=40);ap.add_argument('--workers',type=int,default=3);a=ap.parse_args()
+    ap=argparse.ArgumentParser();ap.add_argument('--master',required=True);ap.add_argument('--shard-index',type=int,required=True);ap.add_argument('--shard-count',type=int,default=4);ap.add_argument('--batch',type=int,default=80);ap.add_argument('--workers',type=int,default=4);a=ap.parse_args()
     ready,flags=collections_complete()
     if not ready:print('FALLBACK_NOT_READY',flags);raise SystemExit(3)
     groups,keys,ambiguous,total_rows=c.read_master(a.master);shard_keys=[k for pos,k in enumerate(keys) if pos%a.shard_count==a.shard_index]
@@ -86,7 +95,7 @@ def main():
     state=load(state_path,{});overlay=load(overlay_path,{});existing=all_existing_overlays();existing.update(overlay);cursor=int(state.get('cursor') or 0)
     if cursor>=len(shard_keys):
         state.update({'complete':True,'cursor':len(shard_keys),'groupsTotal':len(shard_keys),'masterRows':total_rows,'updatedAt':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime())});save(state_path,state);save(overlay_path,overlay);print('FALLBACK_COMPLETE',json.dumps(state));return
-    batch_keys=shard_keys[cursor:cursor+max(1,a.batch)];stats={'hit':0,'miss':0,'covered':0,'linked':0};results={};workers=max(1,min(a.workers,3,len(batch_keys) or 1))
+    batch_keys=shard_keys[cursor:cursor+max(1,a.batch)];stats={'hit':0,'miss':0,'covered':0,'linked':0};results={};workers=max(1,min(a.workers,5,len(batch_keys) or 1))
     with ThreadPoolExecutor(max_workers=workers) as ex:
         futs={ex.submit(process_group,k,groups[k],existing):k for k in batch_keys}
         for fut in as_completed(futs):
