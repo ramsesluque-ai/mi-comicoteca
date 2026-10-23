@@ -1,0 +1,41 @@
+name: Tebeosfera fast validate
+
+on:
+  push:
+    branches: [bridge-data]
+    paths:
+      - 'bridge/fast-validate/**.json'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout bridge-data
+        uses: actions/checkout@v6
+        with:
+          ref: bridge-data
+          fetch-depth: 1
+      - name: Checkout Maestro main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          path: _main
+          fetch-depth: 1
+      - name: Python dependencies
+        run: pip install --quiet requests beautifulsoup4 pillow
+      - name: Validate direct Tebeosfera resolver
+        run: |
+          python master_cover_tebeosfera_fast.py \
+            --master _main/master-data/publishers \
+            --publisher Bruguera \
+            --batch 5 \
+            --workers 1 \
+            --reset
+          echo '--- STATE ---'
+          cat bridge/cache/master-cover-tebeosfera-state.json
+          echo '--- NEW COVER FILES ---'
+          git status --short bridge/covers bridge/cache/master-cover-overrides.json
