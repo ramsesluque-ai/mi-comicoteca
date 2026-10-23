@@ -1,22 +1,27 @@
 #!/usr/bin/env python3
 """Full-master Tebeosfera sweep using deterministic issue URLs only.
 
-This pass is intentionally conservative and fast: it walks every Maestro row,
-tries only direct Tebeosfera issue URLs, stores verified covers, and keeps a
-separate cursor so publisher-specific validations do not disturb the full scan.
-Unresolved records can be handled later by the slower collection/search fallback.
+This pass walks every Maestro row, tries only direct Tebeosfera issue URLs,
+stores verified covers, and keeps both its cursor and overlay isolated from
+interactive searches/backfills. The app merges this full overlay at read time.
 """
 from pathlib import Path
 import master_cover_tebeosfera_fast as f
 
-FULL_STATE = Path(__file__).resolve().parent / 'bridge' / 'cache' / 'master-cover-tebeosfera-full-state.json'
+ROOT = Path(__file__).resolve().parent
+FULL_STATE = ROOT / 'bridge' / 'cache' / 'master-cover-tebeosfera-full-state.json'
+FULL_OVERLAY = ROOT / 'bridge' / 'cache' / 'master-cover-full-overrides.json'
+
+# Isolate the long-running sweep from the interactive overlay so concurrent
+# searches cannot overwrite or conflict with sweep progress.
 f.m.STATE = FULL_STATE
+f.m.OVERLAY = FULL_OVERLAY
 
 
 def resolve_direct_only(row):
     sid = str(row.get('sourceId') or '').strip()
-    # Keep the bulk pass bounded. The most likely Tebeosfera slug variants are
-    # ordered first; 12 candidates covers normal, dotted-title and publisher aliases.
+    # Keep the bulk pass bounded. Direct canonical URL variants are enough for
+    # the first complete pass; unresolved rows are handled by slower fallback.
     return f.try_links(row, sid, f.direct_issue_links(row)[:12], 'full-direct')
 
 
