@@ -1,7 +1,7 @@
 {
-  "fileIndex": 204,
-  "rowIndex": 2542,
-  "scanned": 298911,
+  "fileIndex": 268,
+  "rowIndex": 871,
+  "scanned": 309246,
   "linked": 967,
   "passes": 1,
   "phase": "isbn-direct",
@@ -9,7 +9,7 @@
   "lastBatchChecked": 250,
   "lastBatchLinked": 0,
   "lastBatchTebeosfera": 0,
-  "lastBatchScanned": 56850,
+  "lastBatchScanned": 10335,
   "lastWorkers": 3,
-  "updatedAt": "2026-10-23T13:56:08Z"
+  "updatedAt": "2026-10-23T14:22:13Z"
 }
