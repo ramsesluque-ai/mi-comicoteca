@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: write
+  actions: read
 
 concurrency:
   group: comicoteca-full-tebeosfera-sweep
@@ -42,6 +43,25 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
 
+      - name: Wait for legacy cover writers
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for N in $(seq 1 180); do
+            JSON=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?branch=bridge-data&status=in_progress&per_page=100")
+            COUNT=$(printf '%s' "$JSON" | jq --argjson self "$GITHUB_RUN_ID" '[.workflow_runs[] | select(.id != $self) | select(.name=="Tebeosfera cover rebuild" or .name=="Tebeosfera fixed backfill" or .name=="Tebeosfera direct seed")] | length')
+            if [ "$COUNT" -eq 0 ]; then
+              echo 'No legacy cover writer is active'
+              exit 0
+            fi
+            echo "Legacy cover writer still active (${COUNT}); check ${N}/180"
+            sleep 20
+          done
+          echo 'Legacy writer did not finish within the guard window'
+          exit 1
+
       - name: Sweep full Maestro from Tebeosfera
         shell: bash
         run: |
@@ -52,8 +72,6 @@ jobs:
             ROUND=$((ROUND+1))
             echo "=== FULL TEBEOSFERA ROUND ${ROUND} ==="
 
-            # Always begin from the latest branch head. The full sweep writes its
-            # own overlay/state, so rebasing over interactive-search commits is safe.
             git pull --rebase origin bridge-data
 
             python master_cover_tebeosfera_full.py \
@@ -96,8 +114,6 @@ jobs:
               break
             fi
 
-            # Leave enough margin for Actions cleanup instead of being killed
-            # mid-batch. The next scheduled/manual run resumes from the cursor.
             if [ $((SECONDS-START)) -ge 19000 ]; then
               echo 'FULL_TEBEOSFERA_CHECKPOINT_EXIT'
               break
