@@ -1,0 +1,134 @@
+{
+  "totalRows": 160472,
+  "eligibleIssueRows": 157495,
+  "coveredEligibleRows": 24421,
+  "missingEligibleRows": 133074,
+  "coveragePct": 15.51,
+  "overlayKeysWithCover": 27697,
+  "sourceCounts": {
+    "Backfill · Tebeosfera": 2934,
+    "Backfill · OpenLibrary": 911,
+    "Backfill · MilComics": 20,
+    "Bridge · MilComics": 7,
+    "Bridge · Fuente española · respaldo": 1,
+    "Tebeosfera · colección": 17376,
+    "Tebeosfera · URL directa validada": 1622,
+    "Tebeosfera · colección fallback": 4817,
+    "Tebeosfera · fallback directo": 9
+  },
+  "topMissingPublishers": [
+    [
+      "Novaro",
+      33832
+    ],
+    [
+      "Bruguera",
+      12695
+    ],
+    [
+      "Planeta / DeAgostini",
+      10806
+    ],
+    [
+      "Editorial Valenciana",
+      5848
+    ],
+    [
+      "Toray",
+      4695
+    ],
+    [
+      "Panini",
+      4672
+    ],
+    [
+      "Ferma",
+      3102
+    ],
+    [
+      "El Jueves",
+      2830
+    ],
+    [
+      "Maga",
+      2671
+    ],
+    [
+      "Ibero Mundial de ediciones",
+      2480
+    ],
+    [
+      "Exclusivas Gráficas Ricart",
+      2375
+    ],
+    [
+      "Zinco",
+      2048
+    ],
+    [
+      "Vértice",
+      2044
+    ],
+    [
+      "Editorial Marco",
+      1977
+    ],
+    [
+      "La Vanguardia",
+      1898
+    ],
+    [
+      "Producciones Editoriales",
+      1847
+    ],
+    [
+      "Norma",
+      1827
+    ],
+    [
+      "Ediciones Chicos",
+      1679
+    ],
+    [
+      "Ediciones B",
+      1670
+    ],
+    [
+      "Hispano Americana",
+      1570
+    ],
+    [
+      "Ediciones Clíper",
+      1490
+    ],
+    [
+      "Ediciones Recreativas S. A.",
+      1441
+    ],
+    [
+      "Secretariats catequístics de Girona, Vic i Solsona",
+      1202
+    ],
+    [
+      "Ameller Editor",
+      1132
+    ],
+    [
+      "Casa Editorial Buigas",
+      1097
+    ]
+  ],
+  "collectionComplete": [
+    true,
+    true,
+    true,
+    true
+  ],
+  "fallbackComplete": [
+    true,
+    true,
+    true,
+    true
+  ],
+  "updatedAt": "2026-10-23T19:09:33Z"
+}
