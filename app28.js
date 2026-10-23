@@ -1,5 +1,5 @@
 'use strict';
-/* v63: Maestro mezcla base, overlay interactivo, barrido previo y 4 shards Tebeosfera. */
+/* v64: Maestro mezcla base, interactivo, barridos previos y barrido definitivo por colecciones Tebeosfera. */
 (function(){
   if(typeof mcSEOverrides!=='function'||typeof MCMasterData==='undefined')return;
   const STATIC='./master-data/cover-overrides.json';
@@ -9,7 +9,11 @@
     'https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/cache/master-cover-shard-0-overrides.json',
     'https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/cache/master-cover-shard-1-overrides.json',
     'https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/cache/master-cover-shard-2-overrides.json',
-    'https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/cache/master-cover-shard-3-overrides.json'
+    'https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/cache/master-cover-shard-3-overrides.json',
+    'https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/cache/master-cover-collection-shard-0-overrides.json',
+    'https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/cache/master-cover-collection-shard-1-overrides.json',
+    'https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/cache/master-cover-collection-shard-2-overrides.json',
+    'https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/cache/master-cover-collection-shard-3-overrides.json'
   ];
   let staticCache=null;
   const remoteCache=new Map(),remoteAt=new Map();
