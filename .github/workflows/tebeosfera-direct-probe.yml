@@ -19,39 +19,38 @@ jobs:
           ref: bridge-data
       - name: Python dependencies
         run: pip install --quiet requests beautifulsoup4
-      - name: Probe Tebeosfera collection pagination
+      - name: Probe Tebeosfera AJAX gallery parameters
         run: |
           python - <<'PY'
           import requests,re,json
           from bs4 import BeautifulSoup
+          from urllib.parse import urljoin
           base='https://www.tebeosfera.com/colecciones/blanca_1961_bruguera.html'
           h={'User-Agent':'Mozilla/5.0 Chrome/153','Accept-Language':'es-ES,es;q=0.9','Referer':'https://www.tebeosfera.com/'}
           r=requests.get(base,headers=h,timeout=25)
           s=BeautifulSoup(r.text,'html.parser')
-          print('BASE',r.status_code,len(r.content),'HAS_53', 'blanca_1961_bruguera_53.html' in r.text,'HAS_91','blanca_1961_bruguera_91.html' in r.text)
-          nav=[]
-          for a in s.find_all('a',href=True):
-            href=a['href']
-            text=a.get_text(' ',strip=True)
-            if ('blanca_1961_bruguera' in href or 'pagina' in href.lower() or 'page' in href.lower() or 'pag=' in href.lower() or 'p=' in href.lower()) and '/numeros/' not in href:
-              nav.append((text,href))
-          print('NAV',json.dumps(nav[-30:],ensure_ascii=False))
-          # Look for likely pagination/load-more clues in HTML/script text.
-          for pat in ['pagination','pagin','load more','cargar más','cargar mas','offset','limit','ajax','coleccion_numeros','NKgal']:
-            hits=[m.start() for m in re.finditer(pat,r.text,re.I)]
-            print('PATTERN',pat,'COUNT',len(hits))
-            for pos in hits[:3]: print('CTX',r.text[max(0,pos-250):pos+500].replace('\n',' ')[:800])
-          # Try common query conventions and count issue cards.
-          tests=['?p=2','?page=2','?pagina=2','?pag=2','/2','?offset=50','?start=50']
-          for q in tests:
-            u=base+q if q.startswith('?') else base.rstrip('.html')+q+'.html'
+          gal=s.select_one('[data-url*="NKgal_ajax.php"]')
+          print('GAL_ATTRS',json.dumps(dict(gal.attrs) if gal else {},ensure_ascii=False,default=str))
+          scripts=[]
+          for sc in s.find_all('script'):
+            src=sc.get('src')
+            if src: scripts.append(urljoin(base,src))
+          print('SCRIPT_COUNT',len(scripts))
+          for u in scripts:
+            if any(k in u.lower() for k in ['nkgal','gal','neko','ficha','coleccion']): print('SCRIPT',u)
+          needles=['NKgal_ajax.php','data-rpp','paginacion-modo','ejecutarBusqueda','NKgal_pagina','paginaActual','pagina','offset','rpp']
+          # Search inline HTML and downloaded JS assets for AJAX call construction.
+          docs=[('HTML',r.text)]
+          for u in scripts:
             try:
-              rr=requests.get(u,headers=h,timeout=15)
-              ss=BeautifulSoup(rr.text,'html.parser')
-              nums=[]
-              for a in ss.select('a[href*="/numeros/blanca_1961_bruguera_"]'):
-                mm=re.search(r'_([0-9]+)\.html',a.get('href') or '')
-                if mm: nums.append(int(mm.group(1)))
-              print('TEST',q,rr.status_code,len(rr.content),'COUNT',len(set(nums)),'MINMAX',(min(nums),max(nums)) if nums else None,'FINAL',rr.url)
-            except Exception as e: print('TEST_ERROR',q,repr(e))
+              rr=requests.get(u,headers=h,timeout=12)
+              if rr.status_code==200 and ('nkgal' in rr.text.lower() or 'ejecutarbusqueda' in rr.text.lower()): docs.append((u,rr.text))
+            except Exception: pass
+          for label,text in docs:
+            found=False
+            for needle in needles:
+              for m in list(re.finditer(re.escape(needle),text,re.I))[:4]:
+                found=True
+                print('SOURCE',label,'NEEDLE',needle,'CTX',text[max(0,m.start()-600):m.start()+1200].replace('\n',' ')[:1800])
+            if found: print('SOURCE_END',label)
           PY
