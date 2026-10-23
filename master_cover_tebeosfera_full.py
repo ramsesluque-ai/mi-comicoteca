@@ -20,9 +20,9 @@ f.m.OVERLAY = FULL_OVERLAY
 
 def resolve_direct_only(row):
     sid = str(row.get('sourceId') or '').strip()
-    # Keep the bulk pass bounded. Direct canonical URL variants are enough for
-    # the first complete pass; unresolved rows are handled by slower fallback.
-    return f.try_links(row, sid, f.direct_issue_links(row)[:12], 'full-direct')
+    # The six most likely deterministic variants cover the normal Tebeosfera
+    # URL patterns while keeping misses fast enough for a complete Maestro pass.
+    return f.try_links(row, sid, f.direct_issue_links(row)[:6], 'full-direct')
 
 
 f.m.resolve = resolve_direct_only
