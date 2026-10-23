@@ -19,18 +19,50 @@ jobs:
           ref: bridge-data
       - name: Python dependencies
         run: pip install --quiet requests beautifulsoup4
-      - name: Extract exact Tebeosfera AJAX request function
+      - name: Validate 300-cover Tebeosfera AJAX collection fetch
         run: |
           python - <<'PY'
-          import requests,re
-          u='https://www.tebeosfera.com/neko/clases/NKGAL/NKgal.js'
-          h={'User-Agent':'Mozilla/5.0 Chrome/153','Referer':'https://www.tebeosfera.com/'}
-          t=requests.get(u,headers=h,timeout=25).text
-          start=t.find('function NKgal_request_categoria')
-          if start<0: raise SystemExit('FUNCTION_NOT_FOUND')
-          nxt=t.find('\nfunction ',start+20)
-          if nxt<0: nxt=min(len(t),start+12000)
-          print('FUNCTION_START')
-          print(t[start:nxt])
-          print('FUNCTION_END')
+          import requests,re,json
+          from bs4 import BeautifulSoup
+          from urllib.parse import urljoin
+          base='https://www.tebeosfera.com/colecciones/blanca_1961_bruguera.html'
+          ajax='https://www.tebeosfera.com/neko/clases/NKGAL/NKgal_ajax.php'
+          h={'User-Agent':'Mozilla/5.0 Chrome/153','Accept-Language':'es-ES,es;q=0.9','Referer':base,'X-Requested-With':'XMLHttpRequest'}
+          s=requests.Session(); s.headers.update(h)
+          r=s.get(base,timeout=25); soup=BeautifulSoup(r.text,'html.parser')
+          gal=soup.select_one('#nkgal-galeria-720001')
+          pag=soup.select_one('.nkgal-paginacion[data-id="720001"]')
+          src=pag or gal
+          data={
+            'action':'buscar_NKgal_categoria','id':'720001','tabla_tabla':'T3_numeros','q':'','pagina':'1',
+            'modo_carrusel':gal.get('data-modo-carrusel','mixto'),'rpp':'300',
+            'paginacion_tipo':'paginas','paginacion_modo':'ajax','galeria_tipo':src.get('data-galeria','CATEGORIA'),
+            'carrusel_token':src.get('data-carrusel-token') or gal.get('data-carrusel-token',''),
+            'selector_rpp_max':'300','selector_rpp_opciones':'[50,100,200,300]','selector_rpp_posicion':'controles',
+            'adaptar_orientacion':src.get('data-adaptar-orientacion') or gal.get('data-adaptar-orientacion','1'),
+            'orientacion_portadas':src.get('data-orientacion-portadas') or gal.get('data-orientacion-portadas','vertical'),
+            'orden':src.get('data-order') or gal.get('data-order','numero ASC'),
+            'pie_leyenda':src.get('data-pie-leyenda') or gal.get('data-pie-leyenda','')
+          }
+          rr=s.post(ajax,data=data,timeout=30)
+          print('AJAX_STATUS',rr.status_code,'BYTES',len(rr.content),'CTYPE',rr.headers.get('content-type'))
+          try: j=rr.json()
+          except Exception:
+            print('BODY',rr.text[:2000]); raise
+          print('JSON_META',json.dumps({k:j.get(k) for k in ['ok','total_regs','pagina','has_more','error']},ensure_ascii=False))
+          hs=BeautifulSoup(j.get('html') or '','html.parser')
+          rows=[]
+          for a in hs.select('a[href*="/numeros/blanca_1961_bruguera_"]'):
+            href=a.get('href') or ''
+            m=re.search(r'_([0-9]+)\.html',href)
+            if not m: continue
+            parent=a.parent
+            im=parent.find('img') if parent else None
+            if im:
+              srcim=im.get('data-src') or im.get('data-original') or im.get('data-lazy') or im.get('src') or ''
+              rows.append((int(m.group(1)),urljoin(base,srcim)))
+          uniq=dict(rows)
+          print('COVERS',len(uniq),'MINMAX',(min(uniq),max(uniq)) if uniq else None)
+          print('SAMPLE',json.dumps(list(sorted(uniq.items()))[:3]+list(sorted(uniq.items()))[-3:],ensure_ascii=False))
+          if len(uniq)<90: raise SystemExit('TOO_FEW_COVERS')
           PY
