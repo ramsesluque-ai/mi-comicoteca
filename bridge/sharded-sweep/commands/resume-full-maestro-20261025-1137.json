@@ -1,0 +1,9 @@
+{
+  "action": "resume-full-maestro-sharded-sweep",
+  "shards": 4,
+  "source": "Tebeosfera",
+  "mode": "validated-remote-cover-url",
+  "preserveCursor": true,
+  "preserveVerified": true,
+  "requestedAt": "2026-10-25T10:37:00Z"
+}
