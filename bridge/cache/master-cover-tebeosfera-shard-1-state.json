@@ -1,11 +1,11 @@
 {
   "scope": "__all__",
   "fileIndex": 11,
-  "rowIndex": 11,
-  "scanned": 26340,
-  "linked": 5606,
+  "rowIndex": 512,
+  "scanned": 26841,
+  "linked": 5700,
   "passes": 0,
   "lastBatchChecked": 500,
-  "lastBatchLinked": 11,
-  "updatedAt": "2026-10-25T14:27:09Z"
+  "lastBatchLinked": 94,
+  "updatedAt": "2026-10-25T14:28:56Z"
 }
