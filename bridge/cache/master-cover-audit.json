@@ -1,57 +1,53 @@
 {
   "totalRows": 160472,
   "eligibleIssueRows": 157495,
-  "coveredEligibleRows": 24421,
-  "missingEligibleRows": 133074,
-  "coveragePct": 15.51,
-  "overlayKeysWithCover": 27697,
+  "coveredEligibleRows": 36541,
+  "missingEligibleRows": 120954,
+  "coveragePct": 23.2,
+  "overlayKeysWithCover": 39817,
   "sourceCounts": {
-    "Backfill · Tebeosfera": 2934,
+    "Backfill · Tebeosfera": 2917,
     "Backfill · OpenLibrary": 911,
     "Backfill · MilComics": 20,
     "Bridge · MilComics": 7,
     "Bridge · Fuente española · respaldo": 1,
-    "Tebeosfera · colección": 17376,
-    "Tebeosfera · URL directa validada": 1622,
-    "Tebeosfera · colección fallback": 4817,
+    "Tebeosfera · colección": 12809,
+    "Tebeosfera · URL directa validada": 20780,
+    "Tebeosfera · colección fallback": 2363,
     "Tebeosfera · fallback directo": 9
   },
   "topMissingPublishers": [
     [
       "Novaro",
-      33832
-    ],
-    [
-      "Bruguera",
-      12695
+      33140
     ],
     [
       "Planeta / DeAgostini",
       10806
     ],
     [
-      "Editorial Valenciana",
-      5848
-    ],
-    [
-      "Toray",
-      4695
+      "Bruguera",
+      9611
     ],
     [
       "Panini",
-      4672
+      4668
+    ],
+    [
+      "Toray",
+      3499
     ],
     [
       "Ferma",
-      3102
+      2963
     ],
     [
       "El Jueves",
-      2830
+      2514
     ],
     [
-      "Maga",
-      2671
+      "Editorial Valenciana",
+      2482
     ],
     [
       "Ibero Mundial de ediciones",
@@ -62,16 +58,16 @@
       2375
     ],
     [
-      "Zinco",
-      2048
+      "Maga",
+      2234
     ],
     [
       "Vértice",
-      2044
+      1961
     ],
     [
-      "Editorial Marco",
-      1977
+      "Zinco",
+      1953
     ],
     [
       "La Vanguardia",
@@ -82,28 +78,32 @@
       1847
     ],
     [
-      "Norma",
-      1827
-    ],
-    [
       "Ediciones Chicos",
       1679
     ],
     [
+      "Editorial Marco",
+      1648
+    ],
+    [
+      "Norma",
+      1619
+    ],
+    [
       "Ediciones B",
-      1670
-    ],
-    [
-      "Hispano Americana",
-      1570
-    ],
-    [
-      "Ediciones Clíper",
-      1490
+      1498
     ],
     [
       "Ediciones Recreativas S. A.",
       1441
+    ],
+    [
+      "Ediciones Clíper",
+      1301
+    ],
+    [
+      "Hispano Americana",
+      1295
     ],
     [
       "Secretariats catequístics de Girona, Vic i Solsona",
@@ -130,5 +130,5 @@
     true,
     true
   ],
-  "updatedAt": "2026-10-23T19:09:33Z"
+  "updatedAt": "2026-10-26T09:07:28Z"
 }
