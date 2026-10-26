@@ -1,0 +1,10 @@
+{
+  "batch": 80,
+  "rounds": 6,
+  "workers": 3,
+  "publisher": "",
+  "reset": false,
+  "scope": "uncovered-only",
+  "preserveVerified": true,
+  "requestedAt": "2026-10-26T09:22:00Z"
+}
