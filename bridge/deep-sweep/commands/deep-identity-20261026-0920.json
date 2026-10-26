@@ -1,0 +1,8 @@
+{
+  "action": "deep-identity-cover-sweep",
+  "scope": "uncovered-only",
+  "primarySource": "Tebeosfera",
+  "identity": ["publisher", "catalogHeader", "stage", "volume", "startYear", "issueNr", "isbn"],
+  "preserveVerified": true,
+  "requestedAt": "2026-10-26T09:20:00Z"
+}
