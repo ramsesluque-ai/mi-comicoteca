@@ -1,11 +1,11 @@
 {
-  "scope": "bruguera",
-  "fileIndex": 0,
-  "rowIndex": 20,
-  "scanned": 20,
-  "linked": 8,
+  "scope": "__all__",
+  "fileIndex": 2,
+  "rowIndex": 492,
+  "scanned": 899,
+  "linked": 0,
   "passes": 0,
-  "lastBatchChecked": 20,
-  "lastBatchLinked": 8,
-  "updatedAt": "2026-10-23T17:50:43Z"
+  "lastBatchChecked": 80,
+  "lastBatchLinked": 0,
+  "updatedAt": "2026-10-26T10:03:52Z"
 }
