@@ -1,0 +1,69 @@
+name: Tebeosfera exact bibliographic sweep v2
+
+on:
+  push:
+    branches: [bridge-data]
+    paths:
+      - 'bridge/exact-v2/commands/**.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: comicoteca-tebeosfera-exact-v2
+  cancel-in-progress: false
+
+jobs:
+  shard:
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: bridge-data
+          fetch-depth: 0
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          path: _main
+          fetch-depth: 1
+      - run: pip install --quiet requests beautifulsoup4 pillow
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+      - name: Resolve exact Tebeosfera identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          STATE="bridge/cache/master-cover-exact-v2-shard-${{ matrix.shard }}-state.json"
+          OVERLAY="bridge/cache/master-cover-exact-v2-shard-${{ matrix.shard }}-overrides.json"
+          START=$SECONDS
+          ROUND=0
+          while true; do
+            ROUND=$((ROUND+1))
+            git pull --rebase origin bridge-data
+            python master_cover_tebeosfera_exact_v2.py --master _main/master-data/publishers --shard-index '${{ matrix.shard }}' --shard-count 4 --batch 25 --workers 2
+            git add "$STATE" "$OVERLAY"
+            if ! git diff --cached --quiet; then
+              git commit -m "Tebeosfera exact v2 shard ${{ matrix.shard }} round ${ROUND}"
+              for ATTEMPT in 1 2 3 4 5 6 7 8 9 10; do
+                git pull --rebase origin bridge-data
+                if git push origin HEAD:bridge-data; then break; fi
+                sleep $((ATTEMPT*2))
+              done
+            fi
+            DONE=$(python - "$STATE" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1]));print('yes' if d.get('complete') else 'no')
+          PY
+            )
+            [ "$DONE" = yes ] && break
+            [ $((SECONDS-START)) -ge 19000 ] && break
+          done
+      - if: always()
+        run: cat "bridge/cache/master-cover-exact-v2-shard-${{ matrix.shard }}-state.json" 2>/dev/null || true
