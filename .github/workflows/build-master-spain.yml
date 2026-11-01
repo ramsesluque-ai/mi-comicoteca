@@ -7,6 +7,7 @@ on:
     paths:
       - 'scripts/build_master_spain.py'
       - 'scripts/augment_master_historical.py'
+      - 'scripts/validate_master_identity.py'
       - '.github/workflows/build-master-spain.yml'
   schedule:
     - cron: '20 4 2 * *'
@@ -40,6 +41,8 @@ jobs:
       - name: Restore enrichments
         run: |
           if [ -f /tmp/mc-master-enrichment/cover-overrides.json ]; then cp /tmp/mc-master-enrichment/cover-overrides.json master-data/cover-overrides.json; fi
+      - name: Validate global master identity
+        run: python scripts/validate_master_identity.py
       - name: Validate master
         run: |
           python - <<'PY'
@@ -63,6 +66,6 @@ jobs:
           if git diff --cached --quiet; then
             echo 'Maestro sin cambios'
           else
-            git commit -m 'Actualiza Maestro España + histórico Novaro desde GCD 20261001'
+            git commit -m 'Actualiza Maestro España + histórico desde GCD'
             git push origin main
           fi
