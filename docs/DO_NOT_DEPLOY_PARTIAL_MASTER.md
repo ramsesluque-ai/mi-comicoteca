@@ -1,0 +1,1 @@
+No desplegar ni cobrar con un Maestro parcial presentado como completo. El catálogo debe superar las validaciones de integridad y regresión antes del go-live.
