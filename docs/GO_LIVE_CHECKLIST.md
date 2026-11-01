@@ -6,7 +6,10 @@
 - [x] Colección privada limitada a auth.uid() = user_id.
 - [x] Usuario no puede autoasignarse membresía/rol por UPDATE de profiles.
 - [x] Clave única de series del Maestro definida.
-- [ ] Aplicar migración de integridad de números del Maestro.
+- [x] Aplicar migración de integridad de números del Maestro.
+- [x] Añadir botón «Copiar cómic» en la ficha con nuevo ID y limpieza de datos propios del número.
+- [ ] Validar «Copiar cómic»: conserva Editorial + Cabecera + Volumen/Etapa + Año y no sobrescribe el original.
+- [ ] Validar duplicado: misma colección/etapa + mismo número debe avisar y no crear duplicado accidental.
 - [ ] Consolidar dataset de bridge-data.
 - [ ] Importar master_series.
 - [ ] Importar master_comics.
