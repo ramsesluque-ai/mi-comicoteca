@@ -1,0 +1,38 @@
+name: Cloud sync safety smoke
+
+on:
+  push:
+    branches: [integration/supabase-master-2026-11-02, production-ready]
+    paths:
+      - 'cloud-sync.js'
+      - '.github/workflows/cloud-sync-smoke.yml'
+  pull_request:
+    paths:
+      - 'cloud-sync.js'
+      - '.github/workflows/cloud-sync-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Syntax check
+        run: node --check cloud-sync.js
+      - name: Verify non-destructive guards
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const s=fs.readFileSync('cloud-sync.js','utf8');
+          const required=['createPreSyncBackup',"allStore('comics')","allStore('purchases')","allStore('master')","allStore('settings')",'backup.comics!==before','after<before','if(local?.coverUrl)out.coverUrl=local.coverUrl','on_conflict=user_id,local_id','resolution=merge-duplicates'];
+          for(const x of required) if(!s.includes(x)) throw new Error('Falta guarda obligatoria: '+x);
+          const forbidden=[/clearStore\s*\(/,/\.clear\s*\(/,/indexedDB\.deleteDatabase\s*\(/];
+          for(const r of forbidden) if(r.test(s)) throw new Error('Operación destructiva detectada: '+r);
+          const backup=s.indexOf('const backup=await createPreSyncBackup()');
+          const upload=s.indexOf('const up=await pushLocal(onProgress)');
+          if(backup<0||upload<0||backup>upload) throw new Error('El backup no precede a la subida cloud');
+          console.log('CLOUD_SYNC_SAFETY_PASS true');
+          NODE
