@@ -5,6 +5,7 @@ Identidad global: Editorial + Cabecera + Volumen + Etapa + Año inicio.
 No fusiona homónimos. IDs UUIDv5 deterministas para permitir upsert idempotente.
 """
 import json, re, unicodedata, uuid
+from datetime import date, datetime
 from pathlib import Path
 from collections import defaultdict
 
@@ -22,6 +23,24 @@ def norm(v):
 def year(v):
     s=str(v or '').strip()
     return int(s) if s.isdigit() and 1000 <= int(s) <= 9999 else None
+
+def pg_date(v):
+    """Devuelve YYYY-MM-DD válido para Postgres o None si la fuente no contiene una fecha utilizable."""
+    s=str(v or '').strip()
+    if not s:
+        return None
+    candidates=[s, s[:10]]
+    for raw in candidates:
+        try:
+            return date.fromisoformat(raw).isoformat()
+        except ValueError:
+            pass
+    for fmt in ('%d/%m/%Y','%d-%m-%Y','%Y/%m/%d'):
+        try:
+            return datetime.strptime(s,fmt).date().isoformat()
+        except ValueError:
+            pass
+    return None
 
 def identity(r):
     pub=str(r.get('publisher') or '').strip()
@@ -42,7 +61,7 @@ def main():
     for p in sorted(PUBDIR.glob('*.json')):
         d=json.loads(p.read_text(encoding='utf-8'))
         if isinstance(d,list): rows.extend(x for x in d if isinstance(x,dict))
-    series={}; comics=[]; seen_issue=defaultdict(set); dup=[]
+    series={}; comics=[]; seen_issue=defaultdict(set); dup=[]; invalid_dates=[]
     for r in rows:
         pub,title,volume,stage,sy,key=identity(r)
         if not pub or not title: raise SystemExit('Editorial/cabecera vacía: '+str(r.get('id')))
@@ -53,16 +72,22 @@ def main():
         if ik and ik in seen_issue[key]: dup.append((key,issue,r.get('id')))
         if ik: seen_issue[key].add(ik)
         source_id=str(r.get('id') or r.get('sourceId') or '')
-        comic_key=source_id or key+'|'+issue+'|'+str(r.get('publicationDate') or '')+'|'+str(r.get('title') or '')
+        raw_date=str(r.get('publicationDate') or '').strip()
+        publication_date=pg_date(raw_date)
+        if raw_date and publication_date is None:
+            invalid_dates.append((r.get('id'),raw_date))
+        comic_key=source_id or key+'|'+issue+'|'+raw_date+'|'+str(r.get('title') or '')
         metadata={k:r.get(k) for k in ('source','sourceId','publisherOriginal','pages','price','color','format','dimensions','binding','language','variant','variantOf','status','tags','masterSnapshot') if r.get(k) not in (None,'')}
-        comics.append({'id':uid('comic',comic_key),'series_id':sid,'issue_number':issue or None,'title':str(r.get('title') or '').strip() or None,'publication_date':str(r.get('publicationDate') or '').strip() or None,'isbn':str(r.get('isbn') or '').strip() or None,'barcode':str(r.get('barcode') or '').strip() or None,'cover_url':str(r.get('coverUrl') or '').strip() or None,'cover_status':'automatic','metadata':metadata})
+        if raw_date and publication_date is None:
+            metadata['publicationDateRaw']=raw_date
+        comics.append({'id':uid('comic',comic_key),'series_id':sid,'issue_number':issue or None,'title':str(r.get('title') or '').strip() or None,'publication_date':publication_date,'isbn':str(r.get('isbn') or '').strip() or None,'barcode':str(r.get('barcode') or '').strip() or None,'cover_url':str(r.get('coverUrl') or '').strip() or None,'cover_status':'automatic','metadata':metadata})
     if dup: raise SystemExit(f'Duplicados dentro de identidad: {len(dup)}; muestra={dup[:10]}')
     OUT.mkdir(exist_ok=True)
     for p in OUT.glob('*.json'): p.unlink()
     slist=sorted(series.values(),key=lambda x:(norm(x['publisher']),norm(x['title']),norm(x['volume']),norm(x['stage']),x['start_year'] or -1))
     for i,b in chunks(slist): (OUT/f'master_series_{i:04d}.json').write_text(json.dumps(b,ensure_ascii=False,separators=(',',':')),encoding='utf-8')
     for i,b in chunks(comics): (OUT/f'master_comics_{i:04d}.json').write_text(json.dumps(b,ensure_ascii=False,separators=(',',':')),encoding='utf-8')
-    manifest={'sourceRows':len(rows),'series':len(slist),'comics':len(comics),'batchSize':BATCH,'seriesBatches':(len(slist)+BATCH-1)//BATCH,'comicBatches':(len(comics)+BATCH-1)//BATCH,'identity':'publisher+title+volume+stage+start_year','idStrategy':'UUIDv5 deterministic'}
+    manifest={'sourceRows':len(rows),'series':len(slist),'comics':len(comics),'batchSize':BATCH,'seriesBatches':(len(slist)+BATCH-1)//BATCH,'comicBatches':(len(comics)+BATCH-1)//BATCH,'identity':'publisher+title+volume+stage+start_year','idStrategy':'UUIDv5 deterministic','invalidPublicationDates':len(invalid_dates),'invalidPublicationDateSamples':invalid_dates[:20]}
     (OUT/'manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf-8')
     print(json.dumps(manifest,ensure_ascii=False))
 
