@@ -1,0 +1,37 @@
+name: Export Master for Supabase
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout integration branch
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Export deterministic Supabase batches
+        run: python scripts/export_master_supabase.py
+      - name: Verify manifest against canonical snapshot
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          manifest=json.loads(Path('supabase-import/manifest.json').read_text())
+          summary=json.loads(Path('master-data/summary.json').read_text())
+          assert manifest['comics']==summary['issues'], (manifest,summary)
+          assert manifest['series']==summary['series'], (manifest,summary)
+          print(manifest)
+          PY
+      - name: Upload import batches
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-master-import
+          path: supabase-import/
+          retention-days: 7
