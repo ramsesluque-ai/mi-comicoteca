@@ -1,0 +1,25 @@
+# Go-live checklist — Mi Comicoteca
+
+- [x] Rama productiva separada de main.
+- [x] Supabase productivo identificado y saludable.
+- [x] RLS habilitado en tablas sensibles.
+- [x] Colección privada limitada a auth.uid() = user_id.
+- [x] Usuario no puede autoasignarse membresía/rol por UPDATE de profiles.
+- [x] Clave única de series del Maestro definida.
+- [x] Aplicar migración de integridad de números del Maestro.
+- [x] Añadir botón «Copiar cómic» en la ficha con nuevo ID y limpieza de datos propios del número.
+- [ ] Validar «Copiar cómic»: conserva Editorial + Cabecera + Volumen/Etapa + Año y no sobrescribe el original.
+- [ ] Validar duplicado: misma colección/etapa + mismo número debe avisar y no crear duplicado accidental.
+- [ ] Consolidar dataset de bridge-data.
+- [ ] Importar master_series.
+- [ ] Importar master_comics.
+- [ ] Validar Spider-Man Forum multi-etapa.
+- [ ] Validar Batman Novaro Serie Águila.
+- [ ] E2E usuario A: Maestro → colección/wishlist → logout/login.
+- [ ] E2E usuario B: aislamiento frente a usuario A.
+- [ ] Stripe test checkout.
+- [ ] Stripe webhook idempotente activa/desactiva entitlement.
+- [ ] Portal/cancelación test.
+- [ ] Backup/rollback verificado.
+- [ ] Deploy Cloudflare desde commit aprobado.
+- [ ] Cobro live solo después de todos los gates.

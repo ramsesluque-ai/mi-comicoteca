@@ -1,0 +1,1 @@
+Master productivo: pendiente de carga. Fuente de reconstrucción localizada en rama `bridge-data`. No declarar catálogo completo hasta consolidación y validación de regresiones.

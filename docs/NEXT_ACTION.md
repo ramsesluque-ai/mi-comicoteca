@@ -1,0 +1,2 @@
+# Next action
+Consolidar los datos de `bridge-data` en un dataset de importación del Maestro. No poblar producción con datos parciales o sintéticos. Después: aplicar migración de integridad, importar y ejecutar validación E2E.

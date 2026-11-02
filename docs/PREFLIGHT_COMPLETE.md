@@ -1,0 +1,1 @@
+Preflight de seguridad e integridad preparado. Siguiente fase: consolidación e importación del Maestro.

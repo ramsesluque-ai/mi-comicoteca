@@ -1,0 +1,1 @@
+Entitlement (`role`, `membership_active`, `membership_valid_until`, `membership_source`) debe modificarse únicamente desde backend confiable/webhook. El cliente autenticado conserva UPDATE solo sobre campos de perfil no privilegiados.
