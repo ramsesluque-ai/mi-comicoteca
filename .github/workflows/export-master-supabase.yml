@@ -31,10 +31,15 @@ jobs:
           from pathlib import Path
           manifest=json.loads(Path('supabase-import/manifest.json').read_text())
           summary=json.loads(Path('master-data/summary.json').read_text())
+          # summary.series (5459) is the legacy source grouping. Supabase uses the
+          # canonical identity Editorial+Cabecera+Volumen+Etapa+Año, which
+          # intentionally separates 5792 series identities without losing issues.
+          assert manifest['sourceRows']==summary['issues'], (manifest,summary)
           assert manifest['comics']==summary['issues'], (manifest,summary)
-          assert manifest['series']==summary['series'], (manifest,summary)
           assert manifest['comics']==160472, manifest
-          assert manifest['series']==5459, manifest
+          assert manifest['series']==5792, manifest
+          assert manifest['comics']==manifest['sourceRows'], manifest
+          assert manifest['series']>=summary['series'], (manifest,summary)
           print(manifest)
           PY
       - name: Upload import batches
