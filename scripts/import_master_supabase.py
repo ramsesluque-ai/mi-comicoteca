@@ -35,11 +35,10 @@ def save_checkpoint(path: Path, done: set[str]) -> None:
 
 
 def discover_batches(root: Path):
+    """Descubre exactamente el formato plano producido por export_master_supabase.py."""
     files = []
     for table in ("master_series", "master_comics"):
-        table_dir = root / table
-        if table_dir.is_dir():
-            files.extend((table, p) for p in sorted(table_dir.glob("*.json")))
+        files.extend((table, p) for p in sorted(root.glob(f"{table}_*.json")))
     return files
 
 
@@ -69,7 +68,7 @@ def main() -> int:
 
     batches = discover_batches(args.export_dir)
     if not batches:
-        print("ERROR: no master_series/master_comics JSON batches found", file=sys.stderr)
+        print("ERROR: no master_series_*.json/master_comics_*.json batches found", file=sys.stderr)
         return 2
 
     done: set[str] = set()
@@ -77,6 +76,7 @@ def main() -> int:
         done.update(load_json(args.checkpoint).get("completed", []))
 
     total_rows = 0
+    table_counts = {"master_series": 0, "master_comics": 0}
     for table, path in batches:
         rows = load_json(path)
         if not isinstance(rows, list) or not rows:
@@ -84,8 +84,9 @@ def main() -> int:
         if any(not isinstance(r, dict) or not r.get("id") for r in rows):
             raise RuntimeError(f"Batch contains row without id: {path}")
         total_rows += len(rows)
+        table_counts[table] += len(rows)
 
-    print(f"Validated {len(batches)} batches / {total_rows} rows; completed checkpoint={len(done)}")
+    print(f"Validated {len(batches)} batches / {total_rows} rows; series={table_counts['master_series']} comics={table_counts['master_comics']}; completed checkpoint={len(done)}")
     if not args.apply:
         print("DRY RUN: no remote writes performed. Use --apply explicitly to import.")
         return 0
@@ -97,7 +98,7 @@ def main() -> int:
         return 2
 
     for table, path in batches:
-        token = f"{table}/{path.name}"
+        token = path.name
         if token in done:
             continue
         rows = load_json(path)
