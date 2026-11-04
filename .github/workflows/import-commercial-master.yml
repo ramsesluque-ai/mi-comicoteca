@@ -1,0 +1,23 @@
+name: Import commercial master into Supabase
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  import-master:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate required secrets
+        env:
+          SUPABASE_URL: ${{ secrets.COMICOTECA_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.COMICOTECA_SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          test -n "$SUPABASE_URL" || { echo "Missing COMICOTECA_SUPABASE_URL"; exit 1; }
+          test -n "$SUPABASE_SERVICE_ROLE_KEY" || { echo "Missing COMICOTECA_SUPABASE_SERVICE_ROLE_KEY"; exit 1; }
+      - name: Import snapshot with idempotent keys
+        env:
+          SUPABASE_URL: ${{ secrets.COMICOTECA_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.COMICOTECA_SUPABASE_SERVICE_ROLE_KEY }}
+        run: python3 scripts/import_commercial_master.py
