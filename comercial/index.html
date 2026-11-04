@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MI COMICOTECA | Acceso comercial</title><link rel="icon" href="../icon.svg"><link rel="stylesheet" href="../styles.css">
+<style>
+:root{color-scheme:dark}body{margin:0;background:#07111f;color:#eef4ff;font:16px system-ui,Arial,sans-serif}.shell{max-width:1120px;margin:auto;padding:24px}.head{display:flex;align-items:center;gap:16px;justify-content:space-between;flex-wrap:wrap}.logo{max-width:260px;height:auto}.panel{background:#102039;border:1px solid #28415f;border-radius:14px;padding:20px;margin:18px 0}.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}input,select{font:inherit;padding:11px;background:#061323;color:#fff;border:1px solid #54708d;border-radius:8px;min-width:0}button{font:inherit;padding:11px 16px;border:0;border-radius:8px;background:#2779c6;color:#fff;cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}.secondary{background:#344a62}.muted{color:#b6c9df}.item{border:1px solid #34506e;padding:14px;border-radius:10px;background:#102b46}.item strong{display:block}.hide{display:none!important}.error{color:#ffb7b7}.ok{color:#a9f2c2}a{color:#9bcfff}small{font-size:13px}.pill{display:inline-block;background:#213b57;border-radius:12px;padding:4px 9px}
+</style></head><body><div class="shell">
+<header class="head"><img class="logo" src="../brand-logo.svg" alt="MI COMICOTECA"><span class="pill">Acceso comercial · preparación</span></header>
+<p class="muted">Tu colección privada, catálogo maestro y wishlist. Los pagos reales permanecerán desactivados hasta validar Stripe y la publicación.</p>
+<div id="notice" role="status" aria-live="polite"></div>
+<section id="authPanel" class="panel"><h2>Acceso a MI COMICOTECA</h2>
+<div class="row"><input id="email" type="email" autocomplete="email" placeholder="Correo electrónico" aria-label="Correo electrónico"><input id="password" type="password" autocomplete="current-password" placeholder="Contraseña (mínimo 8 caracteres)" aria-label="Contraseña"></div>
+<div class="row" style="margin-top:12px"><button id="login">Entrar</button><button id="register" class="secondary">Crear cuenta</button></div>
+<p class="muted"><small>Al registrarte, tu colección empieza vacía. Es posible que debas confirmar tu correo.</small></p></section>
+<section id="appPanel" class="hide"><div class="panel"><div class="row"><b id="identity"></b><span id="membership" class="pill"></span><button id="logout" class="secondary">Salir</button></div>
+<p id="billingMessage" class="muted">Las contrataciones reales se habilitarán tras completar la validación.</p>
+<button id="checkout" disabled>Contratar membresía 9,99 €/mes</button></div>
+<div class="panel"><h2>Mi colección</h2><div class="row"><span id="ownCount"></span><select id="ownFilter"><option value="">Todos</option><option value="In Collection">En colección</option><option value="On Wish List">Wishlist</option><option value="For Sale">En venta</option><option value="Sold">Vendidos</option></select></div><div id="ownList" class="grid"></div></div>
+<div class="panel"><h2>Maestro</h2><p class="muted">Selecciona un ejemplar para añadirlo a tu colección o wishlist. Se muestran los primeros resultados de cada búsqueda.</p>
+<div class="row"><input id="search" placeholder="Buscar título, número o ISBN" aria-label="Buscar en el Maestro"><button id="searchBtn">Buscar</button></div><div id="masterList" class="grid"></div></div></section>
+<footer class="muted"><small>MI COMICOTECA · LUQUE AI Analytics. Esta página es una fase de validación, no una oferta de contratación activa.</small></footer>
+</div><script type="module" src="./app.js"></script></body></html>
