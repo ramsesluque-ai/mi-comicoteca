@@ -231,3 +231,13 @@
 #catbody.mc-list-mode .comic-card>.card-edit{grid-column:4!important;grid-row:1!important;position:static!important}
 #catbody.mc-list-mode .comic-card .comic-title{font-size:14px!important}
 @media(max-width:550px){#catbody.mc-list-mode .comic-card{grid-template-columns:22px 48px minmax(0,1fr)!important;gap:7px!important}#catbody.mc-list-mode .comic-card>.comic-cover{width:45px!important;height:65px!important}#catbody.mc-list-mode .comic-card>.card-edit{grid-column:3!important;grid-row:2!important;justify-self:end}}
+
+/* Catalog list v6: render actual rows; never show the card grid concurrently. */
+#catbody .comic-grid[hidden]{display:none!important}
+#catbody .mc-catalog-list[hidden]{display:none!important}
+#catbody .mc-catalog-list{display:flex!important;flex-direction:column!important;gap:7px!important;padding:10px 12px}
+#catbody .mc-catalog-list-row{display:grid!important;grid-template-columns:24px 60px minmax(0,1fr) auto auto!important;align-items:center!important;min-height:86px!important}
+#catbody .mc-catalog-list-cover{height:72px!important;width:54px!important}
+#catbody .mc-catalog-list-cover img{max-height:72px!important;max-width:54px!important;object-fit:contain!important}
+.mc-catalog-modes button[aria-pressed="true"]{background:#285b9b!important;color:#fff!important;border-color:#77aaff!important}
+@media(max-width:600px){#catbody .mc-catalog-list-row{grid-template-columns:22px 46px minmax(0,1fr) auto!important;gap:6px!important}#catbody .mc-catalog-list-status{display:none!important}}
