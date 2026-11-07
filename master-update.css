@@ -23,3 +23,14 @@
 .mc-master-open{font-size:11px;color:#87b6ff;font-weight:700}
 @media(max-width:1120px){.mc-master-series-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.mc-master-publishers{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.mc-master-series-filters{grid-template-columns:1fr!important}#mc-master-detail-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.mc-master-series-grid,.mc-master-publishers{grid-template-columns:1fr!important}}
+
+
+/* Maestro filters match Colecciones: search + editorial, optional compact advanced filters */
+.mc-master-series-panel>.mc-master-series-filters{display:grid!important;grid-template-columns:minmax(0,2fr) minmax(190px,1fr)!important;gap:10px!important;align-items:center;padding-bottom:8px}
+.mc-master-series-filters input,.mc-master-series-filters select{font-size:13px!important;min-height:38px}
+.mc-master-advanced-wrap{padding:0 12px 8px}
+.mc-master-advanced-toggle{font-size:11px!important;padding:5px 10px!important;min-height:28px!important}
+#mc-master-detail-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding-top:8px}
+#mc-master-detail-filters[hidden]{display:none!important}
+#mc-master-detail-filters select{font-size:12px!important;min-height:34px}
+@media(max-width:700px){.mc-master-series-panel>.mc-master-series-filters{grid-template-columns:1fr!important}#mc-master-detail-filters{grid-template-columns:repeat(2,minmax(0,1fr))}}
