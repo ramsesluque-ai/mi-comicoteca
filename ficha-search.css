@@ -93,3 +93,56 @@
  #modal .mc-comic-editor .formgrid>.span4.toolbar>.ficha-top-actions,
  #modal .mc-comic-editor .formgrid>.span4.toolbar>div[style*="flex:1"]{grid-column:1;grid-row:auto}
 }
+
+
+/* v117 — override legacy 138px/three-column !important toolbar layout */
+#modal .mc-comic-editor .modalbody .formgrid>.span4.toolbar{
+ display:grid!important;
+ grid-template-columns:minmax(255px,330px) minmax(0,1fr)!important;
+ grid-template-rows:auto auto 1fr!important;
+ align-items:start!important;
+ gap:12px 22px!important;
+}
+#modal .mc-comic-editor .modalbody .formgrid>.span4.toolbar>.cover.big,
+#modal .mc-comic-editor .modalbody .formgrid>.span4.toolbar>.coverph.big{
+ grid-column:1!important;grid-row:1 / span 3!important;
+ width:100%!important;max-width:330px!important;
+ height:465px!important;max-height:465px!important;
+ object-fit:contain!important;object-position:center center!important;
+ background:#061321!important;
+ border:1px solid #355675!important;border-radius:12px!important;
+}
+#modal .mc-comic-editor .modalbody .formgrid>.span4.toolbar>.ficha-top-actions{
+ grid-column:2!important;grid-row:1!important;
+ min-width:0!important;max-width:none!important;width:100%!important;
+ gap:7px!important;
+}
+#modal .mc-comic-editor .modalbody .formgrid>.span4.toolbar>div[style*="flex:1"]{
+ grid-column:2!important;grid-row:2!important;min-width:0!important;
+}
+#modal .mc-comic-editor .ficha-top-actions .btn,
+#modal .mc-comic-editor .ficha-top-actions .ficha-code-row .btn{
+ width:auto!important;min-height:32px!important;
+ padding:6px 11px!important;font-size:12px!important;
+ line-height:1.25!important;font-weight:650!important;
+}
+#modal .mc-comic-editor .ficha-top-actions>.btn{align-self:flex-start!important}
+#modal .mc-comic-editor .ficha-code-box{padding:9px 11px!important}
+#modal .mc-comic-editor .ficha-code-row{display:flex!important;align-items:center;gap:7px!important;flex-wrap:wrap}
+#modal .mc-comic-editor .ficha-code-row input{flex:1 1 180px!important;min-width:120px!important}
+#modal .mc-comic-editor .modalbody .formgrid>.span4.toolbar .small{font-size:10px!important}
+@media(max-width:760px){
+ #modal .mc-comic-editor .modalbody .formgrid>.span4.toolbar{grid-template-columns:minmax(150px,42%) minmax(0,1fr)!important;gap:10px!important}
+ #modal .mc-comic-editor .modalbody .formgrid>.span4.toolbar>.cover.big,
+ #modal .mc-comic-editor .modalbody .formgrid>.span4.toolbar>.coverph.big{height:340px!important;max-height:340px!important}
+}
+@media(max-width:520px){
+ #modal .mc-comic-editor .modalbody .formgrid>.span4.toolbar{grid-template-columns:1fr!important;grid-template-rows:auto!important}
+ #modal .mc-comic-editor .modalbody .formgrid>.span4.toolbar>.cover.big,
+ #modal .mc-comic-editor .modalbody .formgrid>.span4.toolbar>.coverph.big{
+  grid-column:1!important;grid-row:auto!important;width:min(100%,260px)!important;
+  height:370px!important;max-height:370px!important;justify-self:center!important;
+ }
+ #modal .mc-comic-editor .modalbody .formgrid>.span4.toolbar>.ficha-top-actions,
+ #modal .mc-comic-editor .modalbody .formgrid>.span4.toolbar>div[style*="flex:1"]{grid-column:1!important;grid-row:auto!important}
+}
