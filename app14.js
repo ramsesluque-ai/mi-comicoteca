@@ -32,8 +32,19 @@ openSeries=async function(encoded){
 function mcSeriesQuickPanel(html,title='Buscar datos y portada'){
   let p=document.getElementById('mcSeriesQuickPanel');
   if(!p){p=document.createElement('div');p.id='mcSeriesQuickPanel';p.className='ficha-search-box';const head=$('#modal .modalhead');head?.insertAdjacentElement('afterend',p)}
-  const hasCandidates=title.includes('Resultados')&&html.includes('mcAcceptSeriesQuick()');
+  const hasCandidates=title==='Resultados: datos y portada';
   p.innerHTML=`<div class="ficha-search-head"><b>${esc(title)}</b><div class="mc-quick-head-actions">${hasCandidates?'<button type="button" class="btn sm primary" onclick="mcAcceptSeriesQuick()">✓ Aceptar portada y datos</button>':''}<button type="button" class="btn sm" onclick="mcCancelSeriesQuick()">Cerrar</button></div></div><div class="ficha-search-content">${html}</div>`;
+  // Keep acceptance accessible even when the result list is long or the form footer is fixed.
+  if(hasCandidates){
+    const head=p.querySelector('.ficha-search-head');
+    if(head&&!head.querySelector('[data-cover-accept]')){
+      const btn=document.createElement('button');
+      btn.type='button';btn.className='btn sm primary';btn.dataset.coverAccept='1';
+      btn.textContent='✓ Aceptar portada y datos';
+      btn.onclick=()=>mcAcceptSeriesQuick();
+      head.insertBefore(btn,head.querySelector('button'));
+    }
+  }
   p.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 function mcCancelSeriesQuick(){document.getElementById('mcSeriesQuickPanel')?.remove();mcSeriesQuickCandidates=[];mcSeriesQuickSelected=0;mcSeriesQuickId=''}
