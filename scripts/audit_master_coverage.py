@@ -36,6 +36,18 @@ report = {
     "missingIsbn": sum(x["missingIsbn"] for x in counts.values()),
     "byPublisher": [{"publisher": name, **values} for name, values in sorted(counts.items(), key=lambda x: -x[1]["missingCover"])]
 }
+# Prioritize missing covers without inventing matches or importing unlicensed images.
+priority = ["Forum", "Zinco", "Novaro", "Panini", "Norma", "Bruguera", "Vértice", "ECC", "Planeta / DeAgostini"]
+report["priorityEditorials"] = [
+    {"publisher": name, **counts[name], "coverCompletionPct": round(100 * (counts[name]["issues"] - counts[name]["missingCover"]) / counts[name]["issues"], 2)}
+    for name in priority if name in counts
+]
+report["priorityMissingCovers"] = sum(x["missingCover"] for x in report["priorityEditorials"])
+import csv
+with (base / "coverage-priority.csv").open("w", encoding="utf-8-sig", newline="") as f:
+    writer = csv.DictWriter(f, fieldnames=["publisher", "issues", "missingCover", "missingSource", "missingIsbn", "coverCompletionPct"])
+    writer.writeheader()
+    writer.writerows(report["priorityEditorials"])
 dest = base / "coverage-audit.json"
 dest.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 print(f"{len(rows)} issues, {len(counts)} publishers, {report['missingCover']} missing covers")
