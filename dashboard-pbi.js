@@ -35,12 +35,14 @@
     if(!drill)return '';
     const selected=drillRows(rows),owned=selected.filter(x=>x.status==='In Collection'),wish=selected.filter(x=>x.status==='On Wish List');
     const secondary=drill.kind==='publisher'?countBy(owned,characterName):drill.kind==='universe'?countBy(owned,characterName):countBy(owned,universeName);
-    const series=countBy(owned,x=>[x.publisher,x.catalogHeader||x.series||'Sin cabecera',x.volume||x.stage||'Sin etapa',x.startYear||'Sin año'].join(' · '));
+    const seriesMap=new Map();
+    owned.forEach(x=>{const key=ckey(x);if(!seriesMap.has(key))seriesMap.set(key,{key,sample:x,count:0});seriesMap.get(key).count++;});
+    const series=[...seriesMap.values()].sort((a,b)=>b.count-a.count);
     const heading=drill.kind==='publisher'?'Editorial':drill.kind==='universe'?'Universo':'Personaje';
     const details=owned.map(x=>`<tr><td>${esc(x.publisher||'Sin dato')}</td><td>${esc(x.catalogHeader||x.series||'Sin cabecera')}</td><td>${esc(x.volume||x.stage||'—')}</td><td>${esc(x.issueNr??x.issue??x.number??'—')}</td><td>${esc(x.title||'Sin título acreditado')}</td></tr>`).join('');
     return `<section class="pbi-drill" aria-label="Desglose interactivo"><div class="pbi-drill-head"><div><small>DESGLOSE · ${heading}</small><h2>${esc(drill.value)}</h2><p>Explora los datos sin salir del dashboard. Las cifras reflejan los registros actuales.</p></div><button class="btn sm" onclick="PbiDashboard.clearDrill()">✕ Cerrar desglose</button></div>
       <div class="pbi-drill-kpis"><div><small>En colección</small><b>${fmt(owned.length)}</b></div><div><small>Wishlist</small><b>${fmt(wish.length)}</b></div><div><small>Series / etapas</small><b>${fmt(series.length)}</b></div><div><small>Editoriales</small><b>${fmt(countBy(owned,x=>x.publisher).length)}</b></div></div>
-      <div class="pbi-drill-grid"><div><h3>${drill.kind==='character'?'Universos':'Personajes'}</h3>${bars(secondary,drill.kind==='character'?'universe':'character',12)||'<p class="muted">Sin datos</p>'}</div><div><h3>Series y etapas</h3>${series.slice(0,12).map(([k,v])=>`<div class="pbi-drill-series"><span>${esc(k)}</span><b>${fmt(v)}</b></div>`).join('')||'<p class="muted">Sin datos</p>'}</div></div>
+      <div class="pbi-drill-grid"><div><h3>${drill.kind==='character'?'Universos':'Personajes'}</h3>${bars(secondary,drill.kind==='character'?'universe':'character',12)||'<p class="muted">Sin datos</p>'}</div><div><h3>Series y etapas</h3>${series.map(item=>`<button type="button" class="pbi-drill-series pbi-series-link" onclick="PbiDashboard.openCollection('${safeParam(item.key)}')" title="Abrir colección"><span>${esc([item.sample.publisher,item.sample.catalogHeader||item.sample.series||'Sin cabecera',item.sample.volume||item.sample.stage||'Sin etapa',item.sample.startYear||'Sin año'].join(' · '))}</span><b>${fmt(item.count)} ↗</b></button>`).join('')}||'<p class="muted">Sin datos</p>'}</div></div>
       <details class="pbi-drill-table"><summary>Ver todos los ejemplares (${fmt(owned.length)})</summary><div class="pbi-drill-scroll"><table><thead><tr><th>Editorial</th><th>Cabecera</th><th>Volumen / etapa</th><th>N.º</th><th>Título</th></tr></thead><tbody>${details}</tbody></table></div></details>
     </section>`;
   }
