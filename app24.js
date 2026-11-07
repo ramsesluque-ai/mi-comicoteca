@@ -3,7 +3,7 @@
 (function(){
   const MAX_SELECT=500,MAX_RUN=250,PER_PAGE=60;
   const order=['publisher','catalogHeader','volume','stage','startYear'];
-  const f={q:'',publisher:'',catalogHeader:'',volume:'',stage:'',startYear:'',status:'In Collection',coverState:'missing'};
+  const f={q:'',publisher:'',catalogHeader:'',volume:'',stage:'',startYear:'',status:'',coverState:'missing'};
   const selected=new Set();
   let coverPage=1,running=false,stopRequested=false,lastProgress='',lastFilteredIds=[];
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
