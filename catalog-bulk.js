@@ -77,92 +77,89 @@
     };
     host.querySelector('#mc-bulk-value')?.focus();
   }
-  function setView(next){
-    view=next;
+  let currentWish=false;
+  let currentRows=[];
+  function showView(){
     const root=document.getElementById('catbody');
-    if(root){
-      root.classList.toggle('mc-list-mode',next==='list');
-      const grid=root.querySelector('.comic-grid');
-      if(grid){
-        grid.style.setProperty('display',next==='list'?'flex':'grid','important');
-        if(next==='list')grid.style.setProperty('flex-direction','column','important');
-        else grid.style.removeProperty('flex-direction');
+    if(!root)return;
+    const grid=root.querySelector('.comic-grid');
+    const list=root.querySelector('.mc-catalog-list');
+    if(view==='list'){
+      if(grid)grid.hidden=true;
+      if(!list){
+        const host=document.createElement('div');
+        host.innerHTML=listHTML(currentRows);
+        const created=host.firstElementChild;
+        (grid||root.firstElementChild)?.before(created);
       }
-      root.querySelectorAll('.comic-card').forEach(card=>{
-        if(next==='list'){
-          card.style.setProperty('display','grid','important');
-          card.style.setProperty('grid-template-columns','28px 85px minmax(0,1fr)','important');
-          card.style.setProperty('width','100%','important');
-          card.style.setProperty('max-width','none','important');
-          card.style.setProperty('min-height','105px','important');
-          const cover=card.querySelector('.comic-cover');
-          if(cover){cover.style.setProperty('width','80px','important');cover.style.setProperty('height','95px','important');}
-        }else{
-          for(const prop of ['display','grid-template-columns','width','max-width','min-height'])card.style.removeProperty(prop);
-          const cover=card.querySelector('.comic-cover');
-          if(cover){cover.style.removeProperty('width');cover.style.removeProperty('height');}
-        }
-      });
+    }else{
+      if(grid)grid.hidden=false;
+      if(list)list.remove();
     }
-    document.querySelectorAll('[data-mc-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mcView===next)));
-  }
-  function setSelection(input,checked){
-    input.checked=checked;
-    if(checked)selected.add(input.dataset.mcSelect);
-    else selected.delete(input.dataset.mcSelect);
-    updateCount();
-  }
-  // Bind controls directly after each render; avoid relying on bubbling from clickable cards.
-  function bindCatalogControls(wish){
+    root.classList.toggle('mc-list-mode',view==='list');
     document.querySelectorAll('[data-mc-view]').forEach(button=>{
-      button.onclick=event=>{event.preventDefault();setView(button.dataset.mcView)};
+      const active=button.dataset.mcView===view;
+      button.setAttribute('aria-pressed',String(active));
+      button.classList.toggle('active',active);
+    });
+    root.querySelectorAll('[data-mc-select]').forEach(input=>{input.checked=selected.has(input.dataset.mcSelect)});
+    updateCount();
+    window.CoverVault?.hydrate?.(root);
+  }
+  function bindCatalogControls(){
+    document.querySelectorAll('[data-mc-view]').forEach(button=>{
+      button.onclick=event=>{
+        event.preventDefault();
+        view=button.dataset.mcView;
+        showView();
+      };
     });
     const apply=document.getElementById('mc-apply-bulk');
-    if(apply)apply.onclick=event=>{event.preventDefault();openBulkDialog(wish)};
+    if(apply)apply.onclick=event=>{event.preventDefault();openBulkDialog(currentWish)};
     const selectPage=document.getElementById('mc-select-page');
     if(selectPage)selectPage.onchange=()=>{
-      document.querySelectorAll('#catbody [data-mc-select]').forEach(input=>{
-        input.checked=selectPage.checked;
-        if(selectPage.checked)selected.add(input.dataset.mcSelect);
-        else selected.delete(input.dataset.mcSelect);
-      });
+      for(const row of currentRows){
+        if(selectPage.checked)selected.add(String(row.id));
+        else selected.delete(String(row.id));
+      }
       updateCount();
     };
-    document.querySelectorAll('#catbody [data-mc-select]').forEach(input=>{
-      input.onclick=event=>{event.stopPropagation();setSelection(input,input.checked)};
-      input.onchange=()=>setSelection(input,input.checked);
-    });
+    const root=document.getElementById('catbody');
+    if(root&&!root.dataset.mcSelectionBound){
+      root.dataset.mcSelectionBound='1';
+      root.addEventListener('click',event=>{
+        const input=event.target.closest?.('[data-mc-select]');
+        if(input)event.stopPropagation();
+        const edit=event.target.closest?.('[data-mc-edit]');
+        if(edit){event.preventDefault();event.stopPropagation();editComic(edit.dataset.mcEdit)}
+      },true);
+      root.addEventListener('change',event=>{
+        const input=event.target.closest?.('[data-mc-select]');
+        if(!input)return;
+        const id=input.dataset.mcSelect;
+        if(input.checked)selected.add(id);else selected.delete(id);
+        updateCount();
+      },true);
+    }
   }
   renderCat=async function(wish=false){
+    currentWish=wish;
     const out=await originalRender(wish);
     const root=document.getElementById('catbody');
     if(!root)return out;
     const visible=await getVisible(wish);
-    const pageRows=visible.slice((page-1)*PAGE,page*PAGE);
-    if(view==='list'){
-      // Preserve the same cards and IDs: CSS presents them as rows, without data loss.
-    }
-    {
-      const cards=root.querySelectorAll('.comic-grid .comic-card');
-      cards.forEach((card,i)=>{
-        const row=pageRows[i];if(!row)return;
-        const checkbox=document.createElement('input');
-        checkbox.type='checkbox';checkbox.className='mc-card-select';checkbox.dataset.mcSelect=row.id;checkbox.setAttribute('aria-label','Seleccionar '+label(row));
-        checkbox.addEventListener('pointerdown',e=>e.stopPropagation());
-
-        card.prepend(checkbox);
-      });
-    }
-    root.querySelectorAll('[data-mc-select]').forEach(input=>{input.checked=selected.has(input.dataset.mcSelect)});
-    root.querySelectorAll('[data-mc-edit]').forEach(btn=>btn.onclick=()=>editComic(btn.dataset.mcEdit));
-    
-    const pageSelect=document.getElementById('mc-select-page');
-    
-    
-    bindCatalogControls(wish);
-    setView(view);
-    updateCount();
-    setTimeout(()=>window.CoverVault?.hydrate?.(root),0);
+    currentRows=visible.slice((page-1)*PAGE,page*PAGE);
+    root.querySelectorAll('.comic-grid .comic-card').forEach((card,i)=>{
+      const row=currentRows[i];if(!row)return;
+      const input=document.createElement('input');
+      input.type='checkbox';
+      input.className='mc-card-select';
+      input.dataset.mcSelect=String(row.id);
+      input.setAttribute('aria-label','Seleccionar '+label(row));
+      card.prepend(input);
+    });
+    bindCatalogControls();
+    showView();
     return out;
   };
 })();
