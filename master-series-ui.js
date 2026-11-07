@@ -1,7 +1,7 @@
 'use strict';
 /* Master series browser: same series-card layout as personal Collections. Publisher chunks load on demand. */
 (function(){
-const state={publisher:'',q:'',header:'',volume:'',stage:'',year:'',status:'',page:1,serial:0};
+const state={publisher:'',q:'',header:'',volume:'',stage:'',year:'',page:1,serial:0};
 const normalize=v=>String(v??'').trim();
 const option=(value,label,selected)=>'<option value="'+esc(value)+'"'+(value===selected?' selected':'')+'>'+esc(label)+'</option>';
 const unique=(rows,key)=>[...new Set(rows.map(x=>normalize(x[key])).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es',{numeric:true}));
@@ -19,7 +19,6 @@ masterView=async function(){
  '<label class="mc-mf mc-mf-volume"><span>▥ VOLUMEN</span><select data-master-filter="volume" aria-label="Volumen">'+option('','Todos los volúmenes',state.volume)+'</select></label>'+
  '<label class="mc-mf mc-mf-stage"><span>◆ ETAPA</span><select data-master-filter="stage" aria-label="Etapa">'+option('','Todas las etapas',state.stage)+'</select></label>'+
  '<label class="mc-mf mc-mf-year"><span>◷ AÑO DE INICIO</span><select data-master-filter="startYear" aria-label="Año de inicio">'+option('','Todos los años',state.year)+'</select></label>'+
- '<label class="mc-mf mc-mf-status"><span>● ESTADO</span><select id="mc-master-status" aria-label="Estado">'+option('','Todos los estados',state.status)+option('In Collection','En colección',state.status)+option('On Wish List','Wishlist',state.status)+option('missing','No incorporados',state.status)+'</select></label>'+
  '<div class="mc-mf-hint" id="mc-master-filter-hint">Sin filtros activos · se muestran todos los registros</div>'+
  '</div><div id="masterbody">'+info()+'</div></div>';
 };
@@ -31,10 +30,8 @@ renderMaster=async function(){
  const q=normalize(document.getElementById('mq')?.value||'');state.q=q;filters.q=q;
  const idx=await mcSEMasterIndex();
  if(token!==state.serial)return;
- const statusSelect=document.getElementById('mc-master-status');
- if(statusSelect){statusSelect.value=state.status;statusSelect.onchange=()=>{state.status=statusSelect.value;state.page=1;renderMaster()};}
  const hint=document.getElementById('mc-master-filter-hint');
- if(hint)hint.textContent=[q&&'Búsqueda activa',pub&&'Editorial: '+pub,state.header&&'Cabecera: '+state.header,state.volume&&'Volumen: '+state.volume,state.stage&&'Etapa: '+state.stage,state.year&&'Año: '+state.year,state.status&&'Estado filtrado'].filter(Boolean).join(' · ')||'Sin filtros activos · se muestran todos los registros';
+ if(hint)hint.textContent=[q&&'Búsqueda activa',pub&&'Editorial: '+pub,state.header&&'Cabecera: '+state.header,state.volume&&'Volumen: '+state.volume,state.stage&&'Etapa: '+state.stage,state.year&&'Año: '+state.year].filter(Boolean).join(' · ')||'Sin filtros activos · se muestran todos los registros';
 
  if(!pub){
    document.querySelectorAll('[data-master-filter]').forEach(el=>{el.innerHTML=option('',{catalogHeader:'Todas las cabeceras',volume:'Todos los volúmenes',stage:'Todas las etapas',startYear:'Todos los años'}[el.dataset.masterFilter],'');el.disabled=true;});
@@ -57,13 +54,7 @@ renderMaster=async function(){
    if(q&&!mcSENorm([r.publisher,r.catalogHeader,r.series,r.title,r.isbn,r.issueNr].join(' ')).includes(mcSENorm(q)))return false;
    return checks.every(([field,prop])=>!state[prop]||normalize(r[field])===state[prop]);
  });
- if(state.status){
-   const owned=await allStore('comics');
-   if(token!==state.serial)return;
-   const match=new Map();
-   for(const x of owned){const key=mcMasterGroupKey(x)+'|'+String(x.issueNr||x.issue||'').trim();if(!match.has(key))match.set(key,new Set());match.get(key).add(x.status);}
-   filtered=filtered.filter(x=>{const key=mcMasterGroupKey(x)+'|'+String(x.issueNr||x.issue||'').trim();const statuses=match.get(key);return state.status==='missing'?!statuses:!!statuses?.has(state.status)});
- }
+
  const groups=new Map();
  for(const r of filtered){const key=mcMasterGroupKey(r);if(!groups.has(key))groups.set(key,{sample:r,cover:null,count:0});const g=groups.get(key);g.count++;if(!g.cover&&r.coverUrl)g.cover=r}
  const list=[...groups.entries()].sort((a,b)=>mcMasterGroupLabel(a[1].sample).localeCompare(mcMasterGroupLabel(b[1].sample),'es',{numeric:true}));
