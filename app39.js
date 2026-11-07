@@ -29,8 +29,8 @@
     const m={};
     for(const x of filtered){
       const k=api.resolvedKey(x,st);
-      if(!m[k])m[k]={sample:x,cover:null,haveSet:new Set(),wishSet:new Set(),personalSet:new Set(),inRecords:0,wishRecords:0};
-      const g=m[k],ik=api.issueKey(x);g.personalSet.add(ik);
+      if(!m[k])m[k]={sample:x,cover:null,haveSet:new Set(),wishSet:new Set(),personalSet:new Set(),inRecords:0,wishRecords:0,complete:false};
+      const g=m[k],ik=api.issueKey(x);g.personalSet.add(ik);if(String(Array.isArray(x.tags)?x.tags.join(','):x.tags||'').split(/[,;|\n]+/).some(t=>t.trim().toLocaleLowerCase('es')==='completa'))g.complete=true;
       if(x.status==='In Collection'){g.haveSet.add(ik);g.inRecords++}
       if(x.status==='On Wish List'){g.wishSet.add(ik);g.wishRecords++}
       if(!g.cover&&(x.coverUrl||x.coverKey||x.coverSourceUrl))g.cover=x;
@@ -45,11 +45,11 @@
     const per=60,pages=Math.max(1,Math.ceil(a.length/per));page=Math.max(1,Math.min(page,pages));
     const slice=a.slice((page-1)*per,page*per),body=document.querySelector('#seriesbody');if(!body)return;
     body.innerHTML=`<div class="series-grid visual">${slice.map(([k,x])=>{
-      const pct=null; // Do not infer completion from incomplete static series counts.
+      const pct=x.complete?100:null; // Only explicit 'completa' tag confirms 100%; never infer from issue numbering.
       const s=x.cover||x.sample;
-      const barColor='transparent';
+      const barColor=x.complete?'var(--ok)':'transparent';
       const dup=x.duplicates?`<div class="muted small">${x.duplicates} registro${x.duplicates===1?'':'s'} duplicado${x.duplicates===1?'':'s'} detectado${x.duplicates===1?'':'s'}</div>`:'';
-      return `<article class="series-card visual" onclick="openSeries('${encodeURIComponent(k)}')"><div class="series-cover">${img(s,'cover seriescover')}</div><div class="series-content"><div class="comic-kicker">${esc(x.sample.publisher||'Sin editorial')}</div><div class="series-title">${esc(x.sample.catalogHeader||x.sample.series)}</div><div class="master-meta">${esc([x.sample.volume&&('Vol. '+x.sample.volume),x.sample.stage,x.sample.startYear].filter(Boolean).join(' · ')||'Edición sin identificar')}</div><div class="series-stats"><b>${x.have}</b> en colección · <b>${x.wish}</b> wishlist · <b>${x.total}</b> números registrados</div><div class="series-percent muted">Total publicado sin verificar</div>${dup}</div></article>`;
+      return `<article class="series-card visual" onclick="openSeries('${encodeURIComponent(k)}')"><div class="series-cover">${img(s,'cover seriescover')}</div><div class="series-content"><div class="comic-kicker">${esc(x.sample.publisher||'Sin editorial')}</div><div class="series-title">${esc(x.sample.catalogHeader||x.sample.series)}</div><div class="master-meta">${esc([x.sample.volume&&('Vol. '+x.sample.volume),x.sample.stage,x.sample.startYear].filter(Boolean).join(' · ')||'Edición sin identificar')}</div><div class="progress"><span style="width:${x.complete?100:0}%;background:${barColor}"></span></div><div class="series-stats"><b>${x.have}</b> en colección · <b>${x.wish}</b> wishlist · <b>${x.total}</b> números registrados</div><div class="series-percent ${x.complete?'':'muted'}">${x.complete?'100% · Completa':'Total publicado sin verificar'}</div>${dup}</div></article>`;
     }).join('')||'<div class="empty">Sin resultados con estos filtros.</div>'}</div><div class="pager"><span>${a.length.toLocaleString('es-ES')} colecciones · Página ${page}/${pages}</span><span><button class="btn sm" ${page<=1?'disabled':''} onclick="page--;renderSeries()">Anterior</button> <button class="btn sm" ${page>=pages?'disabled':''} onclick="page++;renderSeries()">Siguiente</button></span></div>`;
     const sq=document.querySelector('#sq');if(sq)sq.oninput=()=>{filters.q=sq.value;page=1;renderSeries()};
     if(typeof mcVFPaint==='function')mcVFPaint();
