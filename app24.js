@@ -3,7 +3,7 @@
 (function(){
   const MAX_SELECT=500,MAX_RUN=250,PER_PAGE=60;
   const order=['publisher','catalogHeader','volume','stage','startYear'];
-  const f={q:'',publisher:'',catalogHeader:'',volume:'',stage:'',startYear:'',status:'In Collection',coverState:'pending'};
+  const f={q:'',publisher:'',catalogHeader:'',volume:'',stage:'',startYear:'',status:'In Collection',coverState:'missing'};
   const selected=new Set();
   let coverPage=1,running=false,stopRequested=false,lastProgress='',lastFilteredIds=[];
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -16,9 +16,9 @@
 
   function escOpt(v){return typeof esc==='function'?esc(v):String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
   function byStatus(rows){if(!f.status)return rows;if(f.status==='__blank__')return rows.filter(x=>!x.status);return rows.filter(x=>x.status===f.status)}
-  function byCover(rows){if(f.coverState==='pending')return rows.filter(x=>!x.coverKey);if(f.coverState==='missing')return rows.filter(x=>!x.coverKey&&!x.coverUrl);if(f.coverState==='external')return rows.filter(x=>!x.coverKey&&hasExternal(x));if(f.coverState==='stored')return rows.filter(x=>!!x.coverKey);return rows}
+  function byCover(rows){return rows.filter(x=>!x.coverKey&&!hasExternal(x))}
   function filterCore(rows,includeSearch=true){let a=byStatus(rows);for(const k of order)if(f[k])a=a.filter(x=>val(x,k)===String(f[k]));if(includeSearch&&f.q){const q=norm(f.q);a=a.filter(x=>norm([x.publisher,x.catalogHeader,x.series,x.volume,x.stage,x.startYear,x.title,x.issueNr,x.isbn].join(' ')).includes(q))}return byCover(a)}
-  function rowsBefore(rows,field){let a=byStatus(rows);for(const k of order){if(k===field)break;if(f[k])a=a.filter(x=>val(x,k)===String(f[k]))}return a}
+  function rowsBefore(rows,field){let a=byCover(byStatus(rows));for(const k of order){if(k===field)break;if(f[k])a=a.filter(x=>val(x,k)===String(f[k]))}return a}
   function values(rows,field){return [...new Set(rows.map(x=>val(x,field)).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),'es',{numeric:true,sensitivity:'base'}))}
   function selectHtml(id,label,vals,current){return `<select id="${id}" ${running?'disabled':''} onchange="AutoCover.setFilter('${id}',this.value)"><option value="">${label}</option>${vals.map(v=>`<option value="${escOpt(v)}" ${String(current)===String(v)?'selected':''}>${escOpt(v)}</option>`).join('')}</select>`}
   function locked(){if(!running)return false;toast('Detén primero el lote de portadas');return true}
@@ -52,15 +52,15 @@
     const pages=Math.max(1,Math.ceil(filtered.length/PER_PAGE));coverPage=Math.max(1,Math.min(coverPage,pages));const slice=filtered.slice((coverPage-1)*PER_PAGE,coverPage*PER_PAGE);lastFilteredIds=slice.filter(x=>!x.coverKey).map(x=>String(x.id));
     const controls=document.getElementById('mcCoverControls');if(!controls)return;
     controls.innerHTML=`<div class="cover-stats"><span class="cover-stat ok">${own.toLocaleString('es-ES')} propias/sincronizadas</span><span class="cover-stat">${external.toLocaleString('es-ES')} enlazadas externas</span><span class="cover-stat miss">${missing.toLocaleString('es-ES')} sin portada</span></div>
-    <div class="filters covers-filters" style="padding:12px 15px">
-      <input id="coverQ" ${running?'disabled':''} value="${escOpt(f.q)}" placeholder="Buscar ficha…" oninput="AutoCover.setSearch(this.value)">
-      ${selectHtml('publisher','Todas las editoriales',pubs,f.publisher)}
-      ${selectHtml('catalogHeader','Todas las series/cabeceras',headers,f.catalogHeader)}
-      ${selectHtml('volume','Todos los volúmenes',vols,f.volume)}
-      ${selectHtml('stage','Todas las etapas',stages,f.stage)}
-      ${selectHtml('startYear','Todos los años',years,f.startYear)}
-      <select ${running?'disabled':''} onchange="AutoCover.setStatus(this.value)"><option value="" ${!f.status?'selected':''}>Todos los estados</option><option value="In Collection" ${f.status==='In Collection'?'selected':''}>En colección</option><option value="On Wish List" ${f.status==='On Wish List'?'selected':''}>Wishlist</option><option value="__blank__" ${f.status==='__blank__'?'selected':''}>Sin estado</option></select>
-      <select ${running?'disabled':''} onchange="AutoCover.setCoverState(this.value)"><option value="pending" ${f.coverState==='pending'?'selected':''}>Pendientes: sin portada propia</option><option value="missing" ${f.coverState==='missing'?'selected':''}>Sin portada</option><option value="external" ${f.coverState==='external'?'selected':''}>Enlazadas externas</option><option value="stored" ${f.coverState==='stored'?'selected':''}>Propias/sincronizadas</option><option value="all" ${f.coverState==='all'?'selected':''}>Todas</option></select>
+    <div class="mc-cover-filter-dashboard mc-cover-filter-dashboard-v2">
+      <label class="mc-cf mc-cf-search"><span>⌕ BUSCAR FICHA</span><input id="coverQ" ${running?'disabled':''} value="${escOpt(f.q)}" placeholder="Editorial, serie, número, ISBN…" oninput="AutoCover.setSearch(this.value)"></label>
+      <label class="mc-cf mc-cf-pub"><span>▣ EDITORIAL</span>${selectHtml('publisher','Todas las editoriales',pubs,f.publisher)}</label>
+      <label class="mc-cf mc-cf-series"><span>▤ CABECERA / SERIE</span>${selectHtml('catalogHeader','Todas las cabeceras',headers,f.catalogHeader)}</label>
+      <label class="mc-cf mc-cf-volume"><span>▥ VOLUMEN</span>${selectHtml('volume','Todos los volúmenes',vols,f.volume)}</label>
+      <label class="mc-cf mc-cf-stage"><span>◆ ETAPA</span>${selectHtml('stage','Todas las etapas',stages,f.stage)}</label>
+      <label class="mc-cf mc-cf-year"><span>◷ AÑO DE INICIO</span>${selectHtml('startYear','Todos los años',years,f.startYear)}</label>
+      <label class="mc-cf mc-cf-state"><span>● ESTADO</span><select ${running?'disabled':''} onchange="AutoCover.setStatus(this.value)"><option value="" ${!f.status?'selected':''}>Todos los estados</option><option value="In Collection" ${f.status==='In Collection'?'selected':''}>En colección</option><option value="On Wish List" ${f.status==='On Wish List'?'selected':''}>Wishlist</option><option value="__blank__" ${f.status==='__blank__'?'selected':''}>Sin estado</option></select></label>
+      <div class="mc-cf-hint">Solo fichas sin portada · ${filtered.length.toLocaleString('es-ES')} pendientes con estos filtros</div>
     </div>
     <div class="toolbar" style="padding:12px 15px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <button class="btn" ${running?'disabled':''} onclick="AutoCover.selectPage()">Seleccionar página (${lastFilteredIds.length})</button>
@@ -79,7 +79,7 @@
     if(running)return toast('Ya hay un proceso de portadas en marcha');
     if(!selected.size)return toast('Selecciona primero las fichas que quieras completar');
     if(!window.CoverVault?.hasCredentials?.()){toast('Carga primero la clave y la credencial desde Sincronizar');window.CloudSync?.show?.();return}
-    const all=await allStore('comics'),map=new Map(all.map(x=>[String(x.id),x])),targets=[...selected].map(id=>map.get(String(id))).filter(x=>x&&!x.coverKey);
+    const all=await allStore('comics'),map=new Map(all.map(x=>[String(x.id),x])),targets=[...selected].map(id=>map.get(String(id))).filter(x=>x&&!x.coverKey&&!hasExternal(x));
     if(!targets.length){clearSelected();await renderCovers();return toast('Las fichas seleccionadas ya tienen portada propia')}
     const batch=targets.slice(0,MAX_RUN),s={checked:0,total:batch.length,saved:0,skipped:0,errors:0};running=true;stopRequested=false;lastProgress='';await renderCovers();paint(s);
     try{
@@ -98,7 +98,7 @@
   function setFilter(k,v){if(locked())return;resetAfterFilter();f[k]=v;const i=order.indexOf(k);if(i>=0)order.slice(i+1).forEach(z=>f[z]='');renderCovers()}
   function setSearch(v){if(locked())return;clearSelected();f.q=v;coverPage=1;clearTimeout(setSearch.t);setSearch.t=setTimeout(()=>renderCovers(),180)}
   function setStatus(v){if(locked())return;resetAfterFilter();f.status=v;renderCovers()}
-  function setCoverState(v){if(locked())return;resetAfterFilter();f.coverState=v;renderCovers()}
+  function setCoverState(){return;}
   async function selectPage(){if(locked())return;const add=lastFilteredIds.filter(id=>!selected.has(id));if(selected.size+add.length>MAX_SELECT)return toast(`La selección superaría ${MAX_SELECT} fichas. Completa primero el bloque actual.`);add.forEach(id=>selected.add(id));await renderCovers()}
   async function selectFiltered(){if(locked())return;const rows=filterCore(await allStore('comics')).filter(x=>!x.coverKey);if(!rows.length)return toast('No hay fichas pendientes con estos filtros');if(rows.length>MAX_SELECT)return toast(`El filtro devuelve ${rows.length.toLocaleString('es-ES')} fichas. Usa “Seleccionar página” o acota por serie/volumen/año hasta ${MAX_SELECT} o menos.`);rows.forEach(x=>selected.add(String(x.id)));await renderCovers()}
   function clearSelection(){if(locked())return;clearSelected();renderCovers()}
