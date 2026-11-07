@@ -47,3 +47,5 @@
 .pbi-all-groups{margin-top:8px;border-top:1px solid rgba(130,170,210,.2);padding-top:8px}.pbi-all-groups summary{cursor:pointer;color:#91c8ff;font-size:12px;padding:5px}.pbi-all-groups[open]{max-height:360px;overflow:auto}.pbi-all-groups .pbi-bar-row{font-size:12px}
 
 .pbi-series-link{display:flex;width:100%;align-items:center;text-align:left;background:transparent;border:0;color:inherit;cursor:pointer;border-radius:6px}.pbi-series-link:hover,.pbi-series-link:focus-visible{background:rgba(76,164,255,.13);color:#9ed9ff;outline-offset:2px}.pbi-series-link b{white-space:nowrap}
+
+.pbi-series-link span small{display:block;font-size:.75rem;opacity:.72;margin-top:3px;white-space:normal}
