@@ -56,18 +56,31 @@
     // Merge bibliographic classification for display only; never rewrite personal
     // records or infer universe/character from the collection title.
     const masterByIssue=new Map(),masterByCollection=new Map();
-    const issueIdentity=x=>ckey(x)+'|'+String(x.issueNr??x.issue??x.number??'').trim();
+    const issueNumber=x=>String(x.issueNr??x.issue??x.number??'').trim();
+    const issueIdentity=x=>ckey(x)+'|'+issueNumber(x);
+    const fields=['universe','character','group'];
     master.forEach(x=>{
-      masterByIssue.set(issueIdentity(x),x);
-      const key=ckey(x),old=masterByCollection.get(key)||{};
-      masterByCollection.set(key,{
-        universe:old.universe||String(x.universe||'').trim(),
-        character:old.character||String(x.character||'').trim(),
-        group:old.group||String(x.group||'').trim()
+      // An unnumbered bibliographic entry must not impersonate every other
+      // unnumbered entry in the same collection.
+      if(issueNumber(x))masterByIssue.set(issueIdentity(x),x);
+      const key=ckey(x),entry=masterByCollection.get(key)||{values:{},conflicts:new Set()};
+      fields.forEach(field=>{
+        const value=String(x[field]||'').trim();
+        if(!value)return;
+        if(entry.values[field]&&entry.values[field]!==value)entry.conflicts.add(field);
+        else if(!entry.values[field])entry.values[field]=value;
       });
+      masterByCollection.set(key,entry);
+    });
+    // Only inherit a series-wide label when every documented nonempty label
+    // agrees; conflicting classifications must remain unassigned.
+    masterByCollection.forEach((entry,key)=>{
+      const safe={};
+      fields.forEach(field=>safe[field]=entry.conflicts.has(field)?'':(entry.values[field]||''));
+      masterByCollection.set(key,safe);
     });
     const classifiedRows=rows.map(x=>{
-      const exact=masterByIssue.get(issueIdentity(x))||{};
+      const exact=issueNumber(x)?(masterByIssue.get(issueIdentity(x))||{}):{};
       const series=masterByCollection.get(ckey(x))||{};
       return {...x,
         universe:String(x.universe||'').trim()||String(exact.universe||'').trim()||series.universe||'',
