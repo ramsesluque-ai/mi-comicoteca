@@ -206,3 +206,16 @@
 .mc-catalog-list-info strong{font-size:13px;overflow-wrap:anywhere}
 .mc-catalog-list-info small{font-size:11px;color:#a9bdd4}
 @media(max-width:600px){.mc-catalog-list-row{grid-template-columns:20px 42px minmax(0,1fr) auto;gap:7px}.mc-catalog-list-status{display:none}.mc-catalog-tools select{max-width:100%}}
+
+
+/* Batch edit: accessible, explicit confirmation dialog */
+.mc-bulk-dialog{position:fixed;inset:0;z-index:100000;background:rgba(0,8,18,.76);display:flex;align-items:center;justify-content:center;padding:18px}
+.mc-bulk-dialog-card{background:#0b2036;border:1px solid #41658a;box-shadow:0 18px 60px rgba(0,0,0,.55);border-radius:14px;padding:22px;width:min(460px,100%);max-height:90vh;overflow:auto}
+.mc-bulk-dialog-card h3{font-size:20px;margin:0 0 10px}
+.mc-bulk-dialog-card p{font-size:13px;line-height:1.5;color:#c7d7e9}
+.mc-bulk-dialog-card label{display:block;font-size:12px;font-weight:700;margin:14px 0 6px}
+.mc-bulk-dialog-card input,.mc-bulk-dialog-card select{width:100%;min-height:42px;font-size:15px;background:#07192a;color:#f2f7ff;border:1px solid #527398;border-radius:8px;padding:8px 10px}
+.mc-bulk-dialog-buttons{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
+.mc-bulk-danger{color:#ffadad!important}
+#mc-bulk-error{font-size:12px;color:#ff9e9e;margin-top:8px}
+#catbody .comic-card .mc-card-select{pointer-events:auto!important;z-index:15!important;appearance:auto!important}
