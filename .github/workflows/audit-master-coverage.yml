@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Generate coverage report
         run: python scripts/audit_master_coverage.py
-      - name: Verify counts against Maestro index
+      - name: Prepare bulk cover enrichment queue\n        run: python scripts/prepare_cover_enrichment_queue.py\n      - name: Verify counts against Maestro index
         run: |
           python - <<'PY'
           import json
@@ -32,4 +32,4 @@ jobs:
           name: maestro-spain-coverage-audit
           path: |
             master-data/coverage-audit.json
-            master-data/coverage-priority.csv
+            master-data/coverage-priority.csv\n            master-data/cover-enrichment-queue.csv
