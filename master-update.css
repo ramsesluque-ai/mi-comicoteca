@@ -58,3 +58,5 @@
 .mc-master-filter-dashboard .mc-mf-year{grid-column:span 2}
 @media(max-width:900px){.mc-master-filter-dashboard .mc-mf-year{grid-column:span 2}}
 @media(max-width:500px){.mc-master-filter-dashboard .mc-mf-year{grid-column:1}}
+
+.mc-master-personal-only{padding:16px 12px;border-top:1px solid #35516c;margin-top:14px}.mc-master-personal-only h3{font-size:15px;margin:0 0 6px}.mc-master-personal-only>p{font-size:11px;color:#a4bbd3;margin:0 0 12px}.mc-master-personal-only .comic-kicker{color:#f2bd69}
