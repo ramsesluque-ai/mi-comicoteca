@@ -52,3 +52,9 @@
 .mc-master-filter-dashboard .mc-mf-hint{grid-column:1/-1;color:#819cb9;font-size:10px;padding:1px 3px}
 @media(max-width:900px){.mc-master-filter-dashboard{grid-template-columns:repeat(2,minmax(0,1fr))}.mc-master-filter-dashboard .mc-mf-search{grid-column:span 2}}
 @media(max-width:500px){.mc-master-filter-dashboard{grid-template-columns:1fr}.mc-master-filter-dashboard .mc-mf-search{grid-column:1}}
+
+/* Six-field Maestro: balanced second row without personal status. */
+.mc-master-filter-dashboard .mc-mf-volume,.mc-master-filter-dashboard .mc-mf-stage,.mc-master-filter-dashboard .mc-mf-year{grid-column:span 1}
+.mc-master-filter-dashboard .mc-mf-year{grid-column:span 2}
+@media(max-width:900px){.mc-master-filter-dashboard .mc-mf-year{grid-column:span 2}}
+@media(max-width:500px){.mc-master-filter-dashboard .mc-mf-year{grid-column:1}}
