@@ -77,6 +77,40 @@
     };
     host.querySelector('#mc-bulk-value')?.focus();
   }
+  // Delegated controls survive page redraws and do not depend on per-render handlers.
+  document.addEventListener('click',event=>{
+    const button=event.target.closest?.('[data-mc-view],#mc-apply-bulk,[data-mc-edit]');
+    if(!button)return;
+    if(!document.querySelector('.mc-catalog-tools'))return;
+    event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();
+    const wish=current==='wishlist';
+    if(button.hasAttribute('data-mc-view')){
+      view=button.dataset.mcView;
+      document.querySelectorAll('[data-mc-view]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
+      renderCat(wish).catch(err=>toast('Error al cambiar vista: '+err.message));
+    }else if(button.id==='mc-apply-bulk')openBulkDialog(wish);
+    else editComic(button.dataset.mcEdit);
+  },true);
+  document.addEventListener('change',event=>{
+    const input=event.target;
+    if(!document.querySelector('.mc-catalog-tools'))return;
+    if(input.matches?.('#catbody [data-mc-select]')){
+      if(input.checked)selected.add(input.dataset.mcSelect);
+      else selected.delete(input.dataset.mcSelect);
+      updateCount();
+    }else if(input.matches?.('#mc-select-page')){
+      document.querySelectorAll('#catbody [data-mc-select]').forEach(x=>{
+        x.checked=input.checked;
+        if(input.checked)selected.add(x.dataset.mcSelect);
+        else selected.delete(x.dataset.mcSelect);
+      });
+      updateCount();
+    }
+  },true);
+  document.addEventListener('click',event=>{
+    const check=event.target.closest?.('#catbody [data-mc-select]');
+    if(check){event.stopPropagation();event.stopImmediatePropagation()}
+  },true);
   renderCat=async function(wish=false){
     const out=await originalRender(wish);
     const root=document.getElementById('catbody');
@@ -97,16 +131,12 @@
         card.prepend(checkbox);
       });
     }
-    root.querySelectorAll('[data-mc-select]').forEach(input=>{
-      input.checked=selected.has(input.dataset.mcSelect);
-      input.onclick=e=>e.stopPropagation();
-      input.onchange=()=>{if(input.checked)selected.add(input.dataset.mcSelect);else selected.delete(input.dataset.mcSelect);updateCount()};
-    });
+    root.querySelectorAll('[data-mc-select]').forEach(input=>{input.checked=selected.has(input.dataset.mcSelect)});
     root.querySelectorAll('[data-mc-edit]').forEach(btn=>btn.onclick=()=>editComic(btn.dataset.mcEdit));
-    document.querySelectorAll('[data-mc-view]').forEach(btn=>btn.onclick=()=>{view=btn.dataset.mcView;renderCat(wish)});
+    
     const pageSelect=document.getElementById('mc-select-page');
-    if(pageSelect)pageSelect.onchange=()=>{root.querySelectorAll('[data-mc-select]').forEach(x=>{if(pageSelect.checked)selected.add(x.dataset.mcSelect);else selected.delete(x.dataset.mcSelect)});updateCount()};
-    const apply=document.getElementById('mc-apply-bulk');if(apply)apply.onclick=()=>openBulkDialog(wish);
+    
+    
     updateCount();
     setTimeout(()=>window.CoverVault?.hydrate?.(root),0);
     return out;
