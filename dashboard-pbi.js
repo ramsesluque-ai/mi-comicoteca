@@ -43,5 +43,22 @@
   async function goto(v,status){await route(v);if(status&&v==='catalog'){filters.status=status;await render();}}
   async function filter(kind,value){const v=decodeURIComponent(value);current='catalog';page=1;filters={status:'In Collection'};if(kind==='publisher')filters.publisher=v;else if(kind==='group')filters.group=v;else if(kind==='author')filters.q=v;else if(kind==='decade')filters.q=v.split('–')[0];setNav('catalog');await render();}
   async function openCollection(encoded){const key=decodeURIComponent(encoded);current='series';page=1;setNav('series');await render();if(typeof openSeries==='function')return openSeries(encodeURIComponent(key));if(typeof openCollection==='function')return openCollection(encodeURIComponent(key));}
-  window.PbiDashboard={view,goto,filter,openCollection};window.dashboard=view;
+  window.PbiDashboard={view,goto,filter,openCollection};
+  window.dashboard=view;
+
+  // app1/app5 can start their initial asynchronous render before this module loads.
+  // Re-render the active dashboard once the complete script chain has installed
+  // the BI implementation. Never redirect a user who has already navigated away.
+  function activateDashboard(){
+    if(typeof current!=='undefined' && current==='dashboard' && typeof render==='function'){
+      Promise.resolve().then(()=>render()).catch(err=>{
+        console.error('No se pudo iniciar el dashboard BI',err);
+      });
+    }
+  }
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',activateDashboard,{once:true});
+  }else{
+    activateDashboard();
+  }
 })();
