@@ -42,7 +42,7 @@
     const details=owned.map(x=>`<tr><td>${esc(x.publisher||'Sin dato')}</td><td>${esc(x.catalogHeader||x.series||'Sin cabecera')}</td><td>${esc(x.volume||x.stage||'—')}</td><td>${esc(x.issueNr??x.issue??x.number??'—')}</td><td>${esc(x.title||'Sin título acreditado')}</td></tr>`).join('');
     return `<section class="pbi-drill" aria-label="Desglose interactivo"><div class="pbi-drill-head"><div><small>DESGLOSE · ${heading}</small><h2>${esc(drill.value)}</h2><p>Explora los datos sin salir del dashboard. Las cifras reflejan los registros actuales.</p></div><button class="btn sm" onclick="PbiDashboard.clearDrill()">✕ Cerrar desglose</button></div>
       <div class="pbi-drill-kpis"><div><small>En colección</small><b>${fmt(owned.length)}</b></div><div><small>Wishlist</small><b>${fmt(wish.length)}</b></div><div><small>Series / etapas</small><b>${fmt(series.length)}</b></div><div><small>Editoriales</small><b>${fmt(countBy(owned,x=>x.publisher).length)}</b></div></div>
-      <div class="pbi-drill-grid"><div><h3>${drill.kind==='character'?'Universos':'Personajes'}</h3>${bars(secondary,drill.kind==='character'?'universe':'character',12)||'<p class="muted">Sin datos</p>'}</div><div><h3>Series y etapas</h3>${series.map(item=>`<button type="button" class="pbi-drill-series pbi-series-link" onclick="PbiDashboard.openCollection('${safeParam(item.key)}')" title="Abrir colección"><span>${esc([item.sample.publisher,item.sample.catalogHeader||item.sample.series||'Sin cabecera',item.sample.volume||item.sample.stage||'Sin etapa',item.sample.startYear||'Sin año'].join(' · '))}</span><b>${fmt(item.count)} ↗</b></button>`).join('')||'<p class="muted">Sin datos</p>'}</div></div>
+      <div class="pbi-drill-grid"><div><h3>${drill.kind==='character'?'Universos':'Personajes'}</h3>${bars(secondary,drill.kind==='character'?'universe':'character',12)||'<p class="muted">Sin datos</p>'}</div><div><h3>Series y etapas</h3>${series.map(item=>`<button type="button" class="pbi-drill-series pbi-series-link" onclick="PbiDashboard.openCollection('${safeParam(item.key)}')" title="Abrir colección"><span>${esc([item.sample.publisher,item.sample.catalogHeader||item.sample.series||'Sin cabecera',item.sample.volume||item.sample.stage||'Sin etapa',item.sample.startYear||'Sin año'].join(' · '))}<small>Universo: ${esc(universeName(item.sample))} · Personaje: ${esc(characterName(item.sample))}</small></span><b>${fmt(item.count)} ↗</b></button>`).join('')||'<p class="muted">Sin datos</p>'}</div></div>
       <details class="pbi-drill-table"><summary>Ver todos los ejemplares (${fmt(owned.length)})</summary><div class="pbi-drill-scroll"><table><thead><tr><th>Editorial</th><th>Cabecera</th><th>Volumen / etapa</th><th>N.º</th><th>Título</th></tr></thead><tbody>${details}</tbody></table></div></details>
     </section>`;
   }
@@ -53,6 +53,29 @@
     // Count distinct issue identities, not duplicate personal records. A collection is
     // only "complete" when a documented Maestro total exists.
     const master=await allStore('master');
+    // Merge bibliographic classification for display only; never rewrite personal
+    // records or infer universe/character from the collection title.
+    const masterByIssue=new Map(),masterByCollection=new Map();
+    const issueIdentity=x=>ckey(x)+'|'+String(x.issueNr??x.issue??x.number??'').trim();
+    master.forEach(x=>{
+      masterByIssue.set(issueIdentity(x),x);
+      const key=ckey(x),old=masterByCollection.get(key)||{};
+      masterByCollection.set(key,{
+        universe:old.universe||String(x.universe||'').trim(),
+        character:old.character||String(x.character||'').trim(),
+        group:old.group||String(x.group||'').trim()
+      });
+    });
+    const classifiedRows=rows.map(x=>{
+      const exact=masterByIssue.get(issueIdentity(x))||{};
+      const series=masterByCollection.get(ckey(x))||{};
+      return {...x,
+        universe:String(x.universe||'').trim()||String(exact.universe||'').trim()||series.universe||'',
+        character:String(x.character||'').trim()||String(exact.character||'').trim()||series.character||'',
+        group:String(x.group||'').trim()||String(exact.group||'').trim()||series.group||''
+      };
+    });
+    const classifiedOwned=classifiedRows.filter(x=>x.status==='In Collection');
     const collections={};
     const issueKey=x=>String(x.issueNr??x.issue??x.number??'').trim();
     const masterIssues={};
@@ -61,7 +84,7 @@
     Object.values(collections).forEach(x=>{x.have=x.owned.size;x.total=masterIssues[x.key]?.size||0;});
     const cs=Object.values(collections),known=cs.filter(x=>x.total>0),complete=known.filter(x=>x.have>=x.total).length,incomplete=known.length-complete,unknown=cs.length-known.length,pct=known.length?Math.round(100*complete/known.length):0;
     const estimated=inc.reduce((s,x)=>s+num(x.estimated),0),now=new Date(),mk=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'),monthPurchases=purchases.filter(x=>monthKey(x.date)===mk),monthSpend=monthPurchases.reduce((s,x)=>s+num(x.price)+num(x.shipping),0);
-    const pubs=countBy(inc,x=>x.publisher),characters=countBy(inc,characterName),universes=countBy(inc,universeName),authors=countMulti(inc,['writer','writers','script','author','authors','artist','artists','penciller']),decades=countBy(inc,x=>yearBand(x.startYear||x.year));
+    const pubs=countBy(inc,x=>x.publisher),characters=countBy(classifiedOwned,characterName),universes=countBy(classifiedOwned,universeName),authors=countMulti(inc,['writer','writers','script','author','authors','artist','artists','penciller']),decades=countBy(inc,x=>yearBand(x.startYear||x.year));
     const recent=[...purchases].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).slice(0,6),progress=[...cs].filter(x=>x.total).sort((a,b)=>(b.total-b.have)-(a.total-a.have)||b.total-a.total);
     const noCover=inc.filter(x=>!(x.cover||x.coverUrl||x.image||x.imageUrl)).length,noIsbn=inc.filter(x=>!(x.isbn||x.ISBN)).length,lowQuality=inc.filter(x=>String(x.quality||'').toLowerCase().includes('baj')||String(x.condition||'').toLowerCase().includes('poor')).length;
     return head('Dashboard','Centro de control interactivo de tu comicoteca.',`<button class="btn primary" onclick="editComic()">+ Añadir cómic</button>`)+`<div class="pbi-shell">
@@ -73,7 +96,7 @@
         <div><span>Valor estimado</span><b>${money(estimated)}</b><small>Valor registrado</small></div>
         <button onclick="PbiDashboard.goto('purchases')"><span>Compras del mes</span><b>${fmt(monthPurchases.length)}</b><small>${money(monthSpend)} este mes</small></button>
       </div>
-      ${drillPanel(rows)}
+      ${drillPanel(classifiedRows)}
       <div class="pbi-grid pbi-grid-3">
         <section class="pbi-panel"><div class="pbi-title"><b>Editoriales</b><span>Clic para filtrar</span></div>${bars(pubs,'publisher')||'<div class="muted">Sin datos</div>'}</section>
         <section class="pbi-panel"><div class="pbi-title"><b>Personajes</b><span>Incluye agrupaciones históricas pendientes de clasificar</span></div>${bars(characters,'character')||'<div class="muted">Sin datos</div>'}</section>
