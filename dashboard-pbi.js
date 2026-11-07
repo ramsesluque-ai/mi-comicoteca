@@ -17,10 +17,11 @@
     if(explicit)return explicit;
     const group=String(x.group||x.universe||'').trim();
     const series=String(x.catalogHeader||x.series||'').trim();
-    // A generic publisher universe must not hide an explicitly named series.
-    // Only use the literal documented series name; never invent character metadata.
-    if((!group||/^(dc|marvel|sin grupo|sin dato)$/i.test(group))&&/^animal[ -]man$/i.test(series))return 'Animal Man';
-    return group||'Sin grupo';
+    // Generic universes are not characters. Show the documented series as a
+    // separate category rather than inventing character identities.
+    const generic=!group||/^(dc(?: comics)?|marvel(?: comics)?|universo dc|universo marvel|sin grupo|sin dato|otros?|varios?|general)$/i.test(group);
+    if(generic&&series)return 'Serie: '+series;
+    return group||'Sin clasificar';
   }
   function drillRows(rows){
     if(!drill)return rows;
@@ -69,7 +70,7 @@
       ${drillPanel(rows)}
       <div class="pbi-grid pbi-grid-3">
         <section class="pbi-panel"><div class="pbi-title"><b>Editoriales</b><span>Clic para filtrar</span></div>${bars(pubs,'publisher')||'<div class="muted">Sin datos</div>'}</section>
-        <section class="pbi-panel"><div class="pbi-title"><b>Personajes / universos</b><span>Distribución</span></div>${bars(groups,'group')||'<div class="muted">Sin datos</div>'}</section>
+        <section class="pbi-panel"><div class="pbi-title"><b>Personajes / series</b><span>Personajes identificados y cabeceras sin personaje acreditado</span></div>${bars(groups,'group')||'<div class="muted">Sin datos</div>'}</section>
         <section class="pbi-panel"><div class="pbi-title"><b>Autores</b><span>Guionistas y artistas</span></div>${bars(authors,'author')||'<div class="muted">Sin datos de autores</div>'}</section>
         <section class="pbi-panel"><div class="pbi-title"><b>Décadas</b><span>Año de inicio</span></div>${bars(decades,'decade')||'<div class="muted">Sin datos</div>'}</section>
         <section class="pbi-panel"><div class="pbi-title"><b>Evolución de compras</b><span>Gasto · últimos 12 meses</span></div>${monthBars(purchases)}<button class="btn sm" onclick="PbiDashboard.goto('purchases')">Abrir compras</button></section>
