@@ -29,7 +29,7 @@ self.addEventListener('fetch',event=>{
   // Only cache the public static application. Never persist authenticated,
   // personal or payment responses in a shared service-worker cache.
   const path=url.pathname;
-  const privatePath=/(?:^|\\/)(?:api|auth|user|users|account|accounts|profile|profiles|billing|checkout|stripe|webhook|webhooks)(?:\\/|$)/i.test(path);
+  const privatePath=/(?:^|\/)(?:api|auth|user|users|account|accounts|profile|profiles|billing|checkout|stripe|webhook|webhooks)(?:\/|$)/i.test(path);
   const hasCredentials=request.headers.has('authorization')||request.headers.has('cookie');
   if(privatePath||hasCredentials||request.cache==='no-store')return;
   event.respondWith((async()=>{
