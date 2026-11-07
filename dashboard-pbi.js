@@ -51,7 +51,7 @@
   }
   async function goto(v,status){await route(v);if(status&&v==='catalog'){filters.status=status;await render();}}
   async function filter(kind,value){const v=decodeURIComponent(value);current='catalog';page=1;filters={status:'In Collection'};if(kind==='publisher')filters.publisher=v;else if(kind==='group')filters.group=v;else if(kind==='author')filters.q=v;else if(kind==='decade')filters.q=v.split('–')[0];setNav('catalog');await render();}
-  async function openCollection(encoded){const key=decodeURIComponent(encoded);current='series';page=1;setNav('series');await render();if(typeof openSeries==='function')return openSeries(encodeURIComponent(key));if(typeof openCollection==='function')return openCollection(encodeURIComponent(key));}
+  async function openCollection(encoded){const key=decodeURIComponent(encoded);current='series';page=1;setNav('series');await render();if(typeof openSeries==='function')return openSeries(encodeURIComponent(key));if(typeof window.openCollection==='function' && window.openCollection!==window.PbiDashboard.openCollection)return window.openCollection(encodeURIComponent(key));}
   window.PbiDashboard={view,goto,filter,openCollection};
   window.dashboard=view;
 
