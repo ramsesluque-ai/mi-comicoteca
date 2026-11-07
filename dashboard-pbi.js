@@ -12,19 +12,18 @@
   function collectionProgress(items){return items.slice(0,10).map(x=>{const pct=x.total?Math.min(100,Math.round(100*x.have/x.total)):0,s=x.sample||{};return `<button class="pbi-progress-row" onclick="PbiDashboard.openCollection('${safeParam(x.key)}')"><span><b>${esc(s.catalogHeader||s.series||'Colección')}</b><small>${esc([s.publisher,s.volume,s.stage,s.startYear].filter(Boolean).join(' · '))}</small></span><span class="pbi-progress ${pct>=100?'pbi-complete':pct>=75?'pbi-high':pct>=50?'pbi-medium':pct>=25?'pbi-low':'pbi-critical'}"><i style="width:${pct}%"></i></span><strong>${pct}%</strong></button>`}).join('');}
   function qualityCard(label,value,total,action){const pct=total?Math.round(value*100/total):0;return `<button class="pbi-quality" onclick="${action}"><span>${label}</span><b>${fmt(value)}</b><small>${pct}% del catálogo</small><i><em style="width:${pct}%"></em></i></button>`;}
   function monthBars(purchases){const m={};purchases.forEach(x=>{const k=monthKey(x.date);if(k)m[k]=(m[k]||0)+num(x.price)+num(x.shipping)});const a=Object.entries(m).sort((a,b)=>a[0].localeCompare(b[0])).slice(-12),mx=Math.max(1,...a.map(x=>x[1]));return `<div class="pbi-months">${a.map(([k,v])=>`<div title="${k}: ${money(v)}"><i style="height:${Math.max(5,100*v/mx)}%"></i><small>${k.slice(5)}</small></div>`).join('')||'<span class="muted">Sin compras fechadas</span>'}</div>`;}
-  function isUniverse(v){return /^(dc(?: comics)?|marvel(?: comics)?|universo dc|universo marvel)$/i.test(String(v||'').trim());}
   function universeName(x){
-    const universe=String(x.universe||'').trim();
-    if(universe)return universe;
-    const group=String(x.group||'').trim();
-    return isUniverse(group)?group:'Sin universo acreditado';
+    const explicit=String(x.universe||'').trim();
+    if(explicit)return explicit;
+    // Historic catalogs used group for their universe/category, including Batman.
+    const legacy=String(x.group||'').trim();
+    return legacy&&!/^(sin grupo|sin dato|otros?|varios?|general)$/i.test(legacy)?legacy:'Sin universo acreditado';
   }
   function characterName(x){
-    const character=String(x.character||'').trim();
-    if(character)return character;
-    // Legacy group may contain a character/team, but never treat a universe as one.
-    const group=String(x.group||'').trim();
-    if(group&&!isUniverse(group)&&!/^(sin grupo|sin dato|otros?|varios?|general)$/i.test(group))return group;
+    const explicit=String(x.character||'').trim();
+    if(explicit)return explicit;
+    // A legacy group (e.g. Batman) describes the universe/category, not
+    // proof of an individual character in the issue.
     return 'Sin personaje acreditado';
   }
   function drillRows(rows){
