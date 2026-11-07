@@ -73,6 +73,8 @@ renderMaster=async function(){
    const g=missing.get(key);g.count++;if(!g.cover&&(r.coverUrl||r.coverData||r.coverBlob))g.cover=r;
  }
  const personalCards=[...missing.entries()].sort((a,b)=>String(a[1].sample.catalogHeader||a[1].sample.series).localeCompare(String(b[1].sample.catalogHeader||b[1].sample.series),'es',{numeric:true}));
+ MCMasterUI.visibleGroups=new Map();
+ for(const [key,g] of groups){MCMasterUI.visibleGroups.set(key,{publisher:pub,rows:filtered.filter(x=>mcMasterGroupKey(x)===key)});}
  const list=[...groups.entries()].sort((a,b)=>mcMasterGroupLabel(a[1].sample).localeCompare(mcMasterGroupLabel(b[1].sample),'es',{numeric:true}));
  const per=48,pages=Math.max(1,Math.ceil(list.length/per));state.page=Math.min(state.page,pages);
  const slice=list.slice((state.page-1)*per,state.page*per);
