@@ -1,0 +1,46 @@
+name: COMICTECA Phase 1 regression gate
+on:
+  push:
+    branches: [commercial-published]
+    paths:
+      - '*.js'
+      - '*.css'
+      - 'index.html'
+      - '.github/workflows/phase1-regression.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: comicteca-phase1-regression
+  cancel-in-progress: true
+jobs:
+  static-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check JavaScript syntax
+        run: |
+          set -e
+          for f in ./*.js; do node --check "$f"; done
+      - name: Check critical assets and navigation invariants
+        run: |
+          node <<'NODE'
+          const fs=require('fs'),assert=require('assert');
+          const html=fs.readFileSync('index.html','utf8');
+          for(const file of ['app1.js','app2.js','catalog-bulk.js','master-static.js','master-series-ui.js','vault.js','sw.js']){
+            assert(fs.existsSync(file),'Missing critical asset: '+file);
+            assert(html.includes(file),'Not loaded by HTML: '+file);
+          }
+          const bulk=fs.readFileSync('catalog-bulk.js','utf8');
+          assert(bulk.includes('input.addEventListener(\'click\',event=>event.stopPropagation())'),'Checkbox must not open comic card');
+          assert(bulk.includes("root.addEventListener('change',event=>"),'Selection change must update bulk counter');
+          assert(bulk.includes('grid.hidden=true'),'List mode must hide card grid');
+          assert(bulk.includes('openBulkDialog(currentWish)'),'Bulk actions must open confirmation');
+          const master=fs.readFileSync('master-static.js','utf8');
+          assert(master.includes('activeIssueRows'),'Master must preserve active issue rows');
+          assert(master.includes('visibleGroups'),'Master must preserve visible collection groups');
+          assert(master.includes('mcMasterDistinctIssues'),'Master must deduplicate exact bibliographic identities');
+          const app=fs.readFileSync('app1.js','utf8');
+          assert(app.includes('function issueNumberLabel('),'Unknown issue numbers need safe display');
+          console.log('PHASE1_STATIC_GATE_PASS');
+          NODE
