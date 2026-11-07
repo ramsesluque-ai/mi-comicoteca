@@ -12,8 +12,21 @@
   function collectionProgress(items){return items.slice(0,10).map(x=>{const pct=x.total?Math.min(100,Math.round(100*x.have/x.total)):0,s=x.sample||{};return `<button class="pbi-progress-row" onclick="PbiDashboard.openCollection('${safeParam(x.key)}')"><span><b>${esc(s.catalogHeader||s.series||'Colección')}</b><small>${esc([s.publisher,s.volume,s.stage,s.startYear].filter(Boolean).join(' · '))}</small></span><span class="pbi-progress ${pct>=100?'pbi-complete':pct>=75?'pbi-high':pct>=50?'pbi-medium':pct>=25?'pbi-low':'pbi-critical'}"><i style="width:${pct}%"></i></span><strong>${pct}%</strong></button>`}).join('');}
   function qualityCard(label,value,total,action){const pct=total?Math.round(value*100/total):0;return `<button class="pbi-quality" onclick="${action}"><span>${label}</span><b>${fmt(value)}</b><small>${pct}% del catálogo</small><i><em style="width:${pct}%"></em></i></button>`;}
   function monthBars(purchases){const m={};purchases.forEach(x=>{const k=monthKey(x.date);if(k)m[k]=(m[k]||0)+num(x.price)+num(x.shipping)});const a=Object.entries(m).sort((a,b)=>a[0].localeCompare(b[0])).slice(-12),mx=Math.max(1,...a.map(x=>x[1]));return `<div class="pbi-months">${a.map(([k,v])=>`<div title="${k}: ${money(v)}"><i style="height:${Math.max(5,100*v/mx)}%"></i><small>${k.slice(5)}</small></div>`).join('')||'<span class="muted">Sin compras fechadas</span>'}</div>`;}
-  function universeName(x){return String(x.universe||'').trim()||'Sin identificar';}
-  function characterName(x){return String(x.character||'').trim()||'Sin identificar';}
+  // Dashboard compatibility only: legacy catalog records store their historic
+  // grouping in 'group'. Do not write inferred classifications into the Maestro.
+  function universeName(x){
+    const explicit=String(x.universe||'').trim();
+    if(explicit)return explicit;
+    const legacy=String(x.group||'').trim();
+    return legacy&&!/^(sin grupo|sin dato|sin identificar)$/i.test(legacy)?legacy:'Sin identificar';
+  }
+  function characterName(x){
+    const explicit=String(x.character||'').trim();
+    if(explicit)return explicit;
+    const legacy=String(x.group||'').trim();
+    if(legacy&&!/^(dc(?: comics)?|marvel(?: comics)?|sin grupo|sin dato|sin identificar)$/i.test(legacy))return legacy;
+    return 'Sin identificar';
+  }
   function drillRows(rows){
     if(!drill)return rows;
     return rows.filter(x=>drill.kind==='publisher'?String(x.publisher||'Sin dato').trim()===drill.value:drill.kind==='universe'?universeName(x)===drill.value:characterName(x)===drill.value);
@@ -63,8 +76,8 @@
       ${drillPanel(rows)}
       <div class="pbi-grid pbi-grid-3">
         <section class="pbi-panel"><div class="pbi-title"><b>Editoriales</b><span>Clic para filtrar</span></div>${bars(pubs,'publisher')||'<div class="muted">Sin datos</div>'}</section>
-        <section class="pbi-panel"><div class="pbi-title"><b>Personajes</b><span>Personajes y equipos registrados</span></div>${bars(characters,'character')||'<div class="muted">Sin datos</div>'}</section>
-        <section class="pbi-panel"><div class="pbi-title"><b>Universos</b><span>Clasificación independiente</span></div>${bars(universes,'universe')||'<div class="muted">Sin datos</div>'}</section>
+        <section class="pbi-panel"><div class="pbi-title"><b>Personajes</b><span>Incluye agrupaciones históricas pendientes de clasificar</span></div>${bars(characters,'character')||'<div class="muted">Sin datos</div>'}</section>
+        <section class="pbi-panel"><div class="pbi-title"><b>Universos</b><span>Incluye agrupaciones históricas pendientes de clasificar</span></div>${bars(universes,'universe')||'<div class="muted">Sin datos</div>'}</section>
         <section class="pbi-panel"><div class="pbi-title"><b>Autores</b><span>Guionistas y artistas</span></div>${bars(authors,'author')||'<div class="muted">Sin datos de autores</div>'}</section>
         <section class="pbi-panel"><div class="pbi-title"><b>Décadas</b><span>Año de inicio</span></div>${bars(decades,'decade')||'<div class="muted">Sin datos</div>'}</section>
         <section class="pbi-panel"><div class="pbi-title"><b>Evolución de compras</b><span>Gasto · últimos 12 meses</span></div>${monthBars(purchases)}<button class="btn sm" onclick="PbiDashboard.goto('purchases')">Abrir compras</button></section>
