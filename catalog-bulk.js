@@ -7,7 +7,7 @@
   const originalRender=renderCat;
   const idSafe=id=>String(id).replace(/\\/g,'\\\\').replace(/"/g,'\\"');
   const getVisible=async(wish)=>filtered(await allStore('comics'),wish);
-  const label=x=>[x.publisher,x.catalogHeader||x.series,x.issueNr&&('#'+x.issueNr)].filter(Boolean).join(' · ');
+  const label=x=>[x.publisher,x.catalogHeader||x.series,issueNumberLabel(x)].filter(Boolean).join(' · ');
   function toolbar(wish){
     return '<div class="mc-catalog-tools"><div class="mc-catalog-modes"><button type="button" class="btn sm" data-mc-view="cards" aria-pressed="'+(view==='cards')+'">▦ Fichas</button><button type="button" class="btn sm" data-mc-view="list" aria-pressed="'+(view==='list')+'">☷ Lista</button></div><label class="mc-catalog-check"><input type="checkbox" id="mc-select-page"> Seleccionar página</label><span id="mc-selection-count" aria-live="polite"></span><select id="mc-bulk-action" aria-label="Acción sobre los seleccionados"><option value="">Acción sobre seleccionados…</option><option value="In Collection">Pasar a colección</option><option value="On Wish List">Pasar a wishlist</option><option value="other">Cambiar estado</option><option value="publisher">Cambiar editorial</option><option value="group">Cambiar grupo / universo</option><option value="arc">Cambiar arco argumental</option><option value="tags">Añadir tags</option><option value="delete">Eliminar del catálogo personal</option></select><button type="button" class="btn sm primary" id="mc-apply-bulk">Aplicar</button></div>';
   }
@@ -25,7 +25,7 @@
     if(selectPage){selectPage.checked=!!all.length&&all.every(x=>x.checked);selectPage.indeterminate=all.some(x=>x.checked)&&!selectPage.checked}
   }
   function listHTML(rows){
-    return '<div class="mc-catalog-list" role="table" aria-label="Listado de cómics">'+rows.map(x=>'<div class="mc-catalog-list-row" role="row"><input type="checkbox" data-mc-select="'+esc(x.id)+'" aria-label="Seleccionar '+esc(label(x))+'"><div class="mc-catalog-list-cover">'+img(x,'cover cardcover')+'</div><div class="mc-catalog-list-info"><strong>'+esc(x.catalogHeader||x.series||x.title||'Sin cabecera')+'</strong><small>'+esc([x.publisher,x.volume&&('Vol. '+x.volume),x.startYear,x.issueNr&&('#'+x.issueNr)].filter(Boolean).join(' · '))+'</small><small>'+esc(x.title||'')+'</small></div><div class="mc-catalog-list-status">'+statusPill(x.status)+'</div><button type="button" class="btn sm" data-mc-edit="'+esc(x.id)+'">Editar</button></div>').join('')+'</div>';
+    return '<div class="mc-catalog-list" role="table" aria-label="Listado de cómics">'+rows.map(x=>'<div class="mc-catalog-list-row" role="row"><input type="checkbox" data-mc-select="'+esc(x.id)+'" aria-label="Seleccionar '+esc(label(x))+'"><div class="mc-catalog-list-cover">'+img(x,'cover cardcover')+'</div><div class="mc-catalog-list-info"><strong>'+esc(x.catalogHeader||x.series||x.title||'Sin cabecera')+'</strong><small>'+esc([x.publisher,x.volume&&('Vol. '+x.volume),x.startYear,issueNumberLabel(x)].filter(Boolean).join(' · '))+'</small><small>'+esc(x.title||'')+'</small></div><div class="mc-catalog-list-status">'+statusPill(x.status)+'</div><button type="button" class="btn sm" data-mc-edit="'+esc(x.id)+'">Editar</button></div>').join('')+'</div>';
   }
   function openBulkDialog(wish){
     const action=document.getElementById('mc-bulk-action')?.value;
