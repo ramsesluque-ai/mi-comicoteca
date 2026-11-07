@@ -86,8 +86,9 @@
     const box=document.createElement('div');
     box.setAttribute('data-local-cover-import','');
     box.style.cssText='display:flex;flex-wrap:wrap;gap:8px;align-items:center;width:100%;margin-top:8px';
-    box.innerHTML=`<input id="mcLocalCoverFile" type="file" accept="image/*" hidden onchange="mcImportLocalCover(this)"><button type="button" class="btn" onclick="document.getElementById('mcLocalCoverFile')?.click()">📁 Importar portada desde el ordenador</button><span class="muted small">La imagen se guarda primero en la bóveda local de la ficha.</span>`;
-    toolbar.appendChild(box);
+    box.innerHTML=`<input id="mcLocalCoverFile" type="file" accept="image/*" hidden onchange="mcImportLocalCover(this)"><button type="button" class="btn mc-local-cover-btn" onclick="document.getElementById('mcLocalCoverFile')?.click()">📁 Importar portada</button>`;
+    const actions=toolbar.querySelector('.ficha-top-actions');
+    if(actions)actions.appendChild(box);else toolbar.appendChild(box);
   }
 
   /* Compras también debe considerar una portada propia aunque coverUrl esté vacío. */
