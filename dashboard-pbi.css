@@ -5,3 +5,34 @@
 .pbi-drill-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.pbi-drill-grid>div{min-width:0}.pbi-drill-grid h3{font-size:15px;margin:0 0 12px}.pbi-drill-series{display:flex;justify-content:space-between;gap:12px;padding:9px 4px;border-bottom:1px solid rgba(255,255,255,.08)}.pbi-drill-series span{overflow-wrap:anywhere}.pbi-drill-series b{flex-shrink:0}
 .pbi-drill-table{margin-top:18px}.pbi-drill-table summary{cursor:pointer;font-weight:600;padding:10px 0}.pbi-drill-scroll{max-height:380px;overflow:auto}.pbi-drill-table table{width:100%;border-collapse:collapse;text-align:left;font-size:13px}.pbi-drill-table th,.pbi-drill-table td{padding:9px;border-bottom:1px solid rgba(255,255,255,.1)}.pbi-drill-table th{white-space:nowrap}
 @media(max-width:760px){.pbi-drill-head{flex-direction:column}.pbi-drill-grid{grid-template-columns:1fr}.pbi-drill-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Compact desktop BI layout: preserve complete publisher, character and series names. */
+@media(min-width:761px){
+  .pbi-shell{gap:12px}
+  .pbi-kpis{gap:8px}
+  .pbi-kpis>button,.pbi-kpis>div{padding:11px 12px;min-height:82px;border-radius:11px}
+  .pbi-kpis span{font-size:10px;letter-spacing:.04em}
+  .pbi-kpis b{font-size:21px;margin:5px 0 3px}
+  .pbi-kpis small{font-size:11px}
+  .pbi-grid{gap:11px}
+  .pbi-panel{padding:12px;min-height:215px;border-radius:12px}
+  .pbi-title{margin-bottom:8px}
+  .pbi-title b{font-size:14px}
+  .pbi-title span{font-size:10px}
+  .pbi-bar-row{grid-template-columns:minmax(0,2fr) minmax(45px,1fr) 36px;gap:7px;padding:5px 3px;font-size:12px}
+  .pbi-track{height:7px}
+  .pbi-months{height:140px}
+  .pbi-progress-row{grid-template-columns:minmax(0,2fr) minmax(50px,1fr) 42px;gap:8px;font-size:12px;padding:7px 3px}
+  .pbi-progress-row small{font-size:11px}
+  .pbi-quality{padding:8px;font-size:12px}
+  .pbi-quality b{font-size:17px}
+  .pbi-purchases>div{font-size:12px;padding:6px}
+}
+.pbi-bar-row .pbi-label{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;line-height:1.2}
+.pbi-progress-row span:first-child{min-width:0;overflow-wrap:anywhere}
+.pbi-drill-series{font-size:12px;line-height:1.3}
+@media(max-width:760px){
+  .pbi-panel{padding:12px}
+  .pbi-bar-row{grid-template-columns:minmax(0,2fr) minmax(32px,1fr) 36px;font-size:12px;gap:6px}
+  .pbi-track{height:7px}
+}
