@@ -1,6 +1,12 @@
 name: Enrich Maestro covers by verified ISBN
 on:
   workflow_dispatch:
+  push:
+    branches: [commercial-published]
+    paths:
+      - 'scripts/enrich_master_isbn_batch.py'
+      - 'scripts/prepare_cover_enrichment_queue.py'
+      - '.github/workflows/enrich-master-isbn.yml'
   schedule:
     - cron: '20 3 * * *'
 permissions:
