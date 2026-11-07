@@ -27,37 +27,55 @@
   function listHTML(rows){
     return '<div class="mc-catalog-list" role="table" aria-label="Listado de cómics">'+rows.map(x=>'<div class="mc-catalog-list-row" role="row"><input type="checkbox" data-mc-select="'+esc(x.id)+'" aria-label="Seleccionar '+esc(label(x))+'"><div class="mc-catalog-list-cover">'+img(x,'cover cardcover')+'</div><div class="mc-catalog-list-info"><strong>'+esc(x.catalogHeader||x.series||x.title||'Sin cabecera')+'</strong><small>'+esc([x.publisher,x.volume&&('Vol. '+x.volume),x.startYear,x.issueNr&&('#'+x.issueNr)].filter(Boolean).join(' · '))+'</small><small>'+esc(x.title||'')+'</small></div><div class="mc-catalog-list-status">'+statusPill(x.status)+'</div><button type="button" class="btn sm" data-mc-edit="'+esc(x.id)+'">Editar</button></div>').join('')+'</div>';
   }
-  async function applyAction(wish){
+  function openBulkDialog(wish){
     const action=document.getElementById('mc-bulk-action')?.value;
-    if(!action||!selected.size){toast('Selecciona cómics y una acción');return}
-    const ids=[...selected];
-    let value=null;
-    if(action==='delete'){
-      if(!confirm('¿Eliminar '+ids.length+' cómic(s) de tu catálogo personal? Esta acción no afecta al Maestro y no se puede deshacer.'))return;
-    }else if(action==='other'){
-      value=prompt('Nuevo estado (por ejemplo: En venta, Vendido, Prestado):');
-      if(value===null||!value.trim())return;
-    }else if(!['In Collection','On Wish List'].includes(action)){
-      value=prompt(action==='publisher'?'Nueva editorial:':action==='group'?'Grupo / universo:':action==='arc'?'Arco argumental:':'Tags que deseas añadir:');
-      if(value===null||!value.trim())return;
-    }
-    let changed=0;
-    for(const id of ids){
-      const row=await getStore('comics',id);
-      if(!row)continue;
-      if(action==='delete')await delStore('comics',id);
-      else {
-        const next={...row};
-        if(action==='other')next.status=value.trim();
-        else if(action==='tags'){const old=String(row.tags||'').split(/[,;]/).map(t=>t.trim()).filter(Boolean);if(!old.some(t=>norm(t)===norm(value)))old.push(value.trim());next.tags=old.join(', ')}
-        else next[action==='In Collection'||action==='On Wish List'?'status':action]=['In Collection','On Wish List'].includes(action)?action:value.trim();
-        await putStore('comics',next);
+    if(!action){toast('Elige una acción');return}
+    if(!selected.size){toast('Selecciona al menos un cómic');return}
+    const labels={'In Collection':'Pasar a colección','On Wish List':'Pasar a wishlist',other:'Cambiar estado',publisher:'Cambiar editorial',group:'Cambiar grupo / universo',arc:'Cambiar arco argumental',tags:'Añadir tags',delete:'Eliminar del catálogo personal'};
+    const needsValue=!['In Collection','On Wish List','delete'].includes(action);
+    const choices=action==='other'?'<select id="mc-bulk-value"><option value="">Selecciona el estado…</option><option value="In Collection">En colección</option><option value="On Wish List">Wishlist</option><option value="For Sale">En venta</option><option value="Sold">Vendido</option><option value="On Loan">Prestado</option></select>':'<input id="mc-bulk-value" type="text" maxlength="250" placeholder="'+esc(({publisher:'Nueva editorial',group:'Nuevo grupo o universo',arc:'Nuevo arco argumental',tags:'Tags a añadir'})[action]||'Nuevo valor')+'">';
+    const host=document.createElement('div');
+    host.id='mc-bulk-dialog';
+    host.className='mc-bulk-dialog';
+    host.innerHTML='<div class="mc-bulk-dialog-card" role="dialog" aria-modal="true" aria-labelledby="mc-bulk-title"><h3 id="mc-bulk-title">'+esc(labels[action])+'</h3><p>Se aplicará a <strong>'+selected.size+'</strong> cómic(s) seleccionados.</p>'+(action==='delete'?'<p class="mc-bulk-danger">Se eliminarán de tu catálogo personal. No se puede deshacer; el Maestro no se modifica.</p>':needsValue?'<label for="mc-bulk-value">Nuevo valor</label>'+choices:'<p>Se actualizará el estado de los cómics seleccionados.</p>')+'<div id="mc-bulk-error" role="alert"></div><div class="mc-bulk-dialog-buttons"><button type="button" class="btn" id="mc-bulk-cancel">Cancelar</button><button type="button" class="btn primary" id="mc-bulk-confirm">'+(action==='delete'?'Eliminar seleccionados':'Confirmar cambios')+'</button></div></div>';
+    document.body.appendChild(host);
+    const close=()=>host.remove();
+    host.addEventListener('click',e=>{if(e.target===host)close()});
+    host.querySelector('#mc-bulk-cancel').onclick=close;
+    host.querySelector('#mc-bulk-confirm').onclick=async()=>{
+      const input=host.querySelector('#mc-bulk-value');
+      const value=input?input.value.trim():null;
+      if(needsValue&&!value){host.querySelector('#mc-bulk-error').textContent='Introduce o selecciona el nuevo valor.';input.focus();return}
+      const confirmButton=host.querySelector('#mc-bulk-confirm');
+      confirmButton.disabled=true;
+      let changed=0;
+      try{
+        for(const id of [...selected]){
+          const row=await getStore('comics',id);
+          if(!row)continue;
+          if(action==='delete')await delStore('comics',id);
+          else{
+            const next={...row};
+            if(action==='other')next.status=value;
+            else if(action==='tags'){
+              const old=String(row.tags||'').split(/[,;]/).map(t=>t.trim()).filter(Boolean);
+              for(const tag of value.split(/[,;]/).map(t=>t.trim()).filter(Boolean))if(!old.some(t=>norm(t)===norm(tag)))old.push(tag);
+              next.tags=old.join(', ');
+            }else next[['In Collection','On Wish List'].includes(action)?'status':action]=['In Collection','On Wish List'].includes(action)?action:value;
+            await putStore('comics',next);
+          }
+          changed++;
+        }
+        selected.clear();
+        close();
+        await renderCat(wish);
+        toast(changed+' cómic(s) actualizados');
+      }catch(err){
+        host.querySelector('#mc-bulk-error').textContent='No se pudieron completar todos los cambios. '+String(err?.message||err);
+        confirmButton.disabled=false;
       }
-      changed++;
-    }
-    selected.clear();
-    toast(changed+' registros actualizados');
-    await renderCat(wish);
+    };
+    host.querySelector('#mc-bulk-value')?.focus();
   }
   renderCat=async function(wish=false){
     const out=await originalRender(wish);
@@ -74,19 +92,21 @@
         const row=pageRows[i];if(!row)return;
         const checkbox=document.createElement('input');
         checkbox.type='checkbox';checkbox.className='mc-card-select';checkbox.dataset.mcSelect=row.id;checkbox.setAttribute('aria-label','Seleccionar '+label(row));
-        checkbox.onclick=e=>e.stopPropagation();
+        checkbox.addEventListener('click',e=>e.stopPropagation());
+        checkbox.addEventListener('pointerdown',e=>e.stopPropagation());
         card.prepend(checkbox);
       });
     }
     root.querySelectorAll('[data-mc-select]').forEach(input=>{
       input.checked=selected.has(input.dataset.mcSelect);
+      input.onclick=e=>e.stopPropagation();
       input.onchange=()=>{if(input.checked)selected.add(input.dataset.mcSelect);else selected.delete(input.dataset.mcSelect);updateCount()};
     });
     root.querySelectorAll('[data-mc-edit]').forEach(btn=>btn.onclick=()=>editComic(btn.dataset.mcEdit));
     document.querySelectorAll('[data-mc-view]').forEach(btn=>btn.onclick=()=>{view=btn.dataset.mcView;renderCat(wish)});
     const pageSelect=document.getElementById('mc-select-page');
     if(pageSelect)pageSelect.onchange=()=>{root.querySelectorAll('[data-mc-select]').forEach(x=>{if(pageSelect.checked)selected.add(x.dataset.mcSelect);else selected.delete(x.dataset.mcSelect)});updateCount()};
-    const apply=document.getElementById('mc-apply-bulk');if(apply)apply.onclick=()=>applyAction(wish);
+    const apply=document.getElementById('mc-apply-bulk');if(apply)apply.onclick=()=>openBulkDialog(wish);
     updateCount();
     setTimeout(()=>window.CoverVault?.hydrate?.(root),0);
     return out;
