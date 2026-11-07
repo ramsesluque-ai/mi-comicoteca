@@ -32,7 +32,8 @@ openSeries=async function(encoded){
 function mcSeriesQuickPanel(html,title='Buscar datos y portada'){
   let p=document.getElementById('mcSeriesQuickPanel');
   if(!p){p=document.createElement('div');p.id='mcSeriesQuickPanel';p.className='ficha-search-box';const head=$('#modal .modalhead');head?.insertAdjacentElement('afterend',p)}
-  p.innerHTML=`<div class="ficha-search-head"><b>${esc(title)}</b><button class="btn sm" onclick="mcCancelSeriesQuick()">Cerrar</button></div><div class="ficha-search-content">${html}</div>`;
+  const hasCandidates=mcSeriesQuickCandidates.length>0&&title==='Resultados: datos y portada';
+  p.innerHTML=`<div class="ficha-search-head"><b>${esc(title)}</b><div class="mc-quick-head-actions">${hasCandidates?'<button type="button" class="btn sm primary" onclick="mcAcceptSeriesQuick()">✓ Aceptar portada y datos</button>':''}<button type="button" class="btn sm" onclick="mcCancelSeriesQuick()">Cerrar</button></div></div><div class="ficha-search-content">${html}</div>`;
   p.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 function mcCancelSeriesQuick(){document.getElementById('mcSeriesQuickPanel')?.remove();mcSeriesQuickCandidates=[];mcSeriesQuickSelected=0;mcSeriesQuickId=''}
