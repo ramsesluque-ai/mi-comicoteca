@@ -1,5 +1,6 @@
 'use strict';
 (function(){
+  let drill=null;
   const fmt=n=>(Number(n)||0).toLocaleString('es-ES');
   function countBy(rows,fn){const m={};rows.forEach(x=>{const k=String(fn(x)||'Sin dato').trim()||'Sin dato';m[k]=(m[k]||0)+1});return Object.entries(m).sort((a,b)=>b[1]-a[1]);}
   function splitPeople(v){return String(v||'').split(/[,;|\/]+/).map(x=>x.trim()).filter(Boolean);}
@@ -11,6 +12,25 @@
   function collectionProgress(items){return items.slice(0,10).map(x=>{const pct=x.total?Math.min(100,Math.round(100*x.have/x.total)):0,s=x.sample||{};return `<button class="pbi-progress-row" onclick="PbiDashboard.openCollection('${safeParam(x.key)}')"><span><b>${esc(s.catalogHeader||s.series||'Colección')}</b><small>${esc([s.publisher,s.volume,s.stage,s.startYear].filter(Boolean).join(' · '))}</small></span><span class="pbi-progress"><i style="width:${pct}%"></i></span><strong>${pct}%</strong></button>`}).join('');}
   function qualityCard(label,value,total,action){const pct=total?Math.round(value*100/total):0;return `<button class="pbi-quality" onclick="${action}"><span>${label}</span><b>${fmt(value)}</b><small>${pct}% del catálogo</small><i><em style="width:${pct}%"></em></i></button>`;}
   function monthBars(purchases){const m={};purchases.forEach(x=>{const k=monthKey(x.date);if(k)m[k]=(m[k]||0)+num(x.price)+num(x.shipping)});const a=Object.entries(m).sort((a,b)=>a[0].localeCompare(b[0])).slice(-12),mx=Math.max(1,...a.map(x=>x[1]));return `<div class="pbi-months">${a.map(([k,v])=>`<div title="${k}: ${money(v)}"><i style="height:${Math.max(5,100*v/mx)}%"></i><small>${k.slice(5)}</small></div>`).join('')||'<span class="muted">Sin compras fechadas</span>'}</div>`;}
+  function groupName(x){return String(x.group||x.universe||x.character||'Sin grupo').trim()||'Sin grupo';}
+  function drillRows(rows){
+    if(!drill)return rows;
+    return rows.filter(x=>drill.kind==='publisher'?String(x.publisher||'Sin dato').trim()===drill.value:groupName(x)===drill.value);
+  }
+  function drillPanel(rows){
+    if(!drill)return '';
+    const selected=drillRows(rows),owned=selected.filter(x=>x.status==='In Collection'),wish=selected.filter(x=>x.status==='On Wish List');
+    const secondary=drill.kind==='publisher'?countBy(owned,groupName):countBy(owned,x=>x.publisher);
+    const series=countBy(owned,x=>[x.publisher,x.catalogHeader||x.series||'Sin cabecera',x.volume||x.stage||'Sin etapa',x.startYear||'Sin año'].join(' · '));
+    const heading=drill.kind==='publisher'?'Editorial':'Personaje / universo';
+    const details=owned.slice(0,40).map(x=>`<tr><td>${esc(x.publisher||'Sin dato')}</td><td>${esc(x.catalogHeader||x.series||'Sin cabecera')}</td><td>${esc(x.volume||x.stage||'—')}</td><td>${esc(x.issueNr??x.issue??x.number??'—')}</td><td>${esc(x.title||'Sin título acreditado')}</td></tr>`).join('');
+    return `<section class="pbi-drill" aria-label="Desglose interactivo"><div class="pbi-drill-head"><div><small>DESGLOSE · ${heading}</small><h2>${esc(drill.value)}</h2><p>Explora los datos sin salir del dashboard. Las cifras reflejan los registros actuales.</p></div><button class="btn sm" onclick="PbiDashboard.clearDrill()">✕ Cerrar desglose</button></div>
+      <div class="pbi-drill-kpis"><div><small>En colección</small><b>${fmt(owned.length)}</b></div><div><small>Wishlist</small><b>${fmt(wish.length)}</b></div><div><small>Series / etapas</small><b>${fmt(series.length)}</b></div><div><small>Editoriales</small><b>${fmt(countBy(owned,x=>x.publisher).length)}</b></div></div>
+      <div class="pbi-drill-grid"><div><h3>${drill.kind==='publisher'?'Personajes / universos':'Editoriales'}</h3>${bars(secondary,drill.kind==='publisher'?'group':'publisher',12)||'<p class="muted">Sin datos</p>'}</div><div><h3>Series y etapas</h3>${series.slice(0,12).map(([k,v])=>`<div class="pbi-drill-series"><span>${esc(k)}</span><b>${fmt(v)}</b></div>`).join('')||'<p class="muted">Sin datos</p>'}</div></div>
+      <details class="pbi-drill-table"><summary>Ver detalle de ejemplares (${fmt(owned.length)}; primeros 40)</summary><div class="pbi-drill-scroll"><table><thead><tr><th>Editorial</th><th>Cabecera</th><th>Volumen / etapa</th><th>N.º</th><th>Título</th></tr></thead><tbody>${details}</tbody></table></div></details>
+    </section>`;
+  }
+  function clearDrill(){drill=null;if(typeof render==='function')return render();}
   async function view(){
     const rows=await allStore('comics'),purchases=await allStore('purchases');
     const inc=rows.filter(x=>x.status==='In Collection'),wish=rows.filter(x=>x.status==='On Wish List');
@@ -37,6 +57,7 @@
         <div><span>Valor estimado</span><b>${money(estimated)}</b><small>Valor registrado</small></div>
         <button onclick="PbiDashboard.goto('purchases')"><span>Compras del mes</span><b>${fmt(monthPurchases.length)}</b><small>${money(monthSpend)} este mes</small></button>
       </div>
+      ${drillPanel(rows)}
       <div class="pbi-grid pbi-grid-3">
         <section class="pbi-panel"><div class="pbi-title"><b>Editoriales</b><span>Clic para filtrar</span></div>${bars(pubs,'publisher')||'<div class="muted">Sin datos</div>'}</section>
         <section class="pbi-panel"><div class="pbi-title"><b>Personajes / universos</b><span>Distribución</span></div>${bars(groups,'group')||'<div class="muted">Sin datos</div>'}</section>
@@ -50,9 +71,9 @@
     </div>`;
   }
   async function goto(v,status){await route(v);if(status&&v==='catalog'){filters.status=status;await render();}}
-  async function filter(kind,value){const v=decodeURIComponent(value);current='catalog';page=1;filters={status:'In Collection'};if(kind==='publisher')filters.publisher=v;else if(kind==='group')filters.group=v;else if(kind==='author')filters.q=v;else if(kind==='decade')filters.q=v.split('–')[0];setNav('catalog');await render();}
+  async function filter(kind,value){const v=decodeURIComponent(value);if(kind==='publisher'||kind==='group'){drill={kind,value:v};if(typeof render==='function')await render();return;}current='catalog';page=1;filters={status:'In Collection'};if(kind==='author')filters.q=v;else if(kind==='decade')filters.q=v.split('–')[0];setNav('catalog');await render();}
   async function openCollection(encoded){const key=decodeURIComponent(encoded);current='series';page=1;setNav('series');await render();if(typeof openSeries==='function')return openSeries(encodeURIComponent(key));if(typeof window.openCollection==='function' && window.openCollection!==window.PbiDashboard.openCollection)return window.openCollection(encodeURIComponent(key));}
-  window.PbiDashboard={view,goto,filter,openCollection};
+  window.PbiDashboard={view,goto,filter,openCollection,clearDrill};
   window.dashboard=view;
 
   // app1/app5 can start their initial asynchronous render before this module loads.
