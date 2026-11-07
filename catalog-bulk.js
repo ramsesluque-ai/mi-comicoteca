@@ -1,0 +1,94 @@
+'use strict';
+/* Catalog batch operations and list/card switch. Only personal comics are modified. */
+(function(){
+  const selected=new Set();
+  let view='cards';
+  const originalView=catalogView;
+  const originalRender=renderCat;
+  const idSafe=id=>String(id).replace(/\\/g,'\\\\').replace(/"/g,'\\"');
+  const getVisible=async(wish)=>filtered(await allStore('comics'),wish);
+  const label=x=>[x.publisher,x.catalogHeader||x.series,x.issueNr&&('#'+x.issueNr)].filter(Boolean).join(' · ');
+  function toolbar(wish){
+    return '<div class="mc-catalog-tools"><div class="mc-catalog-modes"><button type="button" class="btn sm" data-mc-view="cards" aria-pressed="'+(view==='cards')+'">▦ Fichas</button><button type="button" class="btn sm" data-mc-view="list" aria-pressed="'+(view==='list')+'">☷ Lista</button></div><label class="mc-catalog-check"><input type="checkbox" id="mc-select-page"> Seleccionar página</label><span id="mc-selection-count" aria-live="polite"></span><select id="mc-bulk-action" aria-label="Acción sobre los seleccionados"><option value="">Acción sobre seleccionados…</option><option value="In Collection">Pasar a colección</option><option value="On Wish List">Pasar a wishlist</option><option value="other">Cambiar estado</option><option value="publisher">Cambiar editorial</option><option value="group">Cambiar grupo / universo</option><option value="arc">Cambiar arco argumental</option><option value="tags">Añadir tags</option><option value="delete">Eliminar del catálogo personal</option></select><button type="button" class="btn sm primary" id="mc-apply-bulk">Aplicar</button></div>';
+  }
+  catalogView=async function(wish=false){
+    const html=await originalView(wish);
+    selected.clear();
+    return html.replace('<div id="catbody"></div>',toolbar(wish)+'<div id="catbody"></div>');
+  };
+  function updateCount(){
+    const count=document.getElementById('mc-selection-count');
+    if(count)count.textContent=selected.size+' seleccionados';
+    document.querySelectorAll('#catbody [data-mc-select]').forEach(el=>{el.checked=selected.has(el.dataset.mcSelect)});
+    const all=[...document.querySelectorAll('#catbody [data-mc-select]')];
+    const selectPage=document.getElementById('mc-select-page');
+    if(selectPage){selectPage.checked=!!all.length&&all.every(x=>x.checked);selectPage.indeterminate=all.some(x=>x.checked)&&!selectPage.checked}
+  }
+  function listHTML(rows){
+    return '<div class="mc-catalog-list" role="table" aria-label="Listado de cómics">'+rows.map(x=>'<div class="mc-catalog-list-row" role="row"><input type="checkbox" data-mc-select="'+esc(x.id)+'" aria-label="Seleccionar '+esc(label(x))+'"><div class="mc-catalog-list-cover">'+img(x,'cover cardcover')+'</div><div class="mc-catalog-list-info"><strong>'+esc(x.catalogHeader||x.series||x.title||'Sin cabecera')+'</strong><small>'+esc([x.publisher,x.volume&&('Vol. '+x.volume),x.startYear,x.issueNr&&('#'+x.issueNr)].filter(Boolean).join(' · '))+'</small><small>'+esc(x.title||'')+'</small></div><div class="mc-catalog-list-status">'+statusPill(x.status)+'</div><button type="button" class="btn sm" data-mc-edit="'+esc(x.id)+'">Editar</button></div>').join('')+'</div>';
+  }
+  async function applyAction(wish){
+    const action=document.getElementById('mc-bulk-action')?.value;
+    if(!action||!selected.size){toast('Selecciona cómics y una acción');return}
+    const ids=[...selected];
+    let value=null;
+    if(action==='delete'){
+      if(!confirm('¿Eliminar '+ids.length+' cómic(s) de tu catálogo personal? Esta acción no afecta al Maestro y no se puede deshacer.'))return;
+    }else if(action==='other'){
+      value=prompt('Nuevo estado (por ejemplo: En venta, Vendido, Prestado):');
+      if(value===null||!value.trim())return;
+    }else if(!['In Collection','On Wish List'].includes(action)){
+      value=prompt(action==='publisher'?'Nueva editorial:':action==='group'?'Grupo / universo:':action==='arc'?'Arco argumental:':'Tags que deseas añadir:');
+      if(value===null||!value.trim())return;
+    }
+    let changed=0;
+    for(const id of ids){
+      const row=await getStore('comics',id);
+      if(!row)continue;
+      if(action==='delete')await delStore('comics',id);
+      else {
+        const next={...row};
+        if(action==='other')next.status=value.trim();
+        else if(action==='tags'){const old=String(row.tags||'').split(/[,;]/).map(t=>t.trim()).filter(Boolean);if(!old.some(t=>norm(t)===norm(value)))old.push(value.trim());next.tags=old.join(', ')}
+        else next[action==='In Collection'||action==='On Wish List'?'status':action]=['In Collection','On Wish List'].includes(action)?action:value.trim();
+        await putStore('comics',next);
+      }
+      changed++;
+    }
+    selected.clear();
+    toast(changed+' registros actualizados');
+    await renderCat(wish);
+  }
+  renderCat=async function(wish=false){
+    const out=await originalRender(wish);
+    const root=document.getElementById('catbody');
+    if(!root)return out;
+    const visible=await getVisible(wish);
+    const pageRows=visible.slice((page-1)*PAGE,page*PAGE);
+    if(view==='list'){
+      const grid=root.querySelector('.comic-grid');
+      if(grid)grid.outerHTML=listHTML(pageRows);
+    }else{
+      const cards=root.querySelectorAll('.comic-grid .comic-card');
+      cards.forEach((card,i)=>{
+        const row=pageRows[i];if(!row)return;
+        const checkbox=document.createElement('input');
+        checkbox.type='checkbox';checkbox.className='mc-card-select';checkbox.dataset.mcSelect=row.id;checkbox.setAttribute('aria-label','Seleccionar '+label(row));
+        checkbox.onclick=e=>e.stopPropagation();
+        card.prepend(checkbox);
+      });
+    }
+    root.querySelectorAll('[data-mc-select]').forEach(input=>{
+      input.checked=selected.has(input.dataset.mcSelect);
+      input.onchange=()=>{if(input.checked)selected.add(input.dataset.mcSelect);else selected.delete(input.dataset.mcSelect);updateCount()};
+    });
+    root.querySelectorAll('[data-mc-edit]').forEach(btn=>btn.onclick=()=>editComic(btn.dataset.mcEdit));
+    document.querySelectorAll('[data-mc-view]').forEach(btn=>btn.onclick=()=>{view=btn.dataset.mcView;renderCat(wish)});
+    const pageSelect=document.getElementById('mc-select-page');
+    if(pageSelect)pageSelect.onchange=()=>{root.querySelectorAll('[data-mc-select]').forEach(x=>{if(pageSelect.checked)selected.add(x.dataset.mcSelect);else selected.delete(x.dataset.mcSelect)});updateCount()};
+    const apply=document.getElementById('mc-apply-bulk');if(apply)apply.onclick=()=>applyAction(wish);
+    updateCount();
+    setTimeout(()=>window.CoverVault?.hydrate?.(root),0);
+    return out;
+  };
+})();
