@@ -29,8 +29,8 @@
     for(const row of rows){
       let raw=String(row.issueNr??row.issue??'').trim();
       // Accept Nº 09, N.º 9, #9, 009, 9/59, 9 (2012) and localized issue labels.
-      raw=raw.replace(/^(?:n[.\\s]*[º°oúu]?[.\\s]*|núm(?:ero)?[.\\s]*|num(?:ero)?[.\\s]*|#\\s*)/i,'').trim();
-      const match=raw.match(/^0*([1-9][0-9]*)(?:\\s*(?:\\/\\s*[0-9]+|\\(\\s*[12][0-9]{3}\\s*\\)))?$/);
+      raw=raw.replace(/^(?:n[.\s]*[º°oúu]?[.\s]*|núm(?:ero)?[.\s]*|num(?:ero)?[.\s]*|#\s*)/i,'').trim();
+      const match=raw.match(/^0*([1-9][0-9]*)(?:\s*(?:[/]\s*[0-9]+|\(\s*[12][0-9]{3}\s*\)))?$/);
       if(!match){unknown++;continue}
       const v=Number(match[1]);
       if(!Number.isSafeInteger(v)){unknown++;continue}
