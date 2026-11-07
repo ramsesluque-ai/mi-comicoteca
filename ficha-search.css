@@ -146,3 +146,13 @@
  #modal .mc-comic-editor .modalbody .formgrid>.span4.toolbar>.ficha-top-actions,
  #modal .mc-comic-editor .modalbody .formgrid>.span4.toolbar>div[style*="flex:1"]{grid-column:1!important;grid-row:auto!important}
 }
+
+
+/* v118 — clean ISBN tools and preserve hidden cover URL for existing save logic */
+#modal .mc-comic-editor .mc-cover-url-storage{display:none!important}
+#modal .mc-comic-editor .ficha-code-box{display:flex!important;flex-wrap:wrap;align-items:center;gap:8px!important;border:0!important;background:transparent!important;padding:0!important}
+#modal .mc-comic-editor .ficha-code-box>label{flex:0 0 100%;font-size:11px!important;font-weight:600!important;letter-spacing:0!important;text-transform:none!important}
+#modal .mc-comic-editor .ficha-code-row{display:flex!important;flex-wrap:wrap;align-items:center;gap:8px!important;width:100%}
+#modal .mc-comic-editor .ficha-code-row input{flex:1 1 170px!important;max-width:260px!important;font-size:13px!important;padding:7px 10px!important;min-height:34px!important}
+#modal .mc-comic-editor .ficha-top-actions{align-items:flex-start!important;gap:10px!important}
+#modal .mc-comic-editor .ficha-top-actions>.btn{font-size:12px!important;min-height:34px!important;padding:7px 12px!important}
