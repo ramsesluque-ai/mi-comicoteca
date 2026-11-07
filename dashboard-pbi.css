@@ -36,3 +36,10 @@
   .pbi-bar-row{grid-template-columns:minmax(0,2fr) minmax(32px,1fr) 36px;font-size:12px;gap:6px}
   .pbi-track{height:7px}
 }
+
+/* Progress colors encode actual collection completion rather than decoration. */
+.pbi-progress.pbi-critical i{background:linear-gradient(90deg,#e25555,#f17b66)}
+.pbi-progress.pbi-low i{background:linear-gradient(90deg,#e98a39,#f3b24e)}
+.pbi-progress.pbi-medium i{background:linear-gradient(90deg,#e0b83d,#f5d76b)}
+.pbi-progress.pbi-high i{background:linear-gradient(90deg,#69b88a,#9bda7e)}
+.pbi-progress.pbi-complete i{background:linear-gradient(90deg,#259a64,#56d69b)}
