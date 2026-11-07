@@ -25,15 +25,21 @@
   // A continuous registered sequence 1..N is an inferred total, not a bibliographically verified edition length.
   function consecutiveRegistered(rows){
     const nums=new Set();
+    let unknown=0;
     for(const row of rows){
-      const raw=String(row.issueNr??row.issue??'').trim().replace(/^#\s*/, '');
-      if(!/^(?:0*[1-9][0-9]*)$/.test(raw))return null;
-      const v=Number(raw);
-      if(!Number.isSafeInteger(v))return null;
+      let raw=String(row.issueNr??row.issue??'').trim();
+      // Accept Nº 09, N.º 9, #9, 009, 9/59, 9 (2012) and localized issue labels.
+      raw=raw.replace(/^(?:n[.\\s]*[º°oúu]?[.\\s]*|núm(?:ero)?[.\\s]*|num(?:ero)?[.\\s]*|#\\s*)/i,'').trim();
+      const match=raw.match(/^0*([1-9][0-9]*)(?:\\s*(?:\\/\\s*[0-9]+|\\(\\s*[12][0-9]{3}\\s*\\)))?$/);
+      if(!match){unknown++;continue}
+      const v=Number(match[1]);
+      if(!Number.isSafeInteger(v)){unknown++;continue}
       nums.add(v);
     }
     if(!nums.size)return null;
     const last=Math.max(...nums);
+    // Unknown or special issues cannot be silently counted as part of a numeric run.
+    if(unknown)return null;
     return nums.size===last?last:null;
   }
 
