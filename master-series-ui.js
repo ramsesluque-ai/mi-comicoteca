@@ -25,8 +25,19 @@ renderMaster=async function(){
  const q=normalize(document.getElementById('mq')?.value||'');state.q=q;filters.q=q;
  const idx=await mcSEMasterIndex();
  if(token!==state.serial)return;
+ const advancedToggle=document.getElementById('mc-master-advanced-toggle');
+ const advancedBox=document.getElementById('mc-master-detail-filters');
+ if(advancedToggle&&advancedBox){
+   advancedToggle.onclick=()=>{
+     const expanded=advancedToggle.getAttribute('aria-expanded')!=='true';
+     advancedToggle.setAttribute('aria-expanded',String(expanded));
+     advancedBox.hidden=!expanded;
+     advancedToggle.innerHTML=expanded?'Menos filtros <span aria-hidden="true">⌃</span>':'Más filtros <span aria-hidden="true">⌄</span>';
+   };
+ }
+
  if(!pub){
-   document.getElementById('mc-master-detail-filters').innerHTML='';
+   document.getElementById('mc-master-detail-filters').innerHTML='<span class="mc-master-filter-hint">Selecciona una editorial para filtrar por cabecera, volumen, etapa o año.</span>';
    const list=(idx.publishers||[]).filter(p=>!q||mcSENorm(p.publisher).includes(mcSENorm(q))).sort((a,b)=>(b.priority-a.priority)||b.issues-a.issues);
    const per=36,pages=Math.max(1,Math.ceil(list.length/per));state.page=Math.min(state.page,pages);
    const slice=list.slice((state.page-1)*per,state.page*per);
