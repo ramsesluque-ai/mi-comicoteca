@@ -12,11 +12,10 @@ masterView=async function(){
  state.publisher=filters.publisher||state.publisher||'';
  state.q=filters.q||state.q||'';
  return head('Maestro',idx.totalIssues.toLocaleString('es-ES')+' ejemplares · '+idx.totalSeries.toLocaleString('es-ES')+' series · '+idx.totalPublishers.toLocaleString('es-ES')+' editoriales')+
- '<div class="panel mc-master-series-panel"><div class="filters mc-master-series-filters">'+
- '<input id="mq" value="'+esc(state.q)+'" placeholder="Buscar cabecera, título, ISBN…" aria-label="Buscar en Maestro">'+
- '<select id="mpub" aria-label="Editorial">'+option('','Seleccionar editorial',state.publisher)+(idx.publishers||[]).map(p=>option(p.publisher,p.publisher+' · '+p.issues.toLocaleString('es-ES'),state.publisher)).join('')+'</select>'+
- '<span id="mc-master-detail-filters"></span>'+
- '</div><div id="masterbody">'+info()+'</div></div>';
+ '<div class="panel mc-master-series-panel"><div class="filters series-filters mc-master-series-filters">'+
+ '<input id="mq" value="'+esc(state.q)+'" placeholder="Buscar colección…" aria-label="Buscar colección en Maestro">'+
+ '<select id="mpub" aria-label="Editorial">'+option('','Todas las editoriales',state.publisher)+(idx.publishers||[]).map(p=>option(p.publisher,p.publisher,state.publisher)).join('')+'</select>'+
+ '</div><div class="mc-master-advanced-wrap"><button type="button" class="btn sm mc-master-advanced-toggle" id="mc-master-advanced-toggle" aria-expanded="false">Más filtros <span aria-hidden="true">⌄</span></button><div id="mc-master-detail-filters" hidden></div></div><div id="masterbody">'+info()+'</div></div>';
 };
 renderMaster=async function(){
  const body=document.getElementById('masterbody');if(!body)return;
@@ -39,6 +38,7 @@ renderMaster=async function(){
  if(token!==state.serial)return;
  const filtersBox=document.getElementById('mc-master-detail-filters');
  filtersBox.innerHTML=opts(rows,'catalogHeader','Todas las cabeceras',state.header)+opts(rows,'volume','Todos los volúmenes',state.volume)+opts(rows,'stage','Todas las etapas',state.stage)+opts(rows,'startYear','Todos los años',state.year);
+ const toggle=document.getElementById('mc-master-advanced-toggle');if(toggle){toggle.onclick=()=>{const expanded=toggle.getAttribute('aria-expanded')!=='true';toggle.setAttribute('aria-expanded',String(expanded));filtersBox.hidden=!expanded;toggle.innerHTML=expanded?'Menos filtros <span aria-hidden="true">⌃</span>':'Más filtros <span aria-hidden="true">⌄</span>'};}
  const checks=[['catalogHeader','header'],['volume','volume'],['stage','stage'],['startYear','year']];
  for(const [field,prop] of checks){if(state[prop]&&!rows.some(r=>normalize(r[field])===state[prop]))state[prop]='';filtersBox.querySelector('[data-master-filter="'+field+'"]').value=state[prop]}
  let filtered=rows.filter(r=>{
