@@ -22,10 +22,27 @@
     return r;
   }
 
+  // A continuous registered sequence 1..N is an inferred total, not a bibliographically verified edition length.
+  function consecutiveRegistered(rows){
+    const nums=new Set();
+    for(const row of rows){
+      const raw=String(row.issueNr??row.issue??'').trim();
+      if(!/^[1-9]\\d*$/.test(raw))return null;
+      const v=Number(raw);
+      if(!Number.isSafeInteger(v))return null;
+      nums.add(v);
+    }
+    if(!nums.size)return null;
+    const last=Math.max(...nums);
+    return nums.size===last?last:null;
+  }
+
   async function renderSeriesV53(){
     const all=await allStore('comics');
     const st=await api.currentStatic(all);
     const filtered=applyFilters(all);
+    const fullGroups=new Map();
+    for(const row of all){const key=api.resolvedKey(row,st);if(!fullGroups.has(key))fullGroups.set(key,[]);fullGroups.get(key).push(row)}
     const m={};
     for(const x of filtered){
       const k=api.resolvedKey(x,st);
@@ -38,18 +55,19 @@
     let a=Object.entries(m).map(([k,x])=>{
       const me=st.full.get(k);if(me)x.sample=me.sample;
       x.have=x.haveSet.size;x.wish=x.wishSet.size;x.personalTotal=x.personalSet.size;
-      x.total=x.personalTotal; // Only distinct issues actually registered; static master is not a verified publication total.
+      x.total=x.personalTotal; // Distinct registered issues, never the highest issue number.
+      x.continuousTotal=consecutiveRegistered(fullGroups.get(k)||[]);
       x.duplicates=Math.max(0,x.inRecords-x.have)+Math.max(0,x.wishRecords-x.wish);
       return[k,x];
     }).sort((a,b)=>clabel(a[1].sample).localeCompare(clabel(b[1].sample),'es',{numeric:true}));
     const per=60,pages=Math.max(1,Math.ceil(a.length/per));page=Math.max(1,Math.min(page,pages));
     const slice=a.slice((page-1)*per,page*per),body=document.querySelector('#seriesbody');if(!body)return;
     body.innerHTML=`<div class="series-grid visual">${slice.map(([k,x])=>{
-      const pct=x.complete?100:null; // Only explicit 'completa' tag confirms 100%; never infer from issue numbering.
+      const pct=x.complete?100:(x.continuousTotal?Math.round(100*x.have/x.continuousTotal):null); // Continuity is a user-requested estimate, not verified published total.
       const s=x.cover||x.sample;
-      const barColor=x.complete?'var(--ok)':'transparent';
+      const barColor=pct===100?'var(--ok)':pct!==null?'var(--warn)':'transparent';
       const dup=x.duplicates?`<div class="muted small">${x.duplicates} registro${x.duplicates===1?'':'s'} duplicado${x.duplicates===1?'':'s'} detectado${x.duplicates===1?'':'s'}</div>`:'';
-      return `<article class="series-card visual" onclick="openSeries('${encodeURIComponent(k)}')"><div class="series-cover">${img(s,'cover seriescover')}</div><div class="series-content"><div class="comic-kicker">${esc(x.sample.publisher||'Sin editorial')}</div><div class="series-title">${esc(x.sample.catalogHeader||x.sample.series)}</div><div class="master-meta">${esc([x.sample.volume&&('Vol. '+x.sample.volume),x.sample.stage,x.sample.startYear].filter(Boolean).join(' · ')||'Edición sin identificar')}</div><div class="progress"><span style="width:${x.complete?100:0}%;background:${barColor}"></span></div><div class="series-stats"><b>${x.have}</b> en colección · <b>${x.wish}</b> wishlist · <b>${x.total}</b> números registrados</div><div class="series-status-note" style="position:static!important;display:block!important;float:none!important;clear:both!important;width:auto!important;max-width:100%!important;margin:4px 0 0!important;padding:0!important;font-size:11px!important;line-height:1.25!important;font-weight:400!important;letter-spacing:normal!important;white-space:normal!important;overflow-wrap:break-word!important;text-align:left!important;color:${x.complete?'#7cddb3':'#9fb3c9'}!important">${x.complete?'✓ Completa · 100%':'Total publicado sin verificar'}</div>${dup}</div></article>`;
+      return `<article class="series-card visual" onclick="openSeries('${encodeURIComponent(k)}')"><div class="series-cover">${img(s,'cover seriescover')}</div><div class="series-content"><div class="comic-kicker">${esc(x.sample.publisher||'Sin editorial')}</div><div class="series-title">${esc(x.sample.catalogHeader||x.sample.series)}</div><div class="master-meta">${esc([x.sample.volume&&('Vol. '+x.sample.volume),x.sample.stage,x.sample.startYear].filter(Boolean).join(' · ')||'Edición sin identificar')}</div><div class="progress"><span style="width:${pct===null?0:Math.max(0,Math.min(100,pct))}%;background:${barColor}"></span></div><div class="series-stats"><b>${x.have}</b> en colección · <b>${x.wish}</b> wishlist · <b>${x.total}</b> números registrados</div><div class="series-status-note" style="position:static!important;display:block!important;float:none!important;clear:both!important;width:auto!important;max-width:100%!important;margin:4px 0 0!important;padding:0!important;font-size:11px!important;line-height:1.25!important;font-weight:400!important;letter-spacing:normal!important;white-space:normal!important;overflow-wrap:break-word!important;text-align:left!important;color:${x.complete?'#7cddb3':'#9fb3c9'}!important">${x.complete?'✓ Completa · 100%':(pct!==null?`${pct}% · Secuencia 1–${x.continuousTotal} sin huecos (estimado)`:'Total publicado sin verificar')}</div>${dup}</div></article>`;
     }).join('')||'<div class="empty">Sin resultados con estos filtros.</div>'}</div><div class="pager"><span>${a.length.toLocaleString('es-ES')} colecciones · Página ${page}/${pages}</span><span><button class="btn sm" ${page<=1?'disabled':''} onclick="page--;renderSeries()">Anterior</button> <button class="btn sm" ${page>=pages?'disabled':''} onclick="page++;renderSeries()">Siguiente</button></span></div>`;
     const sq=document.querySelector('#sq');if(sq)sq.oninput=()=>{filters.q=sq.value;page=1;renderSeries()};
     if(typeof mcVFPaint==='function')mcVFPaint();
