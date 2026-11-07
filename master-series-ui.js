@@ -1,7 +1,7 @@
 'use strict';
 /* Master series browser: same series-card layout as personal Collections. Publisher chunks load on demand. */
 (function(){
-const state={publisher:'',q:'',header:'',volume:'',stage:'',year:'',page:1,serial:0};
+const state={publisher:'',q:'',header:'',volume:'',stage:'',year:'',status:'',page:1,serial:0};
 const normalize=v=>String(v??'').trim();
 const option=(value,label,selected)=>'<option value="'+esc(value)+'"'+(value===selected?' selected':'')+'>'+esc(label)+'</option>';
 const unique=(rows,key)=>[...new Set(rows.map(x=>normalize(x[key])).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es',{numeric:true}));
@@ -12,10 +12,16 @@ masterView=async function(){
  state.publisher=filters.publisher||state.publisher||'';
  state.q=filters.q||state.q||'';
  return head('Maestro',idx.totalIssues.toLocaleString('es-ES')+' ejemplares · '+idx.totalSeries.toLocaleString('es-ES')+' series · '+idx.totalPublishers.toLocaleString('es-ES')+' editoriales')+
- '<div class="panel mc-master-series-panel"><div class="filters series-filters mc-master-series-filters">'+
- '<input id="mq" value="'+esc(state.q)+'" placeholder="Buscar colección…" aria-label="Buscar colección en Maestro">'+
- '<select id="mpub" aria-label="Editorial">'+option('','Todas las editoriales',state.publisher)+(idx.publishers||[]).map(p=>option(p.publisher,p.publisher,state.publisher)).join('')+'</select>'+
- '</div><div class="mc-master-advanced-wrap"><button type="button" class="btn sm mc-master-advanced-toggle" id="mc-master-advanced-toggle" aria-expanded="false">Más filtros <span aria-hidden="true">⌄</span></button><div id="mc-master-detail-filters" hidden></div></div><div id="masterbody">'+info()+'</div></div>';
+ '<div class="panel mc-master-series-panel"><div class="mc-master-filter-dashboard">'+
+ '<label class="mc-mf mc-mf-search"><span>⌕ BUSCAR COLECCIÓN</span><input id="mq" value="'+esc(state.q)+'" placeholder="Editorial, serie, etapa…" aria-label="Buscar colección"></label>'+
+ '<label class="mc-mf mc-mf-publisher"><span>▣ EDITORIAL</span><select id="mpub" aria-label="Editorial">'+option('','Todas las editoriales',state.publisher)+(idx.publishers||[]).map(p=>option(p.publisher,p.publisher,state.publisher)).join('')+'</select></label>'+
+ '<label class="mc-mf mc-mf-header"><span>▤ CABECERA / SERIE</span><select data-master-filter="catalogHeader" aria-label="Cabecera">'+option('','Todas las cabeceras',state.header)+'</select></label>'+
+ '<label class="mc-mf mc-mf-volume"><span>▥ VOLUMEN</span><select data-master-filter="volume" aria-label="Volumen">'+option('','Todos los volúmenes',state.volume)+'</select></label>'+
+ '<label class="mc-mf mc-mf-stage"><span>◆ ETAPA</span><select data-master-filter="stage" aria-label="Etapa">'+option('','Todas las etapas',state.stage)+'</select></label>'+
+ '<label class="mc-mf mc-mf-year"><span>◷ AÑO DE INICIO</span><select data-master-filter="startYear" aria-label="Año de inicio">'+option('','Todos los años',state.year)+'</select></label>'+
+ '<label class="mc-mf mc-mf-status"><span>● ESTADO</span><select id="mc-master-status" aria-label="Estado">'+option('','Todos los estados',state.status)+option('In Collection','En colección',state.status)+option('On Wish List','Wishlist',state.status)+option('missing','No incorporados',state.status)+'</select></label>'+
+ '<div class="mc-mf-hint" id="mc-master-filter-hint">Sin filtros activos · se muestran todos los registros</div>'+
+ '</div><div id="masterbody">'+info()+'</div></div>';
 };
 renderMaster=async function(){
  const body=document.getElementById('masterbody');if(!body)return;
@@ -25,19 +31,13 @@ renderMaster=async function(){
  const q=normalize(document.getElementById('mq')?.value||'');state.q=q;filters.q=q;
  const idx=await mcSEMasterIndex();
  if(token!==state.serial)return;
- const advancedToggle=document.getElementById('mc-master-advanced-toggle');
- const advancedBox=document.getElementById('mc-master-detail-filters');
- if(advancedToggle&&advancedBox){
-   advancedToggle.onclick=()=>{
-     const expanded=advancedToggle.getAttribute('aria-expanded')!=='true';
-     advancedToggle.setAttribute('aria-expanded',String(expanded));
-     advancedBox.hidden=!expanded;
-     advancedToggle.innerHTML=expanded?'Menos filtros <span aria-hidden="true">⌃</span>':'Más filtros <span aria-hidden="true">⌄</span>';
-   };
- }
+ const statusSelect=document.getElementById('mc-master-status');
+ if(statusSelect){statusSelect.value=state.status;statusSelect.onchange=()=>{state.status=statusSelect.value;state.page=1;renderMaster()};}
+ const hint=document.getElementById('mc-master-filter-hint');
+ if(hint)hint.textContent=[q&&'Búsqueda activa',pub&&'Editorial: '+pub,state.header&&'Cabecera: '+state.header,state.volume&&'Volumen: '+state.volume,state.stage&&'Etapa: '+state.stage,state.year&&'Año: '+state.year,state.status&&'Estado filtrado'].filter(Boolean).join(' · ')||'Sin filtros activos · se muestran todos los registros';
 
  if(!pub){
-   document.getElementById('mc-master-detail-filters').innerHTML='<span class="mc-master-filter-hint">Selecciona una editorial para filtrar por cabecera, volumen, etapa o año.</span>';
+   document.querySelectorAll('[data-master-filter]').forEach(el=>{el.innerHTML=option('',{catalogHeader:'Todas las cabeceras',volume:'Todos los volúmenes',stage:'Todas las etapas',startYear:'Todos los años'}[el.dataset.masterFilter],'');el.disabled=true;});
    const list=(idx.publishers||[]).filter(p=>!q||mcSENorm(p.publisher).includes(mcSENorm(q))).sort((a,b)=>(b.priority-a.priority)||b.issues-a.issues);
    const per=36,pages=Math.max(1,Math.ceil(list.length/per));state.page=Math.min(state.page,pages);
    const slice=list.slice((state.page-1)*per,state.page*per);
@@ -47,15 +47,23 @@ renderMaster=async function(){
  body.innerHTML='<p class="muted">Cargando colecciones de '+esc(pub)+'…</p>';
  const rows=await mcMasterLoadPublisher(pub);
  if(token!==state.serial)return;
- const filtersBox=document.getElementById('mc-master-detail-filters');
- filtersBox.innerHTML=opts(rows,'catalogHeader','Todas las cabeceras',state.header)+opts(rows,'volume','Todos los volúmenes',state.volume)+opts(rows,'stage','Todas las etapas',state.stage)+opts(rows,'startYear','Todos los años',state.year);
- const toggle=document.getElementById('mc-master-advanced-toggle');if(toggle){toggle.onclick=()=>{const expanded=toggle.getAttribute('aria-expanded')!=='true';toggle.setAttribute('aria-expanded',String(expanded));filtersBox.hidden=!expanded;toggle.innerHTML=expanded?'Menos filtros <span aria-hidden="true">⌃</span>':'Más filtros <span aria-hidden="true">⌄</span>'};}
+ for(const [field,label,value] of [['catalogHeader','Todas las cabeceras',state.header],['volume','Todos los volúmenes',state.volume],['stage','Todas las etapas',state.stage],['startYear','Todos los años',state.year]]){
+   const el=document.querySelector('[data-master-filter="'+field+'"]');
+   if(el){el.innerHTML=option('',label,value)+unique(rows,field).map(v=>option(v,v,value)).join('');el.disabled=false;}
+ }
  const checks=[['catalogHeader','header'],['volume','volume'],['stage','stage'],['startYear','year']];
- for(const [field,prop] of checks){if(state[prop]&&!rows.some(r=>normalize(r[field])===state[prop]))state[prop]='';filtersBox.querySelector('[data-master-filter="'+field+'"]').value=state[prop]}
+ for(const [field,prop] of checks){if(state[prop]&&!rows.some(r=>normalize(r[field])===state[prop]))state[prop]='';document.querySelector('[data-master-filter="'+field+'"]').value=state[prop]}
  let filtered=rows.filter(r=>{
    if(q&&!mcSENorm([r.publisher,r.catalogHeader,r.series,r.title,r.isbn,r.issueNr].join(' ')).includes(mcSENorm(q)))return false;
    return checks.every(([field,prop])=>!state[prop]||normalize(r[field])===state[prop]);
  });
+ if(state.status){
+   const owned=await allStore('comics');
+   if(token!==state.serial)return;
+   const match=new Map();
+   for(const x of owned){const key=mcMasterGroupKey(x)+'|'+String(x.issueNr||x.issue||'').trim();if(!match.has(key))match.set(key,new Set());match.get(key).add(x.status);}
+   filtered=filtered.filter(x=>{const key=mcMasterGroupKey(x)+'|'+String(x.issueNr||x.issue||'').trim();const statuses=match.get(key);return state.status==='missing'?!statuses:!!statuses?.has(state.status)});
+ }
  const groups=new Map();
  for(const r of filtered){const key=mcMasterGroupKey(r);if(!groups.has(key))groups.set(key,{sample:r,cover:null,count:0});const g=groups.get(key);g.count++;if(!g.cover&&r.coverUrl)g.cover=r}
  const list=[...groups.entries()].sort((a,b)=>mcMasterGroupLabel(a[1].sample).localeCompare(mcMasterGroupLabel(b[1].sample),'es',{numeric:true}));
