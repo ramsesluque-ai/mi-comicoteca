@@ -77,44 +77,62 @@
     };
     host.querySelector('#mc-bulk-value')?.focus();
   }
-  // Delegated controls survive page redraws and do not depend on per-render handlers.
-  document.addEventListener('click',event=>{
-    const button=event.target.closest?.('[data-mc-view],#mc-apply-bulk,[data-mc-edit]');
-    if(!button)return;
-    if(!document.querySelector('.mc-catalog-tools'))return;
-    event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();
-    const wish=current==='wishlist';
-    if(button.hasAttribute('data-mc-view')){
-      view=button.dataset.mcView;
-      document.querySelectorAll('[data-mc-view]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
-      const root=document.getElementById('catbody');
-      root?.classList.toggle('mc-list-mode',view==='list');
-      // A layout switch must never depend on an asynchronous database render.
-      document.querySelectorAll('[data-mc-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mcView===view)));
-    }else if(button.id==='mc-apply-bulk')openBulkDialog(wish);
-    else editComic(button.dataset.mcEdit);
-  },true);
-  document.addEventListener('change',event=>{
-    const input=event.target;
-    if(!document.querySelector('.mc-catalog-tools'))return;
-    if(input.matches?.('#catbody [data-mc-select]')){
-      if(input.checked)selected.add(input.dataset.mcSelect);
-      else selected.delete(input.dataset.mcSelect);
-      updateCount();
-    }else if(input.matches?.('#mc-select-page')){
-      document.querySelectorAll('#catbody [data-mc-select]').forEach(x=>{
-        x.checked=input.checked;
-        if(input.checked)selected.add(x.dataset.mcSelect);
-        else selected.delete(x.dataset.mcSelect);
+  function setView(next){
+    view=next;
+    const root=document.getElementById('catbody');
+    if(root){
+      root.classList.toggle('mc-list-mode',next==='list');
+      const grid=root.querySelector('.comic-grid');
+      if(grid){
+        grid.style.setProperty('display',next==='list'?'flex':'grid','important');
+        if(next==='list')grid.style.setProperty('flex-direction','column','important');
+        else grid.style.removeProperty('flex-direction');
+      }
+      root.querySelectorAll('.comic-card').forEach(card=>{
+        if(next==='list'){
+          card.style.setProperty('display','grid','important');
+          card.style.setProperty('grid-template-columns','28px 85px minmax(0,1fr)','important');
+          card.style.setProperty('width','100%','important');
+          card.style.setProperty('max-width','none','important');
+          card.style.setProperty('min-height','105px','important');
+          const cover=card.querySelector('.comic-cover');
+          if(cover){cover.style.setProperty('width','80px','important');cover.style.setProperty('height','95px','important');}
+        }else{
+          for(const prop of ['display','grid-template-columns','width','max-width','min-height'])card.style.removeProperty(prop);
+          const cover=card.querySelector('.comic-cover');
+          if(cover){cover.style.removeProperty('width');cover.style.removeProperty('height');}
+        }
+      });
+    }
+    document.querySelectorAll('[data-mc-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mcView===next)));
+  }
+  function setSelection(input,checked){
+    input.checked=checked;
+    if(checked)selected.add(input.dataset.mcSelect);
+    else selected.delete(input.dataset.mcSelect);
+    updateCount();
+  }
+  // Bind controls directly after each render; avoid relying on bubbling from clickable cards.
+  function bindCatalogControls(wish){
+    document.querySelectorAll('[data-mc-view]').forEach(button=>{
+      button.onclick=event=>{event.preventDefault();setView(button.dataset.mcView)};
+    });
+    const apply=document.getElementById('mc-apply-bulk');
+    if(apply)apply.onclick=event=>{event.preventDefault();openBulkDialog(wish)};
+    const selectPage=document.getElementById('mc-select-page');
+    if(selectPage)selectPage.onchange=()=>{
+      document.querySelectorAll('#catbody [data-mc-select]').forEach(input=>{
+        input.checked=selectPage.checked;
+        if(selectPage.checked)selected.add(input.dataset.mcSelect);
+        else selected.delete(input.dataset.mcSelect);
       });
       updateCount();
-    }
-  },true);
-  // Capture checkbox pointer interactions without suppressing the native change event.
-  document.addEventListener('click',event=>{
-    const check=event.target.closest?.('#catbody [data-mc-select]');
-    if(check)event.stopPropagation();
-  },true);
+    };
+    document.querySelectorAll('#catbody [data-mc-select]').forEach(input=>{
+      input.onclick=event=>{event.stopPropagation();setSelection(input,input.checked)};
+      input.onchange=()=>setSelection(input,input.checked);
+    });
+  }
   renderCat=async function(wish=false){
     const out=await originalRender(wish);
     const root=document.getElementById('catbody');
@@ -130,7 +148,7 @@
         const row=pageRows[i];if(!row)return;
         const checkbox=document.createElement('input');
         checkbox.type='checkbox';checkbox.className='mc-card-select';checkbox.dataset.mcSelect=row.id;checkbox.setAttribute('aria-label','Seleccionar '+label(row));
-        checkbox.addEventListener('click',e=>e.stopPropagation());
+        checkbox.addEventListener('pointerdown',e=>e.stopPropagation());
 
         card.prepend(checkbox);
       });
@@ -141,7 +159,8 @@
     const pageSelect=document.getElementById('mc-select-page');
     
     
-    root.classList.toggle('mc-list-mode',view==='list');
+    bindCatalogControls(wish);
+    setView(view);
     updateCount();
     setTimeout(()=>window.CoverVault?.hydrate?.(root),0);
     return out;
