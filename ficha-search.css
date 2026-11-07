@@ -186,3 +186,23 @@
 /* v120: compact local import beside search, not a full-width third column */
 #modal .mc-comic-editor .ficha-top-actions>[data-local-cover-import]{width:auto!important;max-width:100%!important;margin:0!important;display:inline-flex!important;align-self:flex-start!important}
 #modal .mc-comic-editor .ficha-top-actions .mc-local-cover-btn{font-size:11px!important;line-height:1.2!important;font-weight:600!important;padding:5px 9px!important;min-height:30px!important;width:auto!important;white-space:nowrap}
+
+
+/* Catalog actions and list view */
+.mc-catalog-tools{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:12px 0;border-bottom:1px solid #294660;margin-bottom:12px}
+.mc-catalog-modes{display:flex;gap:4px}
+.mc-catalog-modes [aria-pressed="true"]{background:#285ba0;border-color:#5d98ef}
+.mc-catalog-tools select{min-width:180px;max-width:260px;padding:7px 9px;font-size:12px}
+.mc-catalog-check{display:flex;gap:5px;align-items:center;font-size:12px}
+#mc-selection-count{font-size:12px;color:#9eb6d2}
+#catbody .comic-card{position:relative}
+#catbody .mc-card-select{position:absolute;top:9px;left:9px;z-index:3;width:19px;height:19px;cursor:pointer;accent-color:#4586ed;box-shadow:0 1px 4px #071625}
+.mc-catalog-list{display:flex;flex-direction:column;gap:6px}
+.mc-catalog-list-row{display:grid;grid-template-columns:22px 50px minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:8px 10px;border:1px solid #294660;border-radius:8px;background:#0a1d30;min-width:0}
+.mc-catalog-list-row input{width:18px;height:18px;accent-color:#4586ed}
+.mc-catalog-list-cover{width:46px;height:65px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.mc-catalog-list-cover .cover{max-width:100%;max-height:100%;object-fit:contain}
+.mc-catalog-list-info{min-width:0;display:flex;flex-direction:column;gap:3px}
+.mc-catalog-list-info strong{font-size:13px;overflow-wrap:anywhere}
+.mc-catalog-list-info small{font-size:11px;color:#a9bdd4}
+@media(max-width:600px){.mc-catalog-list-row{grid-template-columns:20px 42px minmax(0,1fr) auto;gap:7px}.mc-catalog-list-status{display:none}.mc-catalog-tools select{max-width:100%}}
