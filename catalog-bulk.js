@@ -87,7 +87,10 @@
     if(button.hasAttribute('data-mc-view')){
       view=button.dataset.mcView;
       document.querySelectorAll('[data-mc-view]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
-      renderCat(wish).catch(err=>toast('Error al cambiar vista: '+err.message));
+      const root=document.getElementById('catbody');
+      root?.classList.toggle('mc-list-mode',view==='list');
+      // A layout switch must never depend on an asynchronous database render.
+      document.querySelectorAll('[data-mc-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mcView===view)));
     }else if(button.id==='mc-apply-bulk')openBulkDialog(wish);
     else editComic(button.dataset.mcEdit);
   },true);
@@ -107,9 +110,10 @@
       updateCount();
     }
   },true);
+  // Capture checkbox pointer interactions without suppressing the native change event.
   document.addEventListener('click',event=>{
     const check=event.target.closest?.('#catbody [data-mc-select]');
-    if(check){event.stopPropagation();event.stopImmediatePropagation()}
+    if(check)event.stopPropagation();
   },true);
   renderCat=async function(wish=false){
     const out=await originalRender(wish);
@@ -118,16 +122,16 @@
     const visible=await getVisible(wish);
     const pageRows=visible.slice((page-1)*PAGE,page*PAGE);
     if(view==='list'){
-      const grid=root.querySelector('.comic-grid');
-      if(grid)grid.outerHTML=listHTML(pageRows);
-    }else{
+      // Preserve the same cards and IDs: CSS presents them as rows, without data loss.
+    }
+    {
       const cards=root.querySelectorAll('.comic-grid .comic-card');
       cards.forEach((card,i)=>{
         const row=pageRows[i];if(!row)return;
         const checkbox=document.createElement('input');
         checkbox.type='checkbox';checkbox.className='mc-card-select';checkbox.dataset.mcSelect=row.id;checkbox.setAttribute('aria-label','Seleccionar '+label(row));
         checkbox.addEventListener('click',e=>e.stopPropagation());
-        checkbox.addEventListener('pointerdown',e=>e.stopPropagation());
+
         card.prepend(checkbox);
       });
     }
@@ -137,6 +141,7 @@
     const pageSelect=document.getElementById('mc-select-page');
     
     
+    root.classList.toggle('mc-list-mode',view==='list');
     updateCount();
     setTimeout(()=>window.CoverVault?.hydrate?.(root),0);
     return out;
