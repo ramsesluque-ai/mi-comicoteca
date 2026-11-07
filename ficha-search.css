@@ -45,3 +45,9 @@
  #mcFichaSearchBox .result-actions{margin:10px -10px -10px;padding:10px}
  #mcFichaSearchBox .result-actions .btn{width:auto}
 }
+
+/* Quick cover selection: keep its confirmation visible above the edit-form Save button. */
+#mcSeriesQuickPanel .ficha-search-head{position:sticky;top:0;z-index:12;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#172b4d;padding:10px 12px;}
+#mcSeriesQuickPanel .mc-quick-head-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-left:auto;}
+#mcSeriesQuickPanel .mc-quick-head-actions .primary{font-size:13px;font-weight:700;white-space:normal;line-height:1.25;}
+@media(max-width:560px){#mcSeriesQuickPanel .ficha-search-head{align-items:flex-start}#mcSeriesQuickPanel .mc-quick-head-actions{width:100%;justify-content:flex-end}}
