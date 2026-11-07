@@ -30,4 +30,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: maestro-spain-coverage-audit
-          path: |\n            master-data/coverage-audit.json\n            master-data/coverage-priority.csv
+          path: |
+            master-data/coverage-audit.json
+            master-data/coverage-priority.csv
