@@ -9,14 +9,14 @@ editComic=async function(id){
   const current=isbn?.value||'';
   actions.innerHTML=`
     <div class="ficha-code-box">
-      <label for="mc_top_code">ISBN / EAN / UPC / otro código</label>
+      <label for="mc_top_code">ISBN / código</label>
       <div class="ficha-code-row">
-        <input id="mc_top_code" value="${esc(current)}" placeholder="Escanea o pega el código">
-        <button class="btn" type="button" onclick="mcCompleteByTopCode()">▣ Buscar por código</button>
+        <input id="mc_top_code" value="${esc(current)}" placeholder="Introduce ISBN">
+        <button class="btn" type="button" onclick="mcCompleteByTopCode()">Buscar ISBN</button>
       </div>
     </div>
-    <button class="btn primary" type="button" onclick="mcSearchFichaAllFromTop()">⌕ Buscar datos y portada</button>
-    <div class="small muted">La búsqueda usa primero el código si está informado y, además, Editorial + Serie/Cabecera + Nº + Año + Título.</div>`;
+    <button class="btn primary" type="button" onclick="mcSearchFichaAllFromTop()">Buscar portada y datos</button>
+    `;
   const topCode=document.getElementById('mc_top_code');
   if(topCode){
     topCode.addEventListener('input',()=>{if(isbn)isbn.value=topCode.value});
