@@ -33,11 +33,11 @@
     const secondary=drill.kind==='publisher'?countBy(owned,groupName):countBy(owned,x=>x.publisher);
     const series=countBy(owned,x=>[x.publisher,x.catalogHeader||x.series||'Sin cabecera',x.volume||x.stage||'Sin etapa',x.startYear||'Sin año'].join(' · '));
     const heading=drill.kind==='publisher'?'Editorial':'Personaje / universo';
-    const details=owned.slice(0,40).map(x=>`<tr><td>${esc(x.publisher||'Sin dato')}</td><td>${esc(x.catalogHeader||x.series||'Sin cabecera')}</td><td>${esc(x.volume||x.stage||'—')}</td><td>${esc(x.issueNr??x.issue??x.number??'—')}</td><td>${esc(x.title||'Sin título acreditado')}</td></tr>`).join('');
+    const details=owned.map(x=>`<tr><td>${esc(x.publisher||'Sin dato')}</td><td>${esc(x.catalogHeader||x.series||'Sin cabecera')}</td><td>${esc(x.volume||x.stage||'—')}</td><td>${esc(x.issueNr??x.issue??x.number??'—')}</td><td>${esc(x.title||'Sin título acreditado')}</td></tr>`).join('');
     return `<section class="pbi-drill" aria-label="Desglose interactivo"><div class="pbi-drill-head"><div><small>DESGLOSE · ${heading}</small><h2>${esc(drill.value)}</h2><p>Explora los datos sin salir del dashboard. Las cifras reflejan los registros actuales.</p></div><button class="btn sm" onclick="PbiDashboard.clearDrill()">✕ Cerrar desglose</button></div>
       <div class="pbi-drill-kpis"><div><small>En colección</small><b>${fmt(owned.length)}</b></div><div><small>Wishlist</small><b>${fmt(wish.length)}</b></div><div><small>Series / etapas</small><b>${fmt(series.length)}</b></div><div><small>Editoriales</small><b>${fmt(countBy(owned,x=>x.publisher).length)}</b></div></div>
       <div class="pbi-drill-grid"><div><h3>${drill.kind==='publisher'?'Personajes / universos':'Editoriales'}</h3>${bars(secondary,drill.kind==='publisher'?'group':'publisher',12)||'<p class="muted">Sin datos</p>'}</div><div><h3>Series y etapas</h3>${series.slice(0,12).map(([k,v])=>`<div class="pbi-drill-series"><span>${esc(k)}</span><b>${fmt(v)}</b></div>`).join('')||'<p class="muted">Sin datos</p>'}</div></div>
-      <details class="pbi-drill-table"><summary>Ver detalle de ejemplares (${fmt(owned.length)}; primeros 40)</summary><div class="pbi-drill-scroll"><table><thead><tr><th>Editorial</th><th>Cabecera</th><th>Volumen / etapa</th><th>N.º</th><th>Título</th></tr></thead><tbody>${details}</tbody></table></div></details>
+      <details class="pbi-drill-table"><summary>Ver todos los ejemplares (${fmt(owned.length)})</summary><div class="pbi-drill-scroll"><table><thead><tr><th>Editorial</th><th>Cabecera</th><th>Volumen / etapa</th><th>N.º</th><th>Título</th></tr></thead><tbody>${details}</tbody></table></div></details>
     </section>`;
   }
   function clearDrill(){drill=null;if(typeof render==='function')return render();}
