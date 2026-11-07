@@ -60,3 +60,20 @@
 @media(max-width:500px){.mc-master-filter-dashboard .mc-mf-year{grid-column:1}}
 
 .mc-master-personal-only{padding:16px 12px;border-top:1px solid #35516c;margin-top:14px}.mc-master-personal-only h3{font-size:15px;margin:0 0 6px}.mc-master-personal-only>p{font-size:11px;color:#a4bbd3;margin:0 0 12px}.mc-master-personal-only .comic-kicker{color:#f2bd69}
+
+/* Portadas: same filter dashboard geometry as Catálogo and Maestro. */
+.mc-cover-filter-dashboard{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:8px;padding:12px}
+.mc-cover-filter-dashboard .mc-cf{min-width:0;min-height:72px;border:1px solid #254461;border-left:3px solid #456be5;border-radius:12px;background:#081b2e;padding:10px 11px;display:flex;flex-direction:column;gap:7px}
+.mc-cover-filter-dashboard .mc-cf>span{font-size:10px!important;font-weight:800;letter-spacing:.045em;color:#e3efff}
+.mc-cover-filter-dashboard .mc-cf input,.mc-cover-filter-dashboard .mc-cf select{width:100%;min-width:0;max-width:100%;min-height:30px!important;border:0!important;box-shadow:none!important;background:transparent!important;color:#f4f8ff!important;padding:4px 2px!important;font-size:12px!important;font-weight:600}
+.mc-cover-filter-dashboard .mc-cf input::placeholder{color:#9fb4ce}
+.mc-cover-filter-dashboard .mc-cf-search{grid-column:span 2;border-left-color:#0ca36b}
+.mc-cover-filter-dashboard .mc-cf-pub{border-left-color:#7956e8}
+.mc-cover-filter-dashboard .mc-cf-series{border-left-color:#4785df}
+.mc-cover-filter-dashboard .mc-cf-volume{border-left-color:#e98432}
+.mc-cover-filter-dashboard .mc-cf-stage{border-left-color:#e4489c}
+.mc-cover-filter-dashboard .mc-cf-year{border-left-color:#08b975}
+.mc-cover-filter-dashboard .mc-cf-state{border-left-color:#10b9a9}
+.mc-cover-filter-dashboard .mc-cf-hint{grid-column:1/-1;color:#819cb9;font-size:10px;padding:1px 3px}
+@media(max-width:900px){.mc-cover-filter-dashboard{grid-template-columns:repeat(2,minmax(0,1fr))}.mc-cover-filter-dashboard .mc-cf-search{grid-column:span 2}}
+@media(max-width:500px){.mc-cover-filter-dashboard{grid-template-columns:1fr}.mc-cover-filter-dashboard .mc-cf-search{grid-column:1}}
