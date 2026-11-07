@@ -4,7 +4,8 @@ import csv, json, re
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 base=ROOT/'master-data'
-idx=json.loads((base/'index.json').read_text(encoding='utf-8'))\nassert idx.get('publishers'), 'Maestro index missing publishers'
+idx=json.loads((base/'index.json').read_text(encoding='utf-8'))
+assert idx.get('publishers'), 'Maestro index missing publishers'
 over=json.loads((base/'cover-overrides.json').read_text(encoding='utf-8'))
 priority=['Forum','Zinco','Novaro','Panini','Norma','Bruguera','Vértice','ECC','Planeta / DeAgostini']
 items=[]; seen=set(); counts={}
