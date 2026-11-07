@@ -34,3 +34,21 @@
 #mc-master-detail-filters[hidden]{display:none!important}
 #mc-master-detail-filters select{font-size:12px!important;min-height:34px}
 @media(max-width:700px){.mc-master-series-panel>.mc-master-series-filters{grid-template-columns:1fr!important}#mc-master-detail-filters{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* Maestro filter dashboard — match Colecciones reference (7 visible fields). */
+.mc-master-filter-dashboard{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:8px;padding:12px}
+.mc-master-filter-dashboard .mc-mf{min-width:0;min-height:72px;border:1px solid #254461;border-left:3px solid #456be5;border-radius:12px;background:#081b2e;padding:10px 11px;display:flex;flex-direction:column;gap:7px}
+.mc-master-filter-dashboard .mc-mf>span{font-size:10px!important;font-weight:800;letter-spacing:.045em;color:#e3efff}
+.mc-master-filter-dashboard .mc-mf input,.mc-master-filter-dashboard .mc-mf select{width:100%;max-width:100%;min-width:0;min-height:30px!important;border:0!important;box-shadow:none!important;background:transparent!important;color:#f4f8ff!important;padding:4px 2px!important;font-size:12px!important;font-weight:600}
+.mc-master-filter-dashboard .mc-mf input::placeholder{color:#9fb4ce}
+.mc-master-filter-dashboard .mc-mf-search{grid-column:span 2;border-left-color:#0ca36b}
+.mc-master-filter-dashboard .mc-mf-publisher{border-left-color:#7956e8}
+.mc-master-filter-dashboard .mc-mf-header{border-left-color:#4785df}
+.mc-master-filter-dashboard .mc-mf-volume{border-left-color:#e98432}
+.mc-master-filter-dashboard .mc-mf-stage{border-left-color:#e4489c}
+.mc-master-filter-dashboard .mc-mf-year{border-left-color:#08b975}
+.mc-master-filter-dashboard .mc-mf-status{border-left-color:#10b9a9}
+.mc-master-filter-dashboard .mc-mf-hint{grid-column:1/-1;color:#819cb9;font-size:10px;padding:1px 3px}
+@media(max-width:900px){.mc-master-filter-dashboard{grid-template-columns:repeat(2,minmax(0,1fr))}.mc-master-filter-dashboard .mc-mf-search{grid-column:span 2}}
+@media(max-width:500px){.mc-master-filter-dashboard{grid-template-columns:1fr}.mc-master-filter-dashboard .mc-mf-search{grid-column:1}}
