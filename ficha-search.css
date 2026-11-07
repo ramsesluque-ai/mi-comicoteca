@@ -181,3 +181,8 @@
  #modal .mc-comic-editor .modalbody .formgrid>.span4.toolbar>.mc-identity-panel{grid-column:1!important;grid-row:auto!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
  #modal .mc-comic-editor .mc-identity-panel>.field{grid-column:span 1!important}
 }
+
+
+/* v120: compact local import beside search, not a full-width third column */
+#modal .mc-comic-editor .ficha-top-actions>[data-local-cover-import]{width:auto!important;max-width:100%!important;margin:0!important;display:inline-flex!important;align-self:flex-start!important}
+#modal .mc-comic-editor .ficha-top-actions .mc-local-cover-btn{font-size:11px!important;line-height:1.2!important;font-weight:600!important;padding:5px 9px!important;min-height:30px!important;width:auto!important;white-space:nowrap}
