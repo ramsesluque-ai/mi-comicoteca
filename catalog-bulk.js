@@ -25,7 +25,7 @@
     if(selectPage){selectPage.checked=!!all.length&&all.every(x=>x.checked);selectPage.indeterminate=all.some(x=>x.checked)&&!selectPage.checked}
   }
   function listHTML(rows){
-    return '<div class="mc-catalog-list" role="table" aria-label="Listado de cómics">'+rows.map(x=>'<div class="mc-catalog-list-row" role="row"><input type="checkbox" data-mc-select="'+esc(x.id)+'" aria-label="Seleccionar '+esc(label(x))+'"><div class="mc-catalog-list-cover">'+img(x,'cover cardcover')+'</div><div class="mc-catalog-list-info"><strong>'+esc(x.catalogHeader||x.series||x.title||'Sin cabecera')+'</strong><small>'+esc([x.publisher,x.volume&&('Vol. '+x.volume),x.startYear,issueNumberLabel(x)].filter(Boolean).join(' · '))+'</small><small>'+esc(x.title||'')+'</small></div><div class="mc-catalog-list-status">'+statusPill(x.status)+'</div><button type="button" class="btn sm" data-mc-edit="'+esc(x.id)+'">Editar</button></div>').join('')+'</div>';
+    return '<div class="mc-catalog-list" role="table" aria-label="Listado de cómics">'+rows.map(x=>'<div class="mc-catalog-list-row" role="row"><input type="checkbox" data-mc-select="'+esc(x.id)+'" onclick="event.stopPropagation()" aria-label="Seleccionar '+esc(label(x))+'"><div class="mc-catalog-list-cover">'+img(x,'cover cardcover')+'</div><div class="mc-catalog-list-info"><strong>'+esc(x.catalogHeader||x.series||x.title||'Sin cabecera')+'</strong><small>'+esc([x.publisher,x.volume&&('Vol. '+x.volume),x.startYear,issueNumberLabel(x)].filter(Boolean).join(' · '))+'</small><small>'+esc(x.title||'')+'</small></div><div class="mc-catalog-list-status">'+statusPill(x.status)+'</div><button type="button" class="btn sm" data-mc-edit="'+esc(x.id)+'">Editar</button></div>').join('')+'</div>';
   }
   function openBulkDialog(wish){
     const action=document.getElementById('mc-bulk-action')?.value;
@@ -128,18 +128,16 @@
     if(root&&!root.dataset.mcSelectionBound){
       root.dataset.mcSelectionBound='1';
       root.addEventListener('click',event=>{
-        const input=event.target.closest?.('[data-mc-select]');
-        if(input)event.stopPropagation();
         const edit=event.target.closest?.('[data-mc-edit]');
         if(edit){event.preventDefault();event.stopPropagation();editComic(edit.dataset.mcEdit)}
-      },true);
+      });
       root.addEventListener('change',event=>{
         const input=event.target.closest?.('[data-mc-select]');
         if(!input)return;
         const id=input.dataset.mcSelect;
         if(input.checked)selected.add(id);else selected.delete(id);
         updateCount();
-      },true);
+      });
     }
   }
   renderCat=async function(wish=false){
@@ -155,6 +153,7 @@
       input.type='checkbox';
       input.className='mc-card-select';
       input.dataset.mcSelect=String(row.id);
+      input.addEventListener('click',event=>event.stopPropagation());
       input.setAttribute('aria-label','Seleccionar '+label(row));
       card.prepend(input);
     });
