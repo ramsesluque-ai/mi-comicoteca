@@ -26,8 +26,8 @@
   function consecutiveRegistered(rows){
     const nums=new Set();
     for(const row of rows){
-      const raw=String(row.issueNr??row.issue??'').trim();
-      if(!/^[1-9]\\d*$/.test(raw))return null;
+      const raw=String(row.issueNr??row.issue??'').trim().replace(/^#\s*/, '');
+      if(!/^(?:0*[1-9][0-9]*)$/.test(raw))return null;
       const v=Number(raw);
       if(!Number.isSafeInteger(v))return null;
       nums.add(v);
