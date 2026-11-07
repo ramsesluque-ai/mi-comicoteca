@@ -57,11 +57,33 @@ renderMaster=async function(){
 
  const groups=new Map();
  for(const r of filtered){const key=mcMasterGroupKey(r);if(!groups.has(key))groups.set(key,{sample:r,cover:null,count:0});const g=groups.get(key);g.count++;if(!g.cover&&r.coverUrl)g.cover=r}
+ // Personal-only series are shown as reconciliation candidates, never counted as verified Maestro records.
+ const personal=await allStore('comics');
+ if(token!==state.serial)return;
+ const existingNames=new Set(rows.map(r=>mcSENorm(r.catalogHeader||r.series)));
+ const missing=new Map();
+ for(const r of personal){
+   if(mcSENorm(r.publisher)!==mcSENorm(pub))continue;
+   const name=String(r.catalogHeader||r.series||'').trim();
+   if(!name||existingNames.has(mcSENorm(name)))continue;
+   if(q&&!mcSENorm([r.publisher,name,r.title,r.isbn,r.issueNr].join(' ')).includes(mcSENorm(q)))continue;
+   if(state.header||state.volume||state.stage||state.year)continue;
+   const key=ckey(r);
+   if(!missing.has(key))missing.set(key,{sample:r,count:0,cover:null});
+   const g=missing.get(key);g.count++;if(!g.cover&&(r.coverUrl||r.coverData||r.coverBlob))g.cover=r;
+ }
+ const personalCards=[...missing.entries()].sort((a,b)=>String(a[1].sample.catalogHeader||a[1].sample.series).localeCompare(String(b[1].sample.catalogHeader||b[1].sample.series),'es',{numeric:true}));
  const list=[...groups.entries()].sort((a,b)=>mcMasterGroupLabel(a[1].sample).localeCompare(mcMasterGroupLabel(b[1].sample),'es',{numeric:true}));
  const per=48,pages=Math.max(1,Math.ceil(list.length/per));state.page=Math.min(state.page,pages);
  const slice=list.slice((state.page-1)*per,state.page*per);
  body.innerHTML='<div class="mc-master-summary"><strong>'+esc(pub)+'</strong><span>'+list.length.toLocaleString('es-ES')+' colecciones · '+filtered.length.toLocaleString('es-ES')+' números</span></div>'+
  '<div class="series-grid visual mc-master-series-grid">'+slice.map(([key,g])=>{const r=g.sample;return '<article class="series-card visual mc-master-series-card" data-master-series="'+encodeURIComponent(key)+'" tabindex="0" role="button" aria-label="Abrir '+esc(mcMasterGroupLabel(r))+'"><div class="series-cover">'+img(g.cover||r,'cover seriescover')+'</div><div class="series-content"><div class="comic-kicker">'+esc(r.publisher)+'</div><div class="series-title">'+esc(r.catalogHeader||r.series||'Sin cabecera')+'</div><div class="master-meta">'+esc([r.volume&&'Vol. '+r.volume,r.stage,r.startYear].filter(Boolean).join(' · ')||'Edición sin identificar')+'</div><div class="series-stats">'+g.count.toLocaleString('es-ES')+' números en Maestro</div><div class="mc-master-open">Ver números</div></div></article>'}).join('')+'</div>'+pager(list.length,pages);
+ if(personalCards.length){
+   const section=document.createElement('section');
+   section.className='mc-master-personal-only';
+   section.innerHTML='<h3>Series de tu catálogo pendientes de incorporar al Maestro</h3><p>Estos registros proceden de tu colección personal; todavía no se han verificado como fichas del Maestro.</p><div class="series-grid visual mc-master-series-grid">'+personalCards.map(([key,g])=>{const r=g.sample;return '<article class="series-card visual mc-master-series-card" data-master-personal="'+encodeURIComponent(key)+'" tabindex="0" role="button"><div class="series-cover">'+img(g.cover||r,'cover seriescover')+'</div><div class="series-content"><div class="comic-kicker">'+esc(r.publisher)+' · Catálogo personal</div><div class="series-title">'+esc(r.catalogHeader||r.series)+'</div><div class="master-meta">'+esc([r.volume&&'Vol. '+r.volume,r.stage,r.startYear].filter(Boolean).join(' · ')||'Edición por verificar')+'</div><div class="series-stats">'+g.count+' números personales</div><div class="mc-master-open">Abrir colección</div></div></article>'}).join('')+'</div>';
+   body.appendChild(section);
+ }
  bind();
 };
 function pager(total,pages){return '<div class="pager"><span>'+total.toLocaleString('es-ES')+' resultados · Página '+state.page+'/'+pages+'</span><span><button class="btn sm" data-master-page="-1" '+(state.page<=1?'disabled':'')+'>Anterior</button> <button class="btn sm" data-master-page="1" '+(state.page>=pages?'disabled':'')+'>Siguiente</button></span></div>'}
@@ -71,6 +93,7 @@ function bind(){
  document.querySelectorAll('[data-master-filter]').forEach(el=>el.onchange=()=>{const map={catalogHeader:'header',volume:'volume',stage:'stage',startYear:'year'};state[map[el.dataset.masterFilter]]=el.value;state.page=1;renderMaster()});
  document.querySelectorAll('[data-master-publisher]').forEach(el=>el.onclick=()=>{state.publisher=el.dataset.masterPublisher;state.header='';state.volume='';state.stage='';state.year='';state.page=1;pub.value=state.publisher;renderMaster()});
  document.querySelectorAll('[data-master-page]').forEach(el=>el.onclick=()=>{state.page+=Number(el.dataset.masterPage);renderMaster()});
+ document.querySelectorAll('[data-master-personal]').forEach(el=>{const open=()=>openSeries(el.dataset.masterPersonal);el.onclick=open;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open()}}});
  document.querySelectorAll('[data-master-series]').forEach(el=>{const open=()=>openMasterCollection(el.dataset.masterSeries);el.onclick=open;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open()}}});
 }
 })();
