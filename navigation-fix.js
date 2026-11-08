@@ -41,6 +41,17 @@
     };
   }
 
+
+  // Migration copies ONLY locally stored covers; it does not migrate comic records.
+  // Keep this optional, explicit operation under Data / backups, not as a top-level action.
+  if (typeof window.backupView === 'function') {
+    const originalBackupView = window.backupView;
+    window.backupView = async function(...args) {
+      const html = await originalBackupView.apply(this, args);
+      return html + '<div class="card" style="margin-top:16px"><h3>Portadas privadas en la nube (opcional)</h3><p class="muted">Copia únicamente las portadas guardadas en este dispositivo a tu espacio privado de Supabase. No traslada fichas ni modifica el catálogo; conserva los originales locales. Requiere iniciar sesión y comprobar los permisos antes de utilizarlo.</p><button type="button" class="btn" onclick="window.CloudMigration?.show()">Copiar portadas privadas</button></div>';
+    };
+  }
+
   // Last-loaded handler wins: prevents later legacy scripts from leaving the
   // Dashboard button highlighted while another view remains rendered.
   document.querySelectorAll('.nav button[data-v]').forEach(btn => {
