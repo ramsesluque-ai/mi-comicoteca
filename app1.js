@@ -1,5 +1,5 @@
 'use strict';
-const DBN='mi-comicoteca-v3', DBV=1, PAGE=50;let db,current='dashboard',page=1,filters={},masterCollection=null,deferredInstall=null;
+const DBN='mi-comicoteca-commercial-preview-v1', DBV=1, PAGE=50;let db,current='dashboard',page=1,filters={},masterCollection=null,deferredInstall=null;
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 const norm=s=>String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();

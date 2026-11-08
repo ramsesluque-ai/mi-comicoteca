@@ -3,7 +3,7 @@
    Usa la misma credencial de Contents: Read/Write ya configurada para sincronización. */
 (function(){
   const OWNER='ramsesluque-ai',REPO='mi-comicoteca',BRANCH='bridge-data';
-  const TOKEN_KEY='mc_github_token_v1';
+  const TOKEN_KEY='mc_github_token_commercial_preview_v1';
   const RAW=`https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/bridge`;
   const API=`https://api.github.com/repos/${OWNER}/${REPO}/contents`;
   const enc=new TextEncoder();
@@ -34,6 +34,7 @@
     return rows.map(c=>({source:c.source||'Puente bibliográfico',score:Number(c.score||5000),data:{...(c.data||{})}})).filter(c=>c.data?.coverUrl||c.data?.sourceType==='publisher');
   }
   async function search(x,onStatus){
+    if(!x||x.sourceMode!=='publisher')throw Error('La edición comercial no permite descargar portadas de terceros sin derechos verificados. Utiliza las fuentes editoriales para consultar metadatos.');
     const {cacheKey,requestId}=await ids(x);
     const cached=await rawJson(`cache/${cacheKey}.json`);
     if(cached?.candidates?.length){onStatus?.('Resultado bibliográfico recuperado de la caché.');return convert(cached)}
