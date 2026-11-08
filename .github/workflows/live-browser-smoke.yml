@@ -1,0 +1,36 @@
+name: COMICTECA published-site browser smoke
+on:
+  workflow_run:
+    workflows: ["Deploy to GitHub Pages"]
+    types: [completed]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  published-browser:
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'commercial-published') }}
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: commercial-published
+          persist-credentials: false
+      - name: Install browser test dependency
+        run: npm install --no-save --no-package-lock playwright@1.56.1
+      - name: Check actual published GitHub Pages URL
+        env:
+          COMICTECA_BASE_URL: https://ramsesluque-ai.github.io/mi-comicoteca/
+        run: node tests/bi-browser-smoke.cjs
+      - name: Upload published-site screenshot and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: comicteca-published-browser-evidence
+          path: |
+            artifacts/bi-browser.png
+            artifacts/bi-browser-report.json
+          if-no-files-found: warn
+          retention-days: 7
