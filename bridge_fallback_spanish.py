@@ -72,7 +72,9 @@ def main():
  try:manual=json.loads(MANUAL.read_text(encoding='utf-8')) if MANUAL.exists() else {}
  except:manual={}
  for rp in sorted(REQ.glob('*.json')):
-  q=json.loads(rp.read_text(encoding='utf-8'));rid=str(q.get('requestId') or rp.stem);res=RES/f'{rid}.json'
+  q=json.loads(rp.read_text(encoding='utf-8'));
+  if q.get('sourceMode')=='publisher':continue
+  rid=str(q.get('requestId') or rp.stem);res=RES/f'{rid}.json'
   if res.exists():
    try:
     old=json.loads(res.read_text(encoding='utf-8'))
