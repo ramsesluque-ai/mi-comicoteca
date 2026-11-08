@@ -3,7 +3,7 @@
    comprobados en fuentes oficiales. Sin portadas, scraping ni importación masiva. */
 (function(){
   const SOURCES=[
-    {name:'Astiberri',url:'https://www.astiberri.com/posts/novedades-astiberri-noviembre26',description:'Novedades noviembre 2026'},
+    {name:'Astiberri',url:'https://www.astiberri.com/',description:'Boletín mensual oficial'},
     {name:'Planeta Cómic',url:'https://www.planetadelibros.com/editorial/planeta-comic/54',description:'Novedades de Planeta Cómic'},
     {name:'Norma Editorial',url:'https://www.normaeditorial.com/normaland',description:'Novedades y revista editorial'},
     {name:'Panini Comics',url:'https://www.panini.es/',description:'Catálogo editorial'},
@@ -25,7 +25,7 @@
       }catch(e){console.warn('Fuente editorial no disponible',url,e)}
     }
     if(!data)throw Error('No se pudo leer el calendario editorial');
-    const known=new Map(SOURCES.map(s=>[s.name,new URL(s.url).hostname.replace(/^www\\./,'')]));
+    const known=new Map(SOURCES.map(s=>[s.name,new URL(s.url).hostname.replace(/^www\./,'')]));
     RELEASES=data.releases.filter(x=>{
       try{
         if(!x||!x.id||!x.title||!x.month||!x.sourceUrl||x.coverUrl)return false;
@@ -69,12 +69,12 @@
         '<label>Editorial <select id="new-publisher"><option value="">Todas las editoriales</option>'+
           SOURCES.map(s=>'<option value="'+esc(s.name)+'" '+(state.publisher===s.name?'selected':'')+'>'+esc(s.name)+'</option>').join('')+'</select></label>'+
         '<label>Buscar <input id="new-q" type="search" value="'+esc(state.q)+'" placeholder="Título o serie"></label></div>'+
-      '<p class="small muted">'+count+' publicaciones seleccionadas y contrastadas para este filtro. No es todavía un listado exhaustivo ni una sincronización automática.</p>'+
+      '<p class="small muted">'+count+' publicaciones contrastadas en la ventana de dos meses. Actualización periódica desde fuentes autorizadas; catálogo no exhaustivo.</p>'+
       '<p class="small muted">Se muestran metadatos breves y enlaces a fuentes oficiales, sin copiar portadas ni sinopsis de terceros.</p></div>'+
       grouped.map(g=>'<section class="panel" style="margin:16px 0" aria-label="Novedades '+esc(g.source.name)+'">'+
         '<div class="top"><div><h2>'+esc(g.source.name)+' <span class="muted small">('+g.items.length+')</span></h2>'+
         '<p class="muted small">'+esc(g.source.description)+'</p></div>'+
-        '<div class="actions"><a href="'+esc(safeUrl(g.source.url))+'" target="_blank" rel="noopener noreferrer">Web editorial</a></div></div>'+
+        '<div class="actions"><a href="'+esc(safeUrl(g.items[0]?.sourceUrl||g.source.url))+'" target="_blank" rel="noopener noreferrer">Web editorial</a></div></div>'+
         (g.items.length?'<div class="grid">'+g.items.map(renderIssue).join('')+'</div>':
           '<p class="muted">No se han verificado aún publicaciones de esta editorial para el mes y filtros elegidos. Consulta su calendario oficial.</p>')+
         '</section>').join('');

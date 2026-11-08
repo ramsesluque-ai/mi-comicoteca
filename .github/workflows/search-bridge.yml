@@ -1,4 +1,4 @@
-name: Search bridge
+name: Official publisher metadata lookup (no artwork)
 
 on:
   push:
@@ -11,11 +11,11 @@ permissions:
   contents: write
 
 concurrency:
-  group: comicoteca-search-bridge
-  cancel-in-progress: true
+  group: comicoteca-editorial-metadata
+  cancel-in-progress: false
 
 jobs:
-  search:
+  lookup:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
@@ -24,25 +24,19 @@ jobs:
         with:
           ref: bridge-data
           fetch-depth: 0
-      - name: Python dependencies
-        run: pip install --quiet requests beautifulsoup4 pillow
-      - name: Tebeosfera authority
-        run: python bridge_tebeosfera_authority.py
-      - name: Spanish ISBN fallback
-        run: python bridge_fallback_spanish.py
-      - name: Search bibliographic sources
-        run: python bridge_worker_v2.py
-      - name: Update Master cover overlay
-        run: python bridge_overlay.py
-      - name: Save result cache
+      - name: Install minimal dependencies
+        run: pip install --quiet requests beautifulsoup4
+      - name: Official metadata, single-request only
+        run: python bridge_publishers.py
+      - name: Commit metadata results
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add bridge/results bridge/cache bridge/covers
+          git add bridge/results bridge/cache
           if git diff --cached --quiet; then
-            echo 'No new result files'
+            echo 'No new editorial metadata'
           else
-            git commit -m 'Actualiza caché bibliográfica MI COMICOTECA'
+            git commit -m 'Actualiza metadatos de fuentes editoriales'
             git pull --rebase origin bridge-data
             git push origin bridge-data
           fi
