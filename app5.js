@@ -42,7 +42,7 @@ async function importFile(file,target='comics'){
   mcImportPending={file:file.name,target,unique,duplicates,rejected,backup};
   const modal=document.getElementById('modal');
   modal.innerHTML=`<div class="modalbox"><div class="modalhead"><div><b>Vista previa de importación</b><div class="muted small">${esc(file.name)}</div></div><button class="btn" onclick="closeModal()">Cerrar</button></div><div class="modalbody"><p><b>${raw.length.toLocaleString('es-ES')}</b> filas leídas · <b>${unique.length.toLocaleString('es-ES')}</b> nuevas · <b>${duplicates.length.toLocaleString('es-ES')}</b> duplicadas · <b>${rejected}</b> sin editorial/cabecera.</p><p class="muted">Solo se añadirán registros nuevos. No se borrarán ni sobrescribirán fichas existentes. Los duplicados se omiten.</p><div style="max-height:260px;overflow:auto"><table><thead><tr><th>Editorial</th><th>Cabecera</th><th>Número</th><th>Estado</th></tr></thead><tbody>${unique.slice(0,30).map(x=>`<tr><td>${esc(x.publisher)}</td><td>${esc(x.catalogHeader)}</td><td>${esc(x.issueNr)}</td><td>${esc(x.status)}</td></tr>`).join('')}</tbody></table></div><div class="actions" style="margin-top:18px"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="mcImportConfirm()">Importar ${unique.length.toLocaleString('es-ES')} nuevos</button></div></div></div>`;
-  modal.classList.add('show');
+  modal.classList.remove('hidden');
  }catch(e){console.error(e);toast('Error de importación: '+(e.message||e))}finally{busy(false)}
 }
 async function mcImportConfirm(){
