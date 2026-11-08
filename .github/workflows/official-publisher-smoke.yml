@@ -1,0 +1,36 @@
+name: Official publisher metadata smoke
+on:
+  push:
+    branches: [bridge-data]
+    paths:
+      - bridge_publishers.py
+      - .github/workflows/official-publisher-smoke.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: bridge-data
+      - name: Dependencies
+        run: pip install -q requests beautifulsoup4
+      - name: Validate source matching and robots-aware official metadata
+        run: |
+          python -m py_compile bridge_publishers.py
+          python - <<'PY'
+          from bridge_publishers import PUBLISHERS,publisher,candidate
+          assert publisher({'publisher':'Norma Editorial'})==PUBLISHERS['norma']
+          assert publisher({'publisher':'Editorial Bruguera'}) is None
+          url='https://www.normaeditorial.com/ficha/comic-americano/dune/dune-la-novela-grafica/dune-la-novela-grafica-libro-1'
+          data=candidate(url,{'publisher':'Norma','series':'Dune','issue':'1','isbn':'9788467943603'},'Norma Editorial')
+          if data is None:
+            print('OFFICIAL_SOURCE_UNAVAILABLE: robots/access restriction or no exact edition evidence')
+          else:
+            assert data['data']['isbn']=='9788467943603',data
+            assert data['data']['coverUrl']==''
+            assert data['data']['sourceUrl']==url
+            print('OFFICIAL_SOURCE_MATCH',data['data'])
+          PY
