@@ -23,7 +23,11 @@ async function mcSEMasterIndex(){return MCMasterData.index||(MCMasterData.index=
 async function mcSEOverrides(){return MCMasterData.overrides||(MCMasterData.overrides=await mcSEFetchJSON('cover-overrides.json').catch(()=>({})))}
 async function mcSEMonthlyRows(){
   if(Array.isArray(MCMasterData.monthlyRows))return MCMasterData.monthlyRows;
-  const d=await mcSEFetchJSON('editorial-monthly.json').catch(()=>({releases:[]}));
+  let d=null;
+  if(window.MC_EDITORIAL_NEWS_URL){
+    try{const r=await fetch(window.MC_EDITORIAL_NEWS_URL,{cache:'no-store',signal:AbortSignal.timeout(7000)});if(r.ok)d=await r.json()}catch{}
+  }
+  if(!Array.isArray(d?.releases))d=await mcSEFetchJSON('editorial-monthly.json').catch(()=>({releases:[]}));
   const rows=(Array.isArray(d?.releases)?d.releases:[]).filter(x=>x?.id&&x?.publisher&&x?.title&&x?.month&&x?.sourceUrl);
   MCMasterData.monthlyRows=rows.map(x=>({
     id:'editorial_'+String(x.id),source:'Editorial oficial · novedades',
