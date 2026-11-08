@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "description": "Novedades editoriales seleccionadas, verificadas manualmente en las webs oficiales. Solo metadatos; ninguna imagen ni sinopsis.",
+  "description": "Registro de novedades verificadas. La interfaz solo muestra el mes actual y el anterior; los registros antiguos se eliminan del feed en el mantenimiento mensual. Sin imágenes.",
   "lastReviewed": "2026-11-08",
   "sourcePolicy": "manual_official_metadata_only",
   "releases": [
@@ -135,6 +135,83 @@
       "series": "Sucesos críticos variados",
       "issueNr": "2",
       "sourceUrl": "https://www.astiberri.com/posts/novedades-astiberri-diciembre26",
+      "rights": "bibliographic-facts-only",
+      "coverUrl": ""
+    },
+    {
+      "id": "ast-2026-10-conjura",
+      "publisher": "Astiberri",
+      "month": "2026-10",
+      "date": "2026-10-01",
+      "title": "La conjura de los necios",
+      "series": "La conjura de los necios",
+      "sourceUrl": "https://www.astiberri.com/posts/novedades-astiberri-octubre26",
+      "rights": "bibliographic-facts-only",
+      "coverUrl": ""
+    },
+    {
+      "id": "ast-2026-10-frankenstein",
+      "publisher": "Astiberri",
+      "month": "2026-10",
+      "date": "2026-10-08",
+      "title": "Frankenstein",
+      "series": "Frankenstein",
+      "sourceUrl": "https://www.astiberri.com/posts/novedades-astiberri-octubre26",
+      "rights": "bibliographic-facts-only",
+      "coverUrl": ""
+    },
+    {
+      "id": "ast-2026-10-bruma",
+      "publisher": "Astiberri",
+      "month": "2026-10",
+      "date": "2026-10-08",
+      "title": "Bruma 2. El Bosque de las Almas Perdidas",
+      "series": "Bruma",
+      "issueNr": "2",
+      "sourceUrl": "https://www.astiberri.com/posts/novedades-astiberri-octubre26",
+      "rights": "bibliographic-facts-only",
+      "coverUrl": ""
+    },
+    {
+      "id": "ast-2026-10-ojala",
+      "publisher": "Astiberri",
+      "month": "2026-10",
+      "date": "2026-10-22",
+      "title": "Ojalá no estuviéramos aquí",
+      "series": "Ojalá no estuviéramos aquí",
+      "sourceUrl": "https://www.astiberri.com/posts/novedades-astiberri-octubre26",
+      "rights": "bibliographic-facts-only",
+      "coverUrl": ""
+    },
+    {
+      "id": "ast-2026-10-fml",
+      "publisher": "Astiberri",
+      "month": "2026-10",
+      "date": "2026-10-29",
+      "title": "FML 1. Fuego",
+      "series": "FML",
+      "issueNr": "1",
+      "sourceUrl": "https://www.astiberri.com/posts/novedades-astiberri-octubre26",
+      "rights": "bibliographic-facts-only",
+      "coverUrl": ""
+    },
+    {
+      "id": "pla-2026-10-aten",
+      "publisher": "Planeta Cómic",
+      "month": "2026-10",
+      "title": "Planeta Manga: Aten",
+      "series": "Planeta Manga: Aten",
+      "sourceUrl": "https://www.planetadelibros.com/blog/revista-forum/articulo-manga-oc-26",
+      "rights": "bibliographic-facts-only",
+      "coverUrl": ""
+    },
+    {
+      "id": "pla-2026-10-flashlight",
+      "publisher": "Planeta Cómic",
+      "month": "2026-10",
+      "title": "Planeta Manga: Flashlight (segunda parte)",
+      "series": "Planeta Manga: Flashlight",
+      "sourceUrl": "https://www.planetadelibros.com/blog/revista-forum/articulo-manga-oc-26",
       "rights": "bibliographic-facts-only",
       "coverUrl": ""
     }
