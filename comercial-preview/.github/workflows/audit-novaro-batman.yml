@@ -1,0 +1,53 @@
+name: Audit Novaro Batman
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/audit_novaro_batman.py'
+      - 'master-data/publishers/novaro-*.json'
+      - '.github/workflows/audit-novaro-batman.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: audit-novaro-batman
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Generate audit
+        run: python scripts/audit_novaro_batman.py
+      - name: Validate normalized stages
+        run: |
+          python - <<'PY'
+          import json,sys
+          d=json.load(open('master-data/audit-novaro-batman.json'))
+          print('BATMAN NOVARO',d['totalMatchedIssues'],'issues /',d['groups'],'groups')
+          stages=sorted(set(x.get('stage','') for x in d['collections'] if x.get('stage')))
+          print('STAGES',stages)
+          if d['totalMatchedIssues'] < 20: sys.exit('Batman Novaro audit unexpectedly small')
+          for expected in ('Serie Águila','Serie Avestruz','Serie Colibrí'):
+            if expected not in stages: sys.exit('Missing normalized stage: '+expected)
+          bad=[x for x in d['collections'] if 'serie avestruz' in x.get('catalogHeader','').lower() or 'serie colibr' in x.get('catalogHeader','').lower()]
+          if bad: sys.exit('Stage still embedded in catalogHeader: '+repr(bad[:3]))
+          PY
+      - name: Commit audit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add master-data/audit-novaro-batman.json
+          if git diff --cached --quiet; then
+            echo 'Audit unchanged'
+          else
+            git commit -m 'Actualiza auditoría Batman Novaro normalizada'
+            git pull --rebase origin main
+            git push origin main
+          fi

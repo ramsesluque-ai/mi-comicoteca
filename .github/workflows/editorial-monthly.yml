@@ -1,0 +1,44 @@
+name: MI COMICOTECA · Novedades mensuales (solo metadatos)
+
+on:
+  schedule:
+    - cron: '17 5 1,8,15,22 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: comicoteca-monthly-news-safe
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obtener feed editorial aislado
+        uses: actions/checkout@v6
+        with:
+          ref: commercial-news
+          persist-credentials: true
+          fetch-depth: 0
+      - name: Preparar entorno
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Dependencias mínimas
+        run: pip install --quiet requests beautifulsoup4
+      - name: Actualizar novedades por fuente oficial
+        run: python scripts/refresh_editorial_monthly.py
+      - name: Publicar únicamente el feed bibliográfico
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add master-data/editorial-monthly.json
+          if git diff --cached --quiet; then
+            echo 'Sin nuevas publicaciones o bajas'
+          else
+            git commit -m 'Novedades mensuales: ventana móvil de dos meses'
+            git pull --rebase origin commercial-news
+            git push origin HEAD:commercial-news
+          fi

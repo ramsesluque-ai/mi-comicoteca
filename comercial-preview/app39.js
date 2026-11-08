@@ -1,0 +1,86 @@
+'use strict';
+/* v53: filtros correctos + progreso contra Maestro + semáforo visual de estado. */
+(function(){
+  if(!window.mcCollectionIdentityV50||typeof allStore!=='function')return;
+  const api=window.mcCollectionIdentityV50;
+  const n=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+  const canonHeader=v=>typeof window.mcCanonicalSeriesHeader==='function'?window.mcCanonicalSeriesHeader(v):n(v);
+  const canonPub=v=>typeof mcSECanonPub==='function'?n(mcSECanonPub(v)):n(v);
+  const same=(a,b)=>n(a)===n(b);
+
+  function applyFilters(rows,f=filters||{}){
+    let r=rows.slice();
+    if(f.publisher)r=r.filter(x=>canonPub(x.publisher)===canonPub(f.publisher));
+    if(f.catalogHeader)r=r.filter(x=>canonHeader(x.catalogHeader||x.series)===canonHeader(f.catalogHeader));
+    if(f.volume)r=r.filter(x=>same(x.volume,f.volume));
+    if(f.stage)r=r.filter(x=>same(x.stage,f.stage));
+    if(f.startYear)r=r.filter(x=>String(x.startYear??'').trim()===String(f.startYear).trim());
+    if(f.status==='__blank__')r=r.filter(x=>!x.status);
+    else if(f.status)r=r.filter(x=>x.status===f.status);
+    const q=n(f.q||document.querySelector('#sq')?.value||'');
+    if(q)r=r.filter(x=>n([x.publisher,x.catalogHeader,x.series,x.volume,x.stage,x.startYear,x.title,x.issueNr,x.isbn].join(' ')).includes(q));
+    return r;
+  }
+
+  // A continuous registered sequence 1..N is an inferred total, not a bibliographically verified edition length.
+  function consecutiveRegistered(rows){
+    const nums=new Set();
+    let unknown=0;
+    for(const row of rows){
+      let raw=String(row.issueNr??row.issue??'').trim();
+      // Accept Nº 09, N.º 9, #9, 009, 9/59, 9 (2012) and localized issue labels.
+      raw=raw.replace(/^(?:n[.\s]*[º°oúu]?[.\s]*|núm(?:ero)?[.\s]*|num(?:ero)?[.\s]*|#\s*)/i,'').trim();
+      const match=raw.match(/^0*([1-9][0-9]*)(?:\s*(?:[/]\s*[0-9]+|\(\s*[12][0-9]{3}\s*\)))?$/);
+      if(!match){unknown++;continue}
+      const v=Number(match[1]);
+      if(!Number.isSafeInteger(v)){unknown++;continue}
+      nums.add(v);
+    }
+    if(!nums.size)return null;
+    const last=Math.max(...nums);
+    // Unknown or special issues cannot be silently counted as part of a numeric run.
+    if(unknown)return null;
+    return nums.size===last?last:null;
+  }
+
+  async function renderSeriesV53(){
+    const all=await allStore('comics');
+    const st=await api.currentStatic(all);
+    const filtered=applyFilters(all);
+    const fullGroups=new Map();
+    for(const row of all){const key=api.resolvedKey(row,st);if(!fullGroups.has(key))fullGroups.set(key,[]);fullGroups.get(key).push(row)}
+    const m={};
+    for(const x of filtered){
+      const k=api.resolvedKey(x,st);
+      if(!m[k])m[k]={sample:x,cover:null,haveSet:new Set(),wishSet:new Set(),personalSet:new Set(),inRecords:0,wishRecords:0,complete:false};
+      const g=m[k],ik=api.issueKey(x);g.personalSet.add(ik);if(String(Array.isArray(x.tags)?x.tags.join(','):x.tags||'').split(/[,;|\n]+/).some(t=>t.trim().toLocaleLowerCase('es')==='completa'))g.complete=true;
+      if(x.status==='In Collection'){g.haveSet.add(ik);g.inRecords++}
+      if(x.status==='On Wish List'){g.wishSet.add(ik);g.wishRecords++}
+      if(!g.cover&&(x.coverUrl||x.coverKey||x.coverSourceUrl))g.cover=x;
+    }
+    let a=Object.entries(m).map(([k,x])=>{
+      const me=st.full.get(k);if(me)x.sample=me.sample;
+      x.have=x.haveSet.size;x.wish=x.wishSet.size;x.personalTotal=x.personalSet.size;
+      x.total=x.personalTotal; // Distinct registered issues, never the highest issue number.
+      x.continuousTotal=consecutiveRegistered(fullGroups.get(k)||[]);
+      x.duplicates=Math.max(0,x.inRecords-x.have)+Math.max(0,x.wishRecords-x.wish);
+      return[k,x];
+    }).sort((a,b)=>clabel(a[1].sample).localeCompare(clabel(b[1].sample),'es',{numeric:true}));
+    const per=60,pages=Math.max(1,Math.ceil(a.length/per));page=Math.max(1,Math.min(page,pages));
+    const slice=a.slice((page-1)*per,page*per),body=document.querySelector('#seriesbody');if(!body)return;
+    body.innerHTML=`<div class="series-grid visual">${slice.map(([k,x])=>{
+      const pct=x.complete?100:(x.continuousTotal?Math.round(100*x.have/x.continuousTotal):null); // Continuity is a user-requested estimate, not verified published total.
+      const s=x.cover||x.sample;
+      const barColor=pct===null?'#42566c':pct===100?'#27c68b':pct>=75?'#7ccf55':pct>=50?'#f0c34e':pct>=25?'#f49a44':'#df6565';
+      const dup=x.duplicates?`<div class="muted small">${x.duplicates} registro${x.duplicates===1?'':'s'} duplicado${x.duplicates===1?'':'s'} detectado${x.duplicates===1?'':'s'}</div>`:'';
+      return `<article class="series-card visual" onclick="openSeries('${encodeURIComponent(k)}')"><div class="series-cover">${img(s,'cover seriescover')}</div><div class="series-content"><div class="comic-kicker">${esc(x.sample.publisher||'Sin editorial')}</div><div class="series-title">${esc(x.sample.catalogHeader||x.sample.series)}</div><div class="master-meta">${esc([x.sample.volume&&('Vol. '+x.sample.volume),x.sample.stage,x.sample.startYear].filter(Boolean).join(' · ')||'Edición sin identificar')}</div><div class="progress"><span style="width:${pct===null?0:Math.max(0,Math.min(100,pct))}%;background:${barColor}"></span></div><div class="series-stats"><b>${x.have}</b> en colección · <b>${x.wish}</b> wishlist · <b>${x.total}</b> números registrados</div><div class="series-status-note" style="position:static!important;display:block!important;float:none!important;clear:both!important;width:auto!important;max-width:100%!important;margin:4px 0 0!important;padding:0!important;font-size:11px!important;line-height:1.25!important;font-weight:400!important;letter-spacing:normal!important;white-space:normal!important;overflow-wrap:break-word!important;text-align:left!important;color:${pct===100?'#27c68b':'#9fb3c9'}!important">${x.complete?'✓ Completa · 100%':(pct!==null?`${pct}%`:'Total publicado sin verificar')}</div>${dup}</div></article>`;
+    }).join('')||'<div class="empty">Sin resultados con estos filtros.</div>'}</div><div class="pager"><span>${a.length.toLocaleString('es-ES')} colecciones · Página ${page}/${pages}</span><span><button class="btn sm" ${page<=1?'disabled':''} onclick="page--;renderSeries()">Anterior</button> <button class="btn sm" ${page>=pages?'disabled':''} onclick="page++;renderSeries()">Siguiente</button></span></div>`;
+    const sq=document.querySelector('#sq');if(sq)sq.oninput=()=>{filters.q=sq.value;page=1;renderSeries()};
+    if(typeof mcVFPaint==='function')mcVFPaint();
+    try{CoverVault?.hydrate?.()}catch{}
+  }
+
+  renderSeries=renderSeriesV53;window.renderSeries=renderSeriesV53;
+  window.mcSeriesFilterV51=applyFilters;
+  window.mcSeriesProgressV53=true;
+})();

@@ -1,0 +1,41 @@
+name: Source bridge test
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/source-bridge-test.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test-sources:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test server-side access
+        shell: bash
+        run: |
+          set -e
+          python - <<'PY'
+          import requests, json, re
+          tests = {
+            'gcd': 'https://www.comics.org/api/series/name/All-Star%20Batman%3A%20Renacimiento/issue/1/',
+            'tebeosfera_search': 'https://www.tebeosfera.com/buscador/ALL-STAR+BATMAN/',
+            'milcomics': 'https://www.milcomics.com/comics-descatalogados/all-star-batman-01-renacimiento-103770.html',
+          }
+          headers={'User-Agent':'Mozilla/5.0 MI-COMICOTECA/1.0'}
+          for name,url in tests.items():
+            try:
+              r=requests.get(url,headers=headers,timeout=30,allow_redirects=True)
+              print('TEST',name,'STATUS',r.status_code,'TYPE',r.headers.get('content-type'),'LEN',len(r.content),'URL',r.url)
+              print(r.text[:500].replace('\n',' '))
+            except Exception as e:
+              print('TEST',name,'ERROR',repr(e))
+          # Verify known issue page and image candidates from MilComics as a control source
+          r=requests.get(tests['milcomics'],headers=headers,timeout=30)
+          html=r.text
+          imgs=re.findall(r'<img[^>]+(?:src|data-src)=["\']([^"\']+)["\']',html,re.I)
+          print('MILCOMICS_IMAGES',len(imgs))
+          for u in imgs[:20]: print('IMG',u)
+          PY

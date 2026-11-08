@@ -1,0 +1,30 @@
+name: Audit All-Star Batman ECC
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/audit_all_star_batman.py'
+      - '.github/workflows/audit-all-star-batman.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Generate audit
+        run: python scripts/audit_all_star_batman.py
+      - name: Commit audit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add master-data/audit-all-star-batman.json
+          if git diff --cached --quiet; then
+            echo 'Audit unchanged'
+          else
+            git commit -m 'Actualiza auditoría All-Star Batman ECC'
+            git push origin main
+          fi
