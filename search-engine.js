@@ -21,6 +21,21 @@ function mcSECandidateKey(c){const d=c.data||{};return[mcSECode(d.isbn),mcSENorm
 async function mcSEFetchJSON(rel){const r=await fetch(MCMasterData.base+rel,{cache:'force-cache'});if(!r.ok)throw Error('No se pudo leer Maestro España: '+rel+' ('+r.status+')');return r.json()}
 async function mcSEMasterIndex(){return MCMasterData.index||(MCMasterData.index=await mcSEFetchJSON('index.json'))}
 async function mcSEOverrides(){return MCMasterData.overrides||(MCMasterData.overrides=await mcSEFetchJSON('cover-overrides.json').catch(()=>({})))}
+async function mcSEMonthlyRows(){
+  if(Array.isArray(MCMasterData.monthlyRows))return MCMasterData.monthlyRows;
+  const d=await mcSEFetchJSON('editorial-monthly.json').catch(()=>({releases:[]}));
+  const rows=(Array.isArray(d?.releases)?d.releases:[]).filter(x=>x?.id&&x?.publisher&&x?.title&&x?.month&&x?.sourceUrl);
+  MCMasterData.monthlyRows=rows.map(x=>({
+    id:'editorial_'+String(x.id),source:'Editorial oficial · novedades',
+    sourceId:String(x.id),sourceUrl:String(x.sourceUrl),
+    publisher:String(x.publisher),catalogHeader:String(x.series||x.title),series:String(x.series||x.title),
+    issueNr:String(x.issueNr||''),issue:String(x.issueNr||''),title:String(x.title),
+    publicationDate:String(x.date||''),isbn:String(x.isbn||''),barcode:'',
+    volume:String(x.volume||''),stage:String(x.stage||''),startYear:String(x.startYear||''),
+    coverUrl:'',coverReuseAuthorized:false,newReleaseMonth:String(x.month)
+  }));
+  return MCMasterData.monthlyRows;
+}
 async function mcSEIsbnIndex(){return MCMasterData.isbnIndex||(MCMasterData.isbnIndex=await mcSEFetchJSON('isbn-index.json'))}
 async function mcSEChunk(rel){if(MCMasterData.chunks.has(rel))return MCMasterData.chunks.get(rel);const rows=await mcSEFetchJSON(rel);MCMasterData.chunks.set(rel,rows);return rows}
 async function mcSEChunks(paths){const out=[];for(const p of [...new Set(paths)])out.push(...await mcSEChunk(p));return out}
@@ -34,7 +49,8 @@ async function mcSEStaticMaster(x){
   const idx=await mcSEMasterIndex(),over=await mcSEOverrides(),code=mcSECode(x.isbn||''),paths=[];
   if(code){const refs=(await mcSEIsbnIndex())[code]||[];for(const ref of refs)if(ref?.[0])paths.push(ref[0])}
   if(!paths.length&&x.publisher){for(const p of mcSEPublisherMeta(idx,x.publisher))paths.push(...(p.chunks||[]))}
-  const rows=paths.length?await mcSEChunks(paths):[];
+  const monthly=(await mcSEMonthlyRows()).filter(r=>!x.publisher||mcSEPubCompatible(x.publisher,r.publisher));
+  const rows=[...(paths.length?await mcSEChunks(paths):[]),...monthly];
   const out=[];for(const r of rows)if(mcSERowMatch(x,r))out.push(mcSEFromRow(x,r,over));
   /* Un override por ISBN es un registro verificado aunque el índice base todavía no lo localice. */
   if(code&&over[code]&&!out.some(c=>mcSECode(c.data?.isbn)===code)){const o=over[code];out.push(mcSECandidate('Maestro España · '+(o.source||'Enriquecido'),{...o,series:o.series||x.catalogHeader||x.series||'',issueNr:o.issueNr||x.issueNr||x.issue||'',coverUrls:[o.coverUrl].filter(Boolean)},15000,[o.coverUrl]))}
