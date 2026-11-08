@@ -13,11 +13,13 @@ function mcImportParseCsv(text){
  for(const values of rows){const obj={};headers.forEach((key,i)=>obj[key]=values[i]||'');out.push(obj)}return out;
 }
 function mcImportMap(raw){
- const aliases={publisher:['publisher','editorial','publisher name'],catalogHeader:['catalogheader','cabecera','coleccion','colección','serie','series'],volume:['volume','volumen'],stage:['stage','etapa','subserie'],startYear:['startyear','año inicio','ano inicio','año de inicio'],issueNr:['issuenr','issue','numero','número','num','nº'],title:['title','titulo','título','nombre'],subtitle:['subtitle','subtitulo','subtítulo'],isbn:['isbn','ean','codigo','código'],status:['status','estado'],tags:['tags','etiquetas','tag'],coverUrl:['coverurl','portada','url portada'],publicationDate:['publicationdate','fecha publicacion','fecha publicación'],authors:['authors','autores'],notes:['notes','notas'],location:['location','ubicacion','ubicación'],paid:['paid','precio pagado'],estimated:['estimated','valor estimado'],read:['read','leido','leído'],format:['format','formato'],pages:['pages','paginas','páginas']};
+ const aliases={publisher:['publisher','editorial','publisher name'],catalogHeader:['catalogheader','cabecera','coleccion','colección','serie','series'],volume:['volume','volumen'],stage:['stage','etapa','subserie'],startYear:['startyear','año inicio','ano inicio','año de inicio'],issueNr:['issuenr','issue','numero','número','num','nº'],title:['title','titulo','título','nombre'],subtitle:['subtitle','subtitulo','subtítulo'],isbn:['isbn','ean','codigo','código'],status:['status','estado'],tags:['tags','etiquetas','tag'],coverUrl:['coverurl','portada','url portada'],publicationDate:['publicationdate','fecha publicacion','fecha publicación'],authors:['authors','autores'],notes:['notes','notas'],location:['location','ubicacion','ubicación'],paid:['paid','precio pagado'],estimated:['estimated','valor estimado'],read:['read','leido','leído'],format:['format','formato'],pages:['pages','paginas','páginas'],synopsis:['synopsis','sinopsis','resumen'],characters:['characters','personajes'],genre:['genre','genero','género'],arc:['arc','saga','arco'],originalEdition:['originaledition','edicion original','edición original'],equivalences:['equivalences','equivalencias'],ean:['ean'],price:['price','precio','precio de portada'],variants:['variants','variantes'],sources:['sources','fuentes','fuente'],sourceUpdatedAt:['sourceupdatedat','fecha actualizacion','fecha de actualización'],coverVariants:['covervariants','portadas alternativas'],condition:['condition','conservacion','conservación'],purchaseDate:['purchasedate','fecha compra','fecha de compra'],authorRoles:['authorroles','autores y roles','roles autores']};
  const normalize=k=>String(k).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[_\\s-]+/g,' ').trim();
  const keys=Object.keys(raw),obj={};
  for(const [field,terms] of Object.entries(aliases)){const key=keys.find(k=>terms.some(t=>normalize(k)===normalize(t)));if(key&&raw[key]!==undefined)obj[field]=raw[key]}
- if(typeof obj.authors==='string')obj.authors={writer:obj.authors};
+ if(typeof obj.authors==='string')obj.authors={unclassified:obj.authors};
+ if(typeof obj.authorRoles==='string'&&obj.authorRoles.trim())obj.authors={...(obj.authors||{}),unclassified:obj.authorRoles};
+ delete obj.authorRoles;
  if(obj.status){const st=normalize(obj.status);obj.status=/wishlist|deseos|wish list/.test(st)?'On Wish List':/coleccion|collection|tengo/.test(st)?'In Collection':obj.status}
  return cleanComic(obj);
 }
@@ -57,7 +59,7 @@ async function mcImportConfirm(){
 function mcImportTemplate(){
  // UTF-8 BOM (actual character, not the literal backslash-u sequence) for Excel.
  // Header-only template: sample rows belong in documentation, never in imports.
- const columns=['Editorial','Cabecera','Volumen','Etapa','Año de inicio','Número','Título','Subtítulo','Fecha publicación','Autores','ISBN','Formato','Páginas','Estado','Tags','URL portada','Notas'];
+ const columns=['Editorial','Cabecera','Volumen','Etapa','Año de inicio','Número','Título','Subtítulo','Fecha publicación','Autores','Autores y roles','Sinopsis','Personajes','Género','Saga','Edición original','Equivalencias','Formato','Páginas','ISBN','EAN','Precio','Variantes','URL portada','Portadas alternativas','Fuentes','Fecha de actualización','Estado','Tags','Conservación','Ubicación','Fecha de compra','Precio pagado','Notas'];
  const quote=x=>'"'+String(x).replace(/"/g,'""')+'"';
  download('COMICTECA_plantilla_importacion.csv','\uFEFF'+columns.map(quote).join(';')+'\r\n','text/csv;charset=utf-8');
 }
