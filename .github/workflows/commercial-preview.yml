@@ -1,0 +1,31 @@
+name: COMICTECA commercial preview package
+on:
+  workflow_dispatch:
+  push:
+    branches: [commercial-published]
+    paths:
+      - '.github/workflows/commercial-preview.yml'
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: commercial-published
+          persist-credentials: false
+      - name: Check BI integration
+        run: node tests/bi-static-smoke.cjs
+      - name: Package static preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/comicteca-preview
+          tar --exclude=.git --exclude=.github --exclude=node_modules --exclude='*.env' --exclude='.env*' -cf - . | tar -xf - -C /tmp/comicteca-preview
+          printf '%s\n' "Preview source: commercial-published" "Commit: ${GITHUB_SHA}" "Serve using a local HTTP server. This package is not a certified production release." > /tmp/comicteca-preview/PREVIEW-INFO.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: comicteca-commercial-preview
+          path: /tmp/comicteca-preview/
+          retention-days: 7
