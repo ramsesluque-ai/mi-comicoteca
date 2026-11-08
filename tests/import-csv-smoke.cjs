@@ -20,8 +20,8 @@ console.log('PASS: Excel BOM, template header-only, UTF-8 accents, CRLF, quoted 
 
 // Regression: the import preview must remove the modal's initial hidden class.
 const importer=take("async function importFile(file,target='comics'){",'async function mcImportConfirm(){');
-assert.match(importer,/modal\\.classList\\.remove\\(['\"]hidden['\"]\\)/,'Preview must be visible');
-assert.doesNotMatch(importer,/modal\\.classList\\.add\\(['\"]show['\"]\\)/,'show alone leaves hidden modal invisible');
+assert.match(importer,/modal\.classList\.remove\(['\"]hidden['\"]\\)/,'Preview must be visible');
+assert.doesNotMatch(importer,/modal\.classList\.add\(['\"]show['\"]\\)/,'show alone leaves hidden modal invisible');
 const app1=fs.readFileSync('app1.js','utf8');
 assert.match(app1,/comicteca-importacion-prueba-v1/,'Test mode must use independent IndexedDB');
 const index=fs.readFileSync('index.html','utf8');
