@@ -42,10 +42,18 @@ report["priorityEditorials"] = [
     {"publisher": name, **counts[name], "coverCompletionPct": round(100 * (counts[name]["issues"] - counts[name]["missingCover"]) / counts[name]["issues"], 2)}
     for name in priority if name in counts
 ]
+overrides_path = base / "cover-overrides.json"
+overrides = json.loads(overrides_path.read_text(encoding="utf-8")) if overrides_path.exists() else {}
+def code(x):
+    return "".join(c for c in str(x or "").upper() if c.isdigit() or c == "X")
+effective_cover = sum(bool(str(x.get("coverUrl") or "").strip()) or bool(str((overrides.get(code(x.get("isbn") or x.get("barcode"))) or {}).get("coverUrl") or "").strip()) for x in rows)
 report["coverageAssessment"] = {
     "knownRecords": len(rows),
     "knownPublishers": len(counts),
     "withCoverUrl": len(rows)-report["missingCover"],
+    "withCoverUrlAfterOverrides": effective_cover,
+    "coverUrlPctAfterOverrides": round(100*effective_cover/len(rows),2) if rows else 0,
+    "overrideEntries": len(overrides),
     "coverUrlPct": round(100*(len(rows)-report["missingCover"])/len(rows),2) if rows else 0,
     "withIsbn": len(rows)-report["missingIsbn"],
     "isbnPct": round(100*(len(rows)-report["missingIsbn"])/len(rows),2) if rows else 0,
