@@ -14,7 +14,7 @@
   async function sha1(text){const d=new Uint8Array(await crypto.subtle.digest('SHA-1',enc.encode(text)));return [...d].map(b=>b.toString(16).padStart(2,'0')).join('')}
   function issue(v){const s=clean(v).replace(/^0+(?=\d)/,'');return s||'0'}
   async function ids(x){
-    const stable=[clean(x.publisher),clean(x.catalogHeader||x.series),clean(x.stage),clean(x.startYear),issue(x.issueNr??x.issue),String(x.isbn||'').replace(/[^0-9Xx]/g,'')].join('|').toLowerCase();
+    const stable=[clean(x.sourceMode||'general'),clean(x.publisher),clean(x.catalogHeader||x.series),clean(x.stage),clean(x.startYear),issue(x.issueNr??x.issue),String(x.isbn||'').replace(/[^0-9Xx]/g,'')].join('|').toLowerCase();
     const cacheKey=(await sha1(stable)).slice(0,24);
     const requestId=cacheKey+'-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7);
     return {cacheKey,requestId};
@@ -31,14 +31,14 @@
   }
   function convert(payload){
     const rows=Array.isArray(payload?.candidates)?payload.candidates:[];
-    return rows.map(c=>({source:c.source||'Puente bibliográfico',score:Number(c.score||5000),data:{...(c.data||{})}})).filter(c=>c.data?.coverUrl);
+    return rows.map(c=>({source:c.source||'Puente bibliográfico',score:Number(c.score||5000),data:{...(c.data||{})}})).filter(c=>c.data?.coverUrl||c.data?.sourceType==='publisher');
   }
   async function search(x,onStatus){
     const {cacheKey,requestId}=await ids(x);
     const cached=await rawJson(`cache/${cacheKey}.json`);
     if(cached?.candidates?.length){onStatus?.('Resultado bibliográfico recuperado de la caché.');return convert(cached)}
-    onStatus?.('Consultando Tebeosfera y fuentes bibliográficas desde el servidor…');
-    const req={requestId,cacheKey,publisher:clean(x.publisher),series:clean(x.catalogHeader||x.series),stage:clean(x.stage),startYear:clean(x.startYear),issue:issue(x.issueNr??x.issue),isbn:String(x.isbn||'').replace(/[^0-9Xx]/g,'')};
+    onStatus?.(x.sourceMode==='publisher'?'Consultando catálogos oficiales…':'Consultando fuentes bibliográficas…');
+    const req={requestId,cacheKey,sourceMode:clean(x.sourceMode||'general'),publisher:clean(x.publisher),series:clean(x.catalogHeader||x.series),stage:clean(x.stage),startYear:clean(x.startYear),issue:issue(x.issueNr??x.issue),isbn:String(x.isbn||'').replace(/[^0-9Xx]/g,'')};
     await putRequest(`bridge/requests/${requestId}.json`,req);
     for(let i=0;i<48;i++){
       await sleep(i<4?2500:3500);
@@ -49,7 +49,7 @@
   }
   window.MCBridgeSearch={search,rawJson};
 
-  if(typeof window.mcSESearch==='function'){
+  if(window.MC_ENABLE_GLOBAL_BRIDGE===true&&typeof window.mcSESearch==='function'){
     const browserSearch=window.mcSESearch;
     window.mcSESearch=async function(x){
       try{
