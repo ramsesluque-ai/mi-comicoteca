@@ -3,7 +3,7 @@
    Usa la misma credencial de Contents: Read/Write ya configurada para sincronización. */
 (function(){
   const OWNER='ramsesluque-ai',REPO='mi-comicoteca',BRANCH='bridge-data';
-  const TOKEN_KEY='mc_github_token_v1';
+  const TOKEN_KEY='mc_github_token_commercial_preview_v1';
   const RAW=`https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/bridge`;
   const API=`https://api.github.com/repos/${OWNER}/${REPO}/contents`;
   const enc=new TextEncoder();
