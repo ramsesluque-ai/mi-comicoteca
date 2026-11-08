@@ -1,0 +1,20 @@
+{
+  "ok": false,
+  "requestId": "test-publisher-astiberri-20261108",
+  "cacheKey": "test-pub-astiberri-20261108",
+  "query": {
+    "requestId": "test-publisher-astiberri-20261108",
+    "cacheKey": "test-pub-astiberri-20261108",
+    "sourceMode": "publisher",
+    "publisher": "Astiberri",
+    "series": "Cómics: manual de instrucciones",
+    "stage": "",
+    "startYear": "2016",
+    "issue": "",
+    "isbn": "9788415685999"
+  },
+  "generatedAt": "2026-11-08T00:53:12Z",
+  "candidates": [],
+  "sourceMode": "publisher",
+  "metadataOnly": true
+}

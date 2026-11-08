@@ -1,5 +1,6 @@
 {
   "ok": true,
+  "authority": "Tebeosfera",
   "requestId": "test-all-star-batman-1",
   "cacheKey": "all-star-batman-renacimiento-ecc-1-9788416945313",
   "query": {
@@ -12,24 +13,30 @@
     "issue": "1",
     "isbn": "9788416945313"
   },
-  "generatedAt": "2026-10-22T14:34:23Z",
+  "generatedAt": "2026-11-08T00:56:03Z",
   "candidates": [
     {
-      "source": "MilComics",
-      "score": 16100,
+      "source": "Tebeosfera · principal",
+      "score": 40000,
       "data": {
-        "title": "Comprar All-Star Batman 01 (Renacimiento) - Mil Comics: Tienda de cómics y figuras Marvel, DC Comics, Star Wars, Tintín",
-        "publisher": "Ecc Ediciones Encuadernacion ComiC-Book (grapa) Formato En Castellano EAN 978841",
-        "publicationDate": "2016-12-01",
-        "pages": "28.000",
+        "title": "BATMAN (2016, ECC) -ALL STAR. RENACIMIENTO- 1",
+        "publisher": "ECC Ediciones",
+        "publicationDate": "",
+        "pages": "",
         "isbn": "9788416945313",
         "series": "All-Star Batman: Renacimiento",
         "issueNr": "1",
-        "coverUrl": "https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/covers/all-star-batman-renacimiento-ecc-1-9788416945313-1.webp",
-        "sourceUrl": "https://www.milcomics.com/comics-descatalogados/all-star-batman-01-renacimiento-103770.html",
-        "originalCoverUrl": "https://www.milcomics.com/1177080-thickbox_default/all-star-batman-01-renacimiento.jpg",
+        "volume": "",
+        "stage": "Renacimiento",
+        "startYear": "2016",
+        "sourceId": "",
+        "coverUrl": "https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/covers/all-star-batman-renacimiento-ecc-1-9788416945313-tebeosfera.webp",
+        "sourceUrl": "https://www.tebeosfera.com/numeros/batman_2016_ecc_-all_star._renacimiento-_1.html",
+        "authority": "Tebeosfera",
+        "match": "ISBN exacto",
+        "originalCoverUrl": "https://www.tebeosfera.com/T3content/img/T3_numeros/f/e/num1_ca2a3135afd04140b6c1559b6c0238fe.jpg",
         "coverUrls": [
-          "https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/covers/all-star-batman-renacimiento-ecc-1-9788416945313-1.webp"
+          "https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/covers/all-star-batman-renacimiento-ecc-1-9788416945313-tebeosfera.webp"
         ]
       }
     }

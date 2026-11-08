@@ -1,5 +1,6 @@
 {
   "ok": true,
+  "authority": "Tebeosfera",
   "requestId": "test-all-star-batman-4",
   "cacheKey": "all-star-batman-renacimiento-ecc-4-9788417063504",
   "query": {
@@ -12,24 +13,30 @@
     "issue": "4",
     "isbn": "9788417063504"
   },
-  "generatedAt": "2026-10-22T18:20:42Z",
+  "generatedAt": "2026-11-08T00:56:18Z",
   "candidates": [
     {
-      "source": "MilComics",
-      "score": 16100,
+      "source": "Tebeosfera · principal",
+      "score": 40000,
       "data": {
-        "title": "Comprar All-Star Batman 04 (Renacimiento) - Mil Comics: Tienda de cómics y figuras Marvel, DC Comics, Star Wars, Tintín",
-        "publisher": "Ecc Ediciones Encuadernacion ComiC-Book (grapa) Formato En Castellano EAN 978841",
-        "publicationDate": "2017-03-01",
-        "pages": "32.000",
+        "title": "BATMAN (2016, ECC) -ALL STAR. RENACIMIENTO- 4",
+        "publisher": "ECC Ediciones",
+        "publicationDate": "",
+        "pages": "",
         "isbn": "9788417063504",
         "series": "All-Star Batman: Renacimiento",
         "issueNr": "4",
-        "coverUrl": "https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/covers/all-star-batman-renacimiento-ecc-4-9788417063504-1.webp",
-        "sourceUrl": "https://www.milcomics.com/comic-batman/all-star-batman-04-renacimiento-79513.html",
-        "originalCoverUrl": "https://www.milcomics.com/1058117-thickbox_default/all-star-batman-04-renacimiento.jpg",
+        "volume": "",
+        "stage": "Renacimiento",
+        "startYear": "2016",
+        "sourceId": "",
+        "coverUrl": "https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/covers/all-star-batman-renacimiento-ecc-4-9788417063504-tebeosfera.webp",
+        "sourceUrl": "https://www.tebeosfera.com/numeros/batman_2016_ecc_-all_star._renacimiento-_4.html",
+        "authority": "Tebeosfera",
+        "match": "ISBN exacto",
+        "originalCoverUrl": "https://www.tebeosfera.com/T3content/img/T3_numeros/_/4/asb_4.jpg",
         "coverUrls": [
-          "https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/covers/all-star-batman-renacimiento-ecc-4-9788417063504-1.webp"
+          "https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/covers/all-star-batman-renacimiento-ecc-4-9788417063504-tebeosfera.webp"
         ]
       }
     }

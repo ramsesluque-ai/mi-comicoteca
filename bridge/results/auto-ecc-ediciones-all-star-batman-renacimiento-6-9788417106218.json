@@ -1,5 +1,6 @@
 {
   "ok": true,
+  "authority": "Tebeosfera",
   "requestId": "auto-ecc-ediciones-all-star-batman-renacimiento-6-9788417106218",
   "cacheKey": "auto-ecc-ediciones-all-star-batman-renacimiento-6-9788417106218",
   "query": {
@@ -12,24 +13,30 @@
     "issue": "6",
     "isbn": "9788417106218"
   },
-  "generatedAt": "2026-10-22T18:22:00Z",
+  "generatedAt": "2026-11-08T00:55:24Z",
   "candidates": [
     {
-      "source": "MilComics",
-      "score": 16100,
+      "source": "Tebeosfera · principal",
+      "score": 40000,
       "data": {
-        "title": "Comprar All-Star Batman 06 (Renacimiento) - Mil Comics: Tienda de cómics y figuras Marvel, DC Comics, Star Wars, Tintín",
-        "publisher": "Ecc Ediciones Encuadernacion ComiC-Book (grapa) Formato En Castellano EAN 978841",
-        "publicationDate": "2017-05-01",
-        "pages": "48.000",
+        "title": "BATMAN (2016, ECC) -ALL STAR. RENACIMIENTO- 6",
+        "publisher": "ECC Ediciones",
+        "publicationDate": "",
+        "pages": "",
         "isbn": "9788417106218",
         "series": "All-Star Batman: Renacimiento",
         "issueNr": "6",
-        "coverUrl": "https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/covers/auto-ecc-ediciones-all-star-batman-renacimiento-6-9788417106218-1.webp",
-        "sourceUrl": "https://www.milcomics.com/comic-batman/all-star-batman-06-renacimiento-88209.html",
-        "originalCoverUrl": "https://www.milcomics.com/816858-thickbox_default/all-star-batman-06-renacimiento.jpg",
+        "volume": "",
+        "stage": "Renacimiento",
+        "startYear": "2016",
+        "sourceId": "",
+        "coverUrl": "https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/covers/auto-ecc-ediciones-all-star-batman-renacimiento-6-9788417106218-tebeosfera.webp",
+        "sourceUrl": "https://www.tebeosfera.com/numeros/batman_2016_ecc_-all_star._renacimiento-_6.html",
+        "authority": "Tebeosfera",
+        "match": "ISBN exacto",
+        "originalCoverUrl": "https://www.tebeosfera.com/T3content/img/T3_numeros/3/6/papo_036.jpg",
         "coverUrls": [
-          "https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/covers/auto-ecc-ediciones-all-star-batman-renacimiento-6-9788417106218-1.webp"
+          "https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/covers/auto-ecc-ediciones-all-star-batman-renacimiento-6-9788417106218-tebeosfera.webp"
         ]
       }
     }
