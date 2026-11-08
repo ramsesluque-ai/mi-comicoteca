@@ -34,22 +34,30 @@
   }
   async function view(){
     const items=matching();
-    return head('Novedades editoriales','Publicaciones mensuales verificadas en las webs de las editoriales. Elige qué añadir a tu colección o Wishlist.')+
+    const grouped=SOURCES.filter(s=>!state.publisher||state.publisher===s.name).map(s=>({
+      source:s,items:items.filter(x=>x.publisher===s.name)
+    }));
+    const renderIssue=x=>'<article class="card"><div class="muted small">'+esc(dateLabel(x))+'</div>'+
+      '<h3>'+esc(x.title)+'</h3><div class="muted">'+esc(x.series)+(x.issueNr?' · Nº '+esc(x.issueNr):'')+'</div>'+
+      '<p><a href="'+esc(safeUrl(x.sourceUrl))+'" target="_blank" rel="noopener noreferrer">Ver ficha / boletín oficial</a></p>'+
+      '<div class="actions"><button class="btn sm primary" data-release-id="'+esc(x.id)+'" data-release-status="In Collection">+ Colección</button> '+
+      '<button class="btn sm" data-release-id="'+esc(x.id)+'" data-release-status="On Wish List">+ Wishlist</button></div></article>';
+    const count=items.length;
+    return head('Novedades','Publicaciones del mes agrupadas por editorial. Añade las que te interesen a tu colección o Wishlist.')+
       '<div class="panel"><div class="filters">'+
         '<label>Mes <input id="new-month" type="month" value="'+esc(state.month)+'"></label>'+
         '<label>Editorial <select id="new-publisher"><option value="">Todas las editoriales</option>'+
           SOURCES.map(s=>'<option value="'+esc(s.name)+'" '+(state.publisher===s.name?'selected':'')+'>'+esc(s.name)+'</option>').join('')+'</select></label>'+
         '<label>Buscar <input id="new-q" type="search" value="'+esc(state.q)+'" placeholder="Título o serie"></label></div>'+
-      '<p class="small muted">No se copian portadas ni sinopsis; cada ficha enlaza a la publicación oficial. La lista es una selección contrastada, no un catálogo editorial completo ni una actualización automática.</p></div>'+
-      (items.length?'<div class="grid">'+items.map(x=>'<article class="card"><div class="muted small">'+esc(x.publisher)+' · '+esc(dateLabel(x))+'</div>'+
-        '<h3>'+esc(x.title)+'</h3><div class="muted">'+esc(x.series)+(x.issueNr?' · Nº '+esc(x.issueNr):'')+'</div>'+
-        '<p><a href="'+esc(safeUrl(x.sourceUrl))+'" target="_blank" rel="noopener noreferrer">Ver publicación oficial</a></p>'+
-        '<div class="actions"><button class="btn sm primary" data-release-id="'+esc(x.id)+'" data-release-status="In Collection">+ Colección</button> '+
-        '<button class="btn sm" data-release-id="'+esc(x.id)+'" data-release-status="On Wish List">+ Wishlist</button></div></article>').join('')+'</div>':
-        '<div class="notice">No tenemos entradas contrastadas para este mes y filtro. Consulta las fuentes oficiales y añade un cómic manualmente si no aparece aquí.</div>')+
-      '<div class="panel"><h3>Consultar editoriales</h3><p class="muted small">Fuentes oficiales; sus contenidos e imágenes permanecen en las webs de origen.</p><div class="grid">'+
-        SOURCES.map(s=>'<div><b>'+esc(s.name)+'</b><div class="small muted">'+esc(s.description)+'</div><a href="'+esc(safeUrl(s.url))+'" target="_blank" rel="noopener noreferrer">Consultar web oficial</a></div>').join('')+
-      '</div></div>';
+      '<p class="small muted">'+count+' publicaciones seleccionadas y contrastadas para este filtro. No es todavía un listado exhaustivo ni una sincronización automática.</p>'+
+      '<p class="small muted">Se muestran metadatos breves y enlaces a fuentes oficiales, sin copiar portadas ni sinopsis de terceros.</p></div>'+
+      grouped.map(g=>'<section class="panel" style="margin:16px 0" aria-label="Novedades '+esc(g.source.name)+'">'+
+        '<div class="top"><div><h2>'+esc(g.source.name)+' <span class="muted small">('+g.items.length+')</span></h2>'+
+        '<p class="muted small">'+esc(g.source.description)+'</p></div>'+
+        '<div class="actions"><a href="'+esc(safeUrl(g.source.url))+'" target="_blank" rel="noopener noreferrer">Web editorial</a></div></div>'+
+        (g.items.length?'<div class="grid">'+g.items.map(renderIssue).join('')+'</div>':
+          '<p class="muted">No se han verificado aún publicaciones de esta editorial para el mes y filtros elegidos. Consulta su calendario oficial.</p>')+
+        '</section>').join('');
   }
   function afterRender(){
     const m=document.getElementById('new-month'),p=document.getElementById('new-publisher'),q=document.getElementById('new-q');
