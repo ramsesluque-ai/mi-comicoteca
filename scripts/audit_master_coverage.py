@@ -42,6 +42,19 @@ report["priorityEditorials"] = [
     {"publisher": name, **counts[name], "coverCompletionPct": round(100 * (counts[name]["issues"] - counts[name]["missingCover"]) / counts[name]["issues"], 2)}
     for name in priority if name in counts
 ]
+report["coverageAssessment"] = {
+    "knownRecords": len(rows),
+    "knownPublishers": len(counts),
+    "withCoverUrl": len(rows)-report["missingCover"],
+    "coverUrlPct": round(100*(len(rows)-report["missingCover"])/len(rows),2) if rows else 0,
+    "withIsbn": len(rows)-report["missingIsbn"],
+    "isbnPct": round(100*(len(rows)-report["missingIsbn"])/len(rows),2) if rows else 0,
+    "withSource": len(rows)-report["missingSource"],
+    "sourcePct": round(100*(len(rows)-report["missingSource"])/len(rows),2) if rows else 0,
+    "estimatedMissingIssuesPctVsSpain": None,
+    "completenessVerdict": "unknown without authoritative Spanish reference inventory",
+    "releaseVerdict": "usable as evolving non-exhaustive catalog with manual entry",
+}
 report["priorityMissingCovers"] = sum(x["missingCover"] for x in report["priorityEditorials"])
 import csv
 with (base / "coverage-priority.csv").open("w", encoding="utf-8-sig", newline="") as f:
@@ -51,3 +64,5 @@ with (base / "coverage-priority.csv").open("w", encoding="utf-8-sig", newline=""
 dest = base / "coverage-audit.json"
 dest.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 print(f"{len(rows)} issues, {len(counts)} publishers, {report['missingCover']} missing covers")
+
+print(json.dumps(report["coverageAssessment"],ensure_ascii=False,indent=2))
