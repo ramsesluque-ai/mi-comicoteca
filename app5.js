@@ -14,14 +14,14 @@ function mcImportParseCsv(text){
 }
 function mcImportMap(raw){
  const aliases={publisher:['publisher','editorial','publisher name'],catalogHeader:['catalogheader','cabecera','coleccion','colección','serie','series'],volume:['volume','volumen'],stage:['stage','etapa','subserie'],startYear:['startyear','año inicio','ano inicio','año de inicio'],issueNr:['issuenr','issue','numero','número','num','nº'],title:['title','titulo','título','nombre'],subtitle:['subtitle','subtitulo','subtítulo'],isbn:['isbn','ean','codigo','código'],status:['status','estado'],tags:['tags','etiquetas','tag'],coverUrl:['coverurl','portada','url portada'],publicationDate:['publicationdate','fecha publicacion','fecha publicación'],authors:['authors','autores'],notes:['notes','notas'],location:['location','ubicacion','ubicación'],paid:['paid','precio pagado'],estimated:['estimated','valor estimado'],read:['read','leido','leído'],format:['format','formato'],pages:['pages','paginas','páginas']};
- const normalize=k=>String(k).normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/[_\\s-]+/g,' ').trim();
+ const normalize=k=>String(k).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[_\\s-]+/g,' ').trim();
  const keys=Object.keys(raw),obj={};
  for(const [field,terms] of Object.entries(aliases)){const key=keys.find(k=>terms.some(t=>normalize(k)===normalize(t)));if(key&&raw[key]!==undefined)obj[field]=raw[key]}
  if(typeof obj.authors==='string')obj.authors={writer:obj.authors};
  if(obj.status){const st=normalize(obj.status);obj.status=/wishlist|deseos|wish list/.test(st)?'On Wish List':/coleccion|collection|tengo/.test(st)?'In Collection':obj.status}
  return cleanComic(obj);
 }
-function mcImportKey(x){const n=v=>String(v||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().trim();return [n(x.publisher),n(x.catalogHeader||x.series),n(x.volume),n(x.stage),n(x.startYear),n(x.issueNr||x.issue),n(x.isbn)].join('|')}
+function mcImportKey(x){const n=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();return [n(x.publisher),n(x.catalogHeader||x.series),n(x.volume),n(x.stage),n(x.startYear),n(x.issueNr||x.issue),n(x.isbn)].join('|')}
 let mcImportPending=null;
 async function importFile(file,target='comics'){
  if(!file)return;
