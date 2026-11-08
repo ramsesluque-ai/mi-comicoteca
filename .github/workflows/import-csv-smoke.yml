@@ -1,0 +1,21 @@
+name: COMICTECA CSV import smoke
+on:
+  push:
+    branches: [commercial-published]
+    paths:
+      - app5.js
+      - tests/import-csv-smoke.cjs
+      - .github/workflows/import-csv-smoke.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check app5.js
+      - run: node tests/import-csv-smoke.cjs
