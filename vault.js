@@ -1,7 +1,7 @@
 'use strict';
 /* Bóveda propia de portadas v3: copia local primero; recuperación por fuente; sincronización cifrada separada. */
 (function(){
- const OWNER='ramsesluque-ai',REPO='mi-comicoteca',BRANCH='sync-data',CACHE='mi-comicoteca-cover-vault-v1';
+ const OWNER='ramsesluque-ai',REPO='mi-comicoteca',BRANCH='sync-data',CACHE='mi-comicoteca-cover-vault-commercial-v1';
  const PASS_KEY='mc_sync_pass_v1',TOKEN_KEY='mc_github_token_v1',HISTORY_KEY='mc_cover_write_history_v2';
  const MAX_HOUR=400,MIN_GAP_MS=1250;
  const enc=new TextEncoder();
