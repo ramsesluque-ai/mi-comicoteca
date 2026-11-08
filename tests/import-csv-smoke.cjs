@@ -17,3 +17,13 @@ assert.equal(parsed[0]['Número'],'1');
 const multi=ctx.mcImportParseCsv('Editorial;Título\nECC;"Título con; separador y\nsalto de línea"\n');
 assert.equal(multi[0]['Título'],'Título con; separador y\nsalto de línea');
 console.log('PASS: Excel BOM, template header-only, UTF-8 accents, CRLF, quoted delimiters and multiline fields');
+
+// Regression: the import preview must remove the modal's initial hidden class.
+const importer=take("async function importFile(file,target='comics'){",'async function mcImportConfirm(){');
+assert.match(importer,/modal\\.classList\\.remove\\(['\"]hidden['\"]\\)/,'Preview must be visible');
+assert.doesNotMatch(importer,/modal\\.classList\\.add\\(['\"]show['\"]\\)/,'show alone leaves hidden modal invisible');
+const app1=fs.readFileSync('app1.js','utf8');
+assert.match(app1,/comicteca-importacion-prueba-v1/,'Test mode must use independent IndexedDB');
+const index=fs.readFileSync('index.html','utf8');
+assert.match(index,/ENTORNO DE PRUEBA DE IMPORTACIÓN/,'Test mode must be clearly labeled');
+console.log('PASS: import preview visible and test database isolated');
