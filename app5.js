@@ -1,12 +1,12 @@
 async function parseXlsx(file){const files=await unzipXlsx(await file.arrayBuffer()),ss=[];if(files['xl/sharedStrings.xml'])xmlText(files['xl/sharedStrings.xml']).querySelectorAll('si').forEach(si=>ss.push([...si.querySelectorAll('t')].map(t=>t.textContent).join('')));const wb=xmlText(files['xl/workbook.xml']),rels=xmlText(files['xl/_rels/workbook.xml.rels']),rm={};rels.querySelectorAll('Relationship').forEach(r=>rm[r.getAttribute('Id')]=r.getAttribute('Target'));let best=[];for(const sh of wb.querySelectorAll('sheet')){const rid=sh.getAttribute('r:id')||sh.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id'),target=rm[rid];if(!target)continue;const path='xl/'+target.replace(/^\//,'').replace(/^xl\//,''),x=files[path];if(!x)continue;const d=xmlText(x),grid=[];d.querySelectorAll('row').forEach(row=>{const rr=[];row.querySelectorAll('c').forEach(c=>{const ref=c.getAttribute('r')||'',col=ref.match(/[A-Z]+/)?.[0]||'A';let idx=0;for(const ch of col)idx=idx*26+ch.charCodeAt(0)-64;idx--;const t=c.getAttribute('t'),v=c.querySelector('v')?.textContent||'',iv=c.querySelector('is t')?.textContent;rr[idx]=t==='s'?ss[+v]:t==='inlineStr'?iv:v});grid.push(rr)});const objs=rowsToObjects(grid);if(objs.length>best.length)best=objs}return best}
 function mcImportParseCsv(text){
- const first=(text.replace(/^\\uFEFF/,'').split(/\\r?\\n/,1)[0]||'');
- const delimiter=[';',',','\\t'].sort((a,b)=>first.split(b).length-first.split(a).length)[0];
+ const src=String(text||'').replace(/^\uFEFF/,'');
+ const first=src.split(/\r?\n/,1)[0]||'';
+ const delimiter=[';',',','\t'].sort((a,b)=>first.split(b).length-first.split(a).length)[0];
  const rows=[],out=[];let cell='',row=[],quoted=false;
- const src=text.replace(/^\\uFEFF/,'');
  for(let i=0;i<src.length;i++){const ch=src[i];if(ch==='"'){if(quoted&&src[i+1]==='"'){cell+='"';i++}else quoted=!quoted}
  else if(ch===delimiter&&!quoted){row.push(cell);cell=''}
- else if((ch==='\\n'||ch==='\\r')&&!quoted){if(ch==='\\r'&&src[i+1]==='\\n')i++;row.push(cell);if(row.some(v=>v.trim()))rows.push(row);row=[];cell=''}
+ else if((ch==='\n'||ch==='\r')&&!quoted){if(ch==='\r'&&src[i+1]==='\n')i++;row.push(cell);if(row.some(v=>v.trim()))rows.push(row);row=[];cell=''}
  else cell+=ch}
  row.push(cell);if(row.some(v=>v.trim()))rows.push(row);
  if(!rows.length)return out;const headers=rows.shift().map(x=>x.trim());
