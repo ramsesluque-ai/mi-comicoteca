@@ -27,10 +27,10 @@ async function importFile(file,target='comics'){
  if(!file)return;
  busy(true,'Leyendo '+file.name+'…');
  try{
-  if(!/\\.(json|csv|xlsx)$/i.test(file.name))throw Error('Formato no admitido: utiliza CSV, XLSX o JSON');
+  if(!/\.(json|csv|xlsx)$/i.test(file.name))throw Error('Formato no admitido: utiliza CSV, XLSX o JSON');
   let raw=[],backup=null;
-  if(/\\.json$/i.test(file.name)){const parsed=JSON.parse(await file.text());if(Array.isArray(parsed))raw=parsed;else if(parsed&&Array.isArray(parsed.comics)){raw=parsed.comics;backup=parsed}else if(parsed&&Array.isArray(parsed.master))raw=parsed.master;else throw Error('JSON sin lista de cómics reconocible')}
-  else if(/\\.xlsx$/i.test(file.name))raw=await parseXlsx(file);
+  if(/\.json$/i.test(file.name)){const parsed=JSON.parse(await file.text());if(Array.isArray(parsed))raw=parsed;else if(parsed&&Array.isArray(parsed.comics)){raw=parsed.comics;backup=parsed}else if(parsed&&Array.isArray(parsed.master))raw=parsed.master;else throw Error('JSON sin lista de cómics reconocible')}
+  else if(/\.xlsx$/i.test(file.name))raw=await parseXlsx(file);
   else raw=mcImportParseCsv(await file.text());
   if(!raw.length)throw Error('No se encontraron cómics en el archivo');
   if(raw.length>100000)throw Error('Importación demasiado grande: divide el archivo en bloques de 100.000');
