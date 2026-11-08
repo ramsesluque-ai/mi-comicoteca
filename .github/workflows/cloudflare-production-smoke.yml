@@ -1,0 +1,51 @@
+name: COMICTECA Cloudflare production browser smoke
+on:
+  workflow_dispatch:
+    inputs:
+      production_url:
+        description: 'Exact existing COMICTECA Cloudflare deployment URL (https://*.pages.dev or https://*.workers.dev)'
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  cloudflare-browser:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: commercial-published
+          persist-credentials: false
+      - name: Validate deployment URL
+        env:
+          TARGET_URL: ${{ inputs.production_url }}
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const url = new URL(process.env.TARGET_URL);
+          const host = url.hostname.toLowerCase();
+          if (url.protocol !== 'https:' || url.username || url.password ||
+              url.port || url.search || url.hash ||
+              !(/^[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(pages|workers)\.dev$/.test(host))) {
+            throw Error('Only HTTPS Cloudflare pages.dev/workers.dev deployment URLs are allowed');
+          }
+          NODE
+      - name: Install Playwright
+        run: npm install --no-save --no-package-lock playwright@1.56.1
+      - name: Check Cloudflare deployed application in real Chromium
+        env:
+          COMICTECA_BASE_URL: ${{ inputs.production_url }}
+        run: node tests/bi-browser-smoke.cjs
+      - name: Save browser screenshot and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: comicteca-cloudflare-browser-evidence
+          path: |
+            artifacts/bi-browser.png
+            artifacts/bi-browser-report.json
+          if-no-files-found: warn
+          retention-days: 7
