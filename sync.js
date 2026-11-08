@@ -1,6 +1,9 @@
 'use strict';
 (function(){
 if(new URLSearchParams(location.search).get('modo') === 'prueba-importacion') return;
+// Legacy GitHub owner backup is not a multi-user sync service. Disable it on
+// the commercial Cloudflare origin to prevent cross-account restore or writes.
+if(location.hostname === 'mi-comicoteca.ramsesluque.workers.dev' || location.hostname.endsWith('.mi-comicoteca.workers.dev')) return;
 const OWNER='ramsesluque-ai',REPO='mi-comicoteca',BRANCH='sync-data',PATH='comicoteca-sync.enc.json';
 const RAW=`https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${PATH}`,API=`https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`;
 const PK='mc_sync_pass_v1',TK='mc_github_token_v1',RK='mc_sync_revision_v1';
