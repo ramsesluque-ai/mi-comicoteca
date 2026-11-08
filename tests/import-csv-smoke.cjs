@@ -28,3 +28,18 @@ assert.match(importer,/mcImportIdentityConflict/,'Importer must quarantine ambig
 const index=fs.readFileSync('index.html','utf8');
 assert.match(index,/ENTORNO DE PRUEBA DE IMPORTACIÓN/,'Test mode must be clearly labeled');
 console.log('PASS: import preview visible and test database isolated');
+
+// Execute the actual importer identity check: blank metadata must never be
+// silently assigned to an existing edition, while distinct known editions
+// remain separate and different publishers/issues do not collide.
+const conflictSource=take('function mcImportIdentityConflict(a,b){','let mcImportPending=null;');
+vm.runInContext(conflictSource,ctx);
+const base={publisher:'ECC',catalogHeader:'Batgirl',issueNr:'1'};
+const known={...base,volume:'1',startYear:'2012'};
+const unknown={...base,volume:'',stage:'',startYear:''};
+assert.equal(ctx.mcImportIdentityConflict(unknown,known),true);
+assert.equal(ctx.mcImportIdentityConflict(known,unknown),true);
+assert.equal(ctx.mcImportIdentityConflict(known,{...known,volume:'2',startYear:'2015'}),false);
+assert.equal(ctx.mcImportIdentityConflict(unknown,{...known,publisher:'Planeta DeAgostini'}),false);
+assert.equal(ctx.mcImportIdentityConflict(unknown,{...known,issueNr:'2'}),false);
+console.log('PASS: ambiguous Batgirl editions quarantined; different publisher, edition and issue preserved');
