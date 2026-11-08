@@ -16,7 +16,7 @@
 
   function escOpt(v){return typeof esc==='function'?esc(v):String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
   function byStatus(rows){if(!f.status)return rows;if(f.status==='__blank__')return rows.filter(x=>!x.status);return rows.filter(x=>x.status===f.status)}
-  function byCover(rows){return rows.filter(x=>!x.coverKey&&!hasExternal(x))}
+  function byCover(rows){return rows.filter(x=>!x.coverKey)}
   function filterCore(rows,includeSearch=true){let a=byStatus(rows);for(const k of order)if(f[k])a=a.filter(x=>val(x,k)===String(f[k]));if(includeSearch&&f.q){const q=norm(f.q);a=a.filter(x=>norm([x.publisher,x.catalogHeader,x.series,x.volume,x.stage,x.startYear,x.title,x.issueNr,x.isbn].join(' ')).includes(q))}return byCover(a)}
   function rowsBefore(rows,field){let a=byCover(byStatus(rows));for(const k of order){if(k===field)break;if(f[k])a=a.filter(x=>val(x,k)===String(f[k]))}return a}
   function values(rows,field){return [...new Set(rows.map(x=>val(x,field)).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),'es',{numeric:true,sensitivity:'base'}))}
@@ -47,11 +47,11 @@
   window.coversView=async function(){return head('Portadas','Filtra por colección, selecciona las fichas que quieras y completa únicamente ese bloque.')+`<div class="notice oknotice"><b>Trabajo por colecciones</b><div class="small muted">Editorial → Serie/Cabecera → Volumen/Etapa → Año. Después selecciona la página o todas las fichas filtradas y completa solo ese bloque.</div></div><div class="panel"><div id="mcCoverControls"></div><div id="coversbody"></div></div>`};
 
   window.renderCovers=async function(){
-    const all=(await allStore('comics')).slice().sort(mcSortRecord),filtered=filterCore(all),own=all.filter(x=>x.coverKey).length,external=all.filter(x=>!x.coverKey&&hasExternal(x)).length,missing=all.length-own-external;
+    const all=(await allStore('comics')).slice().sort(mcSortRecord),filtered=filterCore(all),own=all.filter(x=>x.coverKey).length,external=all.filter(x=>!x.coverKey&&hasExternal(x)).length,missing=all.length-own;
     const pubs=values(rowsBefore(all,'publisher'),'publisher'),headers=values(rowsBefore(all,'catalogHeader'),'catalogHeader'),vols=values(rowsBefore(all,'volume'),'volume'),stages=values(rowsBefore(all,'stage'),'stage'),years=values(rowsBefore(all,'startYear'),'startYear');
     const pages=Math.max(1,Math.ceil(filtered.length/PER_PAGE));coverPage=Math.max(1,Math.min(coverPage,pages));const slice=filtered.slice((coverPage-1)*PER_PAGE,coverPage*PER_PAGE);lastFilteredIds=slice.filter(x=>!x.coverKey).map(x=>String(x.id));
     const controls=document.getElementById('mcCoverControls');if(!controls)return;
-    controls.innerHTML=`<div class="cover-stats"><span class="cover-stat ok">${own.toLocaleString('es-ES')} propias/sincronizadas</span><span class="cover-stat">${external.toLocaleString('es-ES')} enlazadas externas</span><span class="cover-stat miss">${missing.toLocaleString('es-ES')} sin portada</span></div>
+    controls.innerHTML=`<div class="cover-stats"><span class="cover-stat ok">${own.toLocaleString('es-ES')} propias/sincronizadas</span><span class="cover-stat">${external.toLocaleString('es-ES')} enlaces externos no verificados</span><span class="cover-stat miss">${missing.toLocaleString('es-ES')} sin portada</span></div>
     <div class="mc-cover-filter-dashboard mc-cover-filter-dashboard-v2">
       <label class="mc-cf mc-cf-search"><span>⌕ BUSCAR FICHA</span><input id="coverQ" ${running?'disabled':''} value="${escOpt(f.q)}" placeholder="Editorial, serie, número, ISBN…" oninput="AutoCover.setSearch(this.value)"></label>
       <label class="mc-cf mc-cf-pub"><span>▣ EDITORIAL</span>${selectHtml('publisher','Todas las editoriales',pubs,f.publisher)}</label>
@@ -60,39 +60,15 @@
       <label class="mc-cf mc-cf-stage"><span>◆ ETAPA</span>${selectHtml('stage','Todas las etapas',stages,f.stage)}</label>
       <label class="mc-cf mc-cf-year"><span>◷ AÑO DE INICIO</span>${selectHtml('startYear','Todos los años',years,f.startYear)}</label>
       <label class="mc-cf mc-cf-state"><span>● ESTADO</span><select ${running?'disabled':''} onchange="AutoCover.setStatus(this.value)"><option value="" ${!f.status?'selected':''}>Todos los estados</option><option value="In Collection" ${f.status==='In Collection'?'selected':''}>En colección</option><option value="On Wish List" ${f.status==='On Wish List'?'selected':''}>Wishlist</option><option value="__blank__" ${f.status==='__blank__'?'selected':''}>Sin estado</option></select></label>
-      <div class="mc-cf-hint">Solo fichas sin portada · ${filtered.length.toLocaleString('es-ES')} pendientes con estos filtros</div>
+      <div class="mc-cf-hint">Fichas sin imagen propia · ${filtered.length.toLocaleString('es-ES')} pendientes con estos filtros</div>
     </div>
-    <div class="toolbar" style="padding:12px 15px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <button class="btn" ${running?'disabled':''} onclick="AutoCover.selectPage()">Seleccionar página (${lastFilteredIds.length})</button>
-      <button class="btn" ${running?'disabled':''} onclick="AutoCover.selectFiltered()">Seleccionar todas las filtradas (${filtered.filter(x=>!x.coverKey).length.toLocaleString('es-ES')})</button>
-      <button class="btn" ${running?'disabled':''} onclick="AutoCover.clearSelection()">Deseleccionar</button>
-      <span id="mcSelectedCount" class="small muted">${selected.size.toLocaleString('es-ES')} seleccionadas</span>
-      <button class="btn primary" ${running||!selected.size?'disabled':''} onclick="AutoCover.runSelected()">Completar portadas seleccionadas</button>
-      ${running?'<button class="btn" onclick="AutoCover.stop()">Detener</button>':''}
-      <span id="mcAutoCoverProgress" class="small muted">${escOpt(lastProgress)}</span>
-    </div>`;
-    document.getElementById('coversbody').innerHTML=`<div class="cover-manager-grid">${slice.map(x=>{const id=encId(x.id),checked=selected.has(String(x.id)),disabled=!!x.coverKey||running;return `<article class="cover-manager-card ${x.coverKey?'found':'missing'}" style="position:relative"><label style="position:absolute;top:8px;left:8px;z-index:3;background:rgba(3,11,22,.86);padding:5px 7px;border-radius:8px"><input type="checkbox" ${checked?'checked':''} ${disabled?'disabled':''} onchange="AutoCover.toggle('${id}',this.checked)"></label>${img(x,'cover gallerycover')}<div><div class="record-kicker">${escOpt(x.publisher)} · ${escOpt([x.volume,x.stage,x.startYear].filter(Boolean).join(' · '))}</div><div class="record-title">${escOpt(x.catalogHeader||x.series)}</div><div class="record-sub">${x.issueNr!==''?'Nº '+escOpt(x.issueNr):''}${x.title?' · '+escOpt(x.title):''}</div><div class="isbn">ISBN: ${escOpt(x.isbn||'sin informar')}</div><div class="cover-actions">${!x.coverKey?`<button class="btn sm primary" ${running?'disabled':''} onclick="AutoCover.find('${id}')">Buscar portada</button>`:''}${!x.coverKey&&x.coverUrl?`<button class="btn sm" ${running?'disabled':''} onclick="AutoCover.internalize('${id}')">Guardar esta portada</button>`:''}<label class="btn sm ${running?'disabled':''}">Subir imagen<input class="hidden" ${running?'disabled':''} type="file" accept="image/*" onchange="AutoCover.upload('${id}',this.files[0]);this.value='' "></label><button class="btn sm" ${running?'disabled':''} onclick="AutoCover.edit('${id}')">Ficha</button></div></div></article>`}).join('')||'<div class="empty">No hay fichas con estos filtros.</div>'}</div><div class="pager"><span>${filtered.length.toLocaleString('es-ES')} fichas · Página ${coverPage}/${pages}</span><span><button class="btn sm" ${running||coverPage<=1?'disabled':''} onclick="AutoCover.prev()">Anterior</button> <button class="btn sm" ${running||coverPage>=pages?'disabled':''} onclick="AutoCover.next()">Siguiente</button></span></div>`;
+    <div class="notice" style="margin:10px 0">La consulta de portadas es individual. En la edición comercial no se descargan ni se guardan automáticamente imágenes de terceros por lotes. Puedes consultar Open Library o subir una foto que puedas utilizar legítimamente.</div>`;
+
+    document.getElementById('coversbody').innerHTML=`<div class="cover-manager-grid">${slice.map(x=>{const id=encId(x.id),checked=selected.has(String(x.id)),disabled=!!x.coverKey||running;return `<article class="cover-manager-card ${x.coverKey?'found':'missing'}" style="position:relative">${img({...x,coverUrl:''},'cover gallerycover')}<div><div class="record-kicker">${escOpt(x.publisher)} · ${escOpt([x.volume,x.stage,x.startYear].filter(Boolean).join(' · '))}</div><div class="record-title">${escOpt(x.catalogHeader||x.series)}</div><div class="record-sub">${x.issueNr!==''?'Nº '+escOpt(x.issueNr):''}${x.title?' · '+escOpt(x.title):''}</div><div class="isbn">ISBN: ${escOpt(x.isbn||'sin informar')}</div><div class="cover-actions">${!x.coverKey?`<button class="btn sm primary" ${running?'disabled':''} onclick="AutoCover.find('${id}')">Consultar portada</button>`:''}<label class="btn sm ${running?'disabled':''}">Subir imagen propia<input class="hidden" ${running?'disabled':''} type="file" accept="image/*" onchange="AutoCover.upload('${id}',this.files[0]);this.value='' "></label><button class="btn sm" ${running?'disabled':''} onclick="AutoCover.edit('${id}')">Ficha</button></div></div></article>`}).join('')||'<div class="empty">No hay fichas con estos filtros.</div>'}</div><div class="pager"><span>${filtered.length.toLocaleString('es-ES')} fichas · Página ${coverPage}/${pages}</span><span><button class="btn sm" ${running||coverPage<=1?'disabled':''} onclick="AutoCover.prev()">Anterior</button> <button class="btn sm" ${running||coverPage>=pages?'disabled':''} onclick="AutoCover.next()">Siguiente</button></span></div>`;
     CoverVault?.hydrate?.();updateSelectedCount();
   };
 
-  async function runSelected(){
-    if(running)return toast('Ya hay un proceso de portadas en marcha');
-    if(!selected.size)return toast('Selecciona primero las fichas que quieras completar');
-    if(!window.CoverVault?.hasCredentials?.()){toast('Carga primero la clave y la credencial desde Sincronizar');window.CloudSync?.show?.();return}
-    const all=await allStore('comics'),map=new Map(all.map(x=>[String(x.id),x])),targets=[...selected].map(id=>map.get(String(id))).filter(x=>x&&!x.coverKey&&!hasExternal(x));
-    if(!targets.length){clearSelected();await renderCovers();return toast('Las fichas seleccionadas ya tienen portada propia')}
-    const batch=targets.slice(0,MAX_RUN),s={checked:0,total:batch.length,saved:0,skipped:0,errors:0};running=true;stopRequested=false;lastProgress='';await renderCovers();paint(s);
-    try{
-      for(const x of batch){
-        if(stopRequested)break;
-        try{const c=await candidateFor(x);if(!c)s.skipped++;else{await attach(x,c);s.saved++;await sleep(1100)}}catch(e){console.warn('AutoCover',x.id,e);s.errors++}
-        selected.delete(String(x.id));s.checked++;paint(s);if(!stopRequested)await sleep(120);
-      }
-      window.CloudSync?.schedule?.();
-      const remain=selected.size;lastProgress=`${progressText(s)}${remain?` · quedan ${remain.toLocaleString('es-ES')} seleccionadas`:''}`;
-      toast(stopRequested?'Proceso detenido':`Lote terminado: ${s.saved} portadas guardadas`);
-    }finally{running=false;stopRequested=false;await renderCovers()}
-  }
+  async function runSelected(){toast('La descarga masiva de portadas está desactivada para la edición comercial. Selecciona una ficha para consultar Open Library.');}
 
   function resetAfterFilter(){clearSelected();coverPage=1;lastProgress=''}
   function setFilter(k,v){if(locked())return;resetAfterFilter();f[k]=v;const i=order.indexOf(k);if(i>=0)order.slice(i+1).forEach(z=>f[z]='');renderCovers()}
@@ -106,9 +82,20 @@
   function stop(){if(running){stopRequested=true;toast('Deteniendo al terminar la ficha actual')}}
   function prev(){if(locked())return;coverPage=Math.max(1,coverPage-1);renderCovers()}
   function next(){if(locked())return;coverPage++;renderCovers()}
-  async function find(id){if(locked())return;return mcFindCover(decId(id))}
-  async function internalize(id){if(locked())return;await mcInternalizeOne(decId(id));await renderCovers()}
-  async function upload(id,file){if(locked()||!file)return;await mcUploadCover(decId(id),file);await renderCovers()}
+  async function find(id){if(locked())return;return window.MCCommercialCovers?.open?.(id)}
+  async function internalize(){toast('La copia de portadas externas no está habilitada en la edición comercial.')}
+  async function upload(id,file){
+    if(locked()||!file)return;
+    const ok=confirm('Esta imagen se guardará en tu colección local. Comprueba que tienes derecho a utilizarla y que no vas a redistribuirla públicamente. ¿Continuar?');
+    if(!ok)return;
+    const comic=await getStore('comics',decId(id));if(!comic)return toast('Ficha no encontrada');
+    busy(true,'Guardando imagen localmente…');
+    try{
+      await CoverVault.attachFile(comic,file,{sync:false});
+      toast('Imagen guardada localmente. La copia a nube pública está desactivada.');
+      await renderCovers();
+    }catch(e){toast('No se pudo guardar: '+(e?.message||e))}finally{busy(false)}
+  }
   function edit(id){if(locked())return;editComic(decId(id))}
 
   window.AutoCover={runSelected,stop,setFilter,setSearch,setStatus,setCoverState,selectPage,selectFiltered,clearSelection,toggle,prev,next,find,internalize,upload,edit};
