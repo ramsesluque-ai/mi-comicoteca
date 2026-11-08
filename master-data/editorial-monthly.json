@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "description": "Novedades editoriales seleccionadas, verificadas manualmente en las webs oficiales. Solo metadatos; ninguna imagen ni sinopsis.",
+  "lastReviewed": "2026-11-08",
+  "sourcePolicy": "manual_official_metadata_only",
+  "releases": [
+    {
+      "id": "ast-2026-11-lengua",
+      "publisher": "Astiberri",
+      "month": "2026-11",
+      "date": "2026-11-05",
+      "title": "Lengua materna",
+      "series": "Lengua materna",
+      "sourceUrl": "https://www.astiberri.com/posts/novedades-astiberri-noviembre26",
+      "rights": "bibliographic-facts-only",
+      "coverUrl": ""
+    },
+    {
+      "id": "ast-2026-11-genia",
+      "publisher": "Astiberri",
+      "month": "2026-11",
+      "date": "2026-11-12",
+      "title": "La pequeña genia y la noche de las brujas",
+      "series": "La pequeña genia",
+      "issueNr": "3",
+      "sourceUrl": "https://www.astiberri.com/posts/novedades-astiberri-noviembre26",
+      "rights": "bibliographic-facts-only",
+      "coverUrl": ""
+    },
+    {
+      "id": "ast-2026-11-thb",
+      "publisher": "Astiberri",
+      "month": "2026-11",
+      "date": "2026-11-26",
+      "title": "Total THB. Volumen 1",
+      "series": "Total THB",
+      "issueNr": "1",
+      "sourceUrl": "https://www.astiberri.com/posts/novedades-astiberri-noviembre26",
+      "rights": "bibliographic-facts-only",
+      "coverUrl": ""
+    },
+    {
+      "id": "ast-2026-11-ocupacion",
+      "publisher": "Astiberri",
+      "month": "2026-11",
+      "date": "2026-11-26",
+      "title": "La ocupación de los terrenos",
+      "series": "La ocupación de los terrenos",
+      "sourceUrl": "https://www.astiberri.com/posts/novedades-astiberri-noviembre26",
+      "rights": "bibliographic-facts-only",
+      "coverUrl": ""
+    },
+    {
+      "id": "pla-2026-11-orgullo",
+      "publisher": "Planeta Cómic",
+      "month": "2026-11",
+      "title": "Orgullo y prejuicio (novela gráfica)",
+      "series": "Orgullo y prejuicio",
+      "sourceUrl": "https://www.planetadelibros.com/blog/revista-forum/articulo-ng-noviembre-26",
+      "rights": "bibliographic-facts-only",
+      "coverUrl": ""
+    },
+    {
+      "id": "pla-2026-11-sacamantecas",
+      "publisher": "Planeta Cómic",
+      "month": "2026-11",
+      "title": "Sacamantecas",
+      "series": "Sacamantecas",
+      "sourceUrl": "https://www.planetadelibros.com/blog/revista-forum/articulo-ng-noviembre-26",
+      "rights": "bibliographic-facts-only",
+      "coverUrl": ""
+    },
+    {
+      "id": "pla-2026-11-cult",
+      "publisher": "Planeta Cómic",
+      "month": "2026-11",
+      "title": "Cult of the Lamb nº 01",
+      "series": "Cult of the Lamb",
+      "issueNr": "1",
+      "sourceUrl": "https://www.planetadelibros.com/editorial/planeta-comic/54",
+      "rights": "bibliographic-facts-only",
+      "coverUrl": ""
+    },
+    {
+      "id": "pla-2026-11-onepiece",
+      "publisher": "Planeta Cómic",
+      "month": "2026-11",
+      "title": "One Piece nº 114",
+      "series": "One Piece",
+      "issueNr": "114",
+      "sourceUrl": "https://www.planetadelibros.com/editorial/planeta-comic/54",
+      "rights": "bibliographic-facts-only",
+      "coverUrl": ""
+    },
+    {
+      "id": "ast-2026-12-bass",
+      "publisher": "Astiberri",
+      "month": "2026-12",
+      "date": "2026-12-03",
+      "title": "Marshal Bass. Integral vol. 3",
+      "series": "Marshal Bass",
+      "issueNr": "3",
+      "sourceUrl": "https://www.astiberri.com/posts/novedades-astiberri-diciembre26",
+      "rights": "bibliographic-facts-only",
+      "coverUrl": ""
+    },
+    {
+      "id": "ast-2026-12-pyongyang",
+      "publisher": "Astiberri",
+      "month": "2026-12",
+      "date": "2026-12-03",
+      "title": "Pyongyang. Edición cartoné",
+      "series": "Pyongyang",
+      "sourceUrl": "https://www.astiberri.com/posts/novedades-astiberri-diciembre26",
+      "rights": "bibliographic-facts-only",
+      "coverUrl": ""
+    },
+    {
+      "id": "ast-2026-12-paracuellos",
+      "publisher": "Astiberri",
+      "month": "2026-12",
+      "date": "2026-12-03",
+      "title": "Paracuellos. Euskarazko edizioa",
+      "series": "Paracuellos",
+      "sourceUrl": "https://www.astiberri.com/posts/novedades-astiberri-diciembre26",
+      "rights": "bibliographic-facts-only",
+      "coverUrl": ""
+    },
+    {
+      "id": "ast-2026-12-sucesos",
+      "publisher": "Astiberri",
+      "month": "2026-12",
+      "date": "2026-12-10",
+      "title": "Sucesos críticos variados. Volumen 2",
+      "series": "Sucesos críticos variados",
+      "issueNr": "2",
+      "sourceUrl": "https://www.astiberri.com/posts/novedades-astiberri-diciembre26",
+      "rights": "bibliographic-facts-only",
+      "coverUrl": ""
+    }
+  ]
+}
