@@ -5,6 +5,12 @@ on:
     branches: [commercial-published]
     paths:
       - '.github/workflows/browser-smoke.yml'
+      - 'dashboard-pbi.js'
+      - 'dashboard-pbi.css'
+      - 'index.html'
+      - 'sw.js'
+      - 'comicteca-logo-real.webp'
+      - 'tests/bi-browser-smoke.cjs'
 permissions:
   contents: read
 jobs:
