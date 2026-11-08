@@ -4,6 +4,8 @@ on:
     branches: [commercial-published]
     paths:
       - app5.js
+      - app1.js
+      - index.html
       - tests/import-csv-smoke.cjs
       - .github/workflows/import-csv-smoke.yml
   workflow_dispatch:
