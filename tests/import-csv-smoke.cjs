@@ -23,7 +23,8 @@ const importer=take("async function importFile(file,target='comics'){",'async fu
 assert.match(importer,/modal[.]classList[.]remove[(]['\"]hidden['\"][)]/,'Preview must be visible');
 assert.doesNotMatch(importer,/modal[.]classList[.]add[(]['\"]show['\"][)]/,'show alone leaves hidden modal invisible');
 const app1=fs.readFileSync('app1.js','utf8');
-assert.match(app1,/comicteca-importacion-prueba-v1/,'Test mode must use independent IndexedDB');
+assert.match(app1,/comicteca-importacion-prueba-v2/,'Test mode must use fresh independent IndexedDB');
+assert.match(importer,/mcImportIdentityConflict/,'Importer must quarantine ambiguous collection identities');
 const index=fs.readFileSync('index.html','utf8');
 assert.match(index,/ENTORNO DE PRUEBA DE IMPORTACIÓN/,'Test mode must be clearly labeled');
 console.log('PASS: import preview visible and test database isolated');
