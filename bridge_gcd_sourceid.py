@@ -54,6 +54,7 @@ def main():
  for rp in sorted(REQ.glob('*.json')):
   try:q=json.loads(rp.read_text(encoding='utf-8'))
   except:continue
+  if q.get('sourceMode')=='publisher':continue
   sid=str(q.get('sourceId') or '').strip();rid=str(q.get('requestId') or rp.stem);key=str(q.get('cacheKey') or rid);res=RES/f'{rid}.json'
   if not sid.isdigit():continue
   if res.exists():
