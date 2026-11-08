@@ -22,11 +22,18 @@
     loaded=true;
     return RELEASES;
   }
-  const today=new Date(),state={month:today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0'),publisher:'',q:''};
+  const state={month:'',publisher:'',q:''};
+  const key=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  const monthWindow=()=>{
+    const today=new Date(),base=new Date(today.getFullYear(),today.getMonth(),1);
+    return [key(new Date(base.getFullYear(),base.getMonth()-1,1)),key(base)];
+  };
+  const monthLabel=k=>{const [y,m]=k.split('-').map(Number);return new Intl.DateTimeFormat('es-ES',{month:'long',year:'numeric'}).format(new Date(y,m-1,1))};
+
   function safeUrl(u){try{const x=new URL(u);return x.protocol==='https:'?x.href:''}catch{return ''}}
   function dateLabel(x){if(!x.date)return 'Fecha exacta no publicada en la selección';const v=x.date.split('-');return v[2]+'/'+v[1]+'/'+v[0]}
   function matching(){
-    return RELEASES.filter(x=>x.month===state.month&&(!state.publisher||state.publisher===x.publisher)&&
+    return RELEASES.filter(x=>monthWindow().includes(x.month)&&(!state.month||x.month===state.month)&&(!state.publisher||state.publisher===x.publisher)&&
       (!state.q||norm([x.publisher,x.title,x.series,x.issueNr||''].join(' ')).includes(norm(state.q))));
   }
   async function view(){
@@ -40,10 +47,11 @@
       '<p><a href="'+esc(safeUrl(x.sourceUrl))+'" target="_blank" rel="noopener noreferrer">Ver ficha / boletín oficial</a></p>'+
       '<div class="actions"><button class="btn sm primary" data-release-id="'+esc(x.id)+'" data-release-status="In Collection">+ Colección</button> '+
       '<button class="btn sm" data-release-id="'+esc(x.id)+'" data-release-status="On Wish List">+ Wishlist</button></div></article>';
-    const count=items.length;
-    return head('Novedades','Publicaciones del mes agrupadas por editorial. Añade las que te interesen a tu colección o Wishlist.')+
+    const count=items.length,months=monthWindow();
+    return head('Novedades','Últimos dos meses: '+monthLabel(months[0])+' y '+monthLabel(months[1])+'. Agrupadas por editorial.')+
       '<div class="panel"><div class="filters">'+
-        '<label>Mes <input id="new-month" type="month" value="'+esc(state.month)+'"></label>'+
+        '<label>Mes <select id="new-month"><option value="" '+(!state.month?'selected':'')+'>Dos meses recientes</option>'+
+         monthWindow().slice().reverse().map(m=>'<option value="'+esc(m)+'" '+(m===state.month?'selected':'')+'>'+esc(monthLabel(m))+'</option>').join('')+'</select></label>'+
         '<label>Editorial <select id="new-publisher"><option value="">Todas las editoriales</option>'+
           SOURCES.map(s=>'<option value="'+esc(s.name)+'" '+(state.publisher===s.name?'selected':'')+'>'+esc(s.name)+'</option>').join('')+'</select></label>'+
         '<label>Buscar <input id="new-q" type="search" value="'+esc(state.q)+'" placeholder="Título o serie"></label></div>'+
@@ -79,5 +87,5 @@
     await putStore('comics',comic);
     toast(status==='In Collection'?'Añadido a tu colección':'Añadido a tu Wishlist');
   }
-  window.MCNewReleases={view,afterRender,add};
+  window.MCNewReleases={view,afterRender,add,monthWindow,monthLabel};
 })();
