@@ -26,6 +26,10 @@ jobs:
           fetch-depth: 0
       - name: Python dependencies
         run: pip install --quiet requests beautifulsoup4 pillow
+      - name: Verify official publisher lookup
+        run: python -m py_compile bridge_publishers.py
+      - name: Official publisher metadata (explicit lookup only)
+        run: python bridge_publishers.py
       - name: Tebeosfera authority
         run: python bridge_tebeosfera_authority.py
       - name: Exact GCD sourceId cover
