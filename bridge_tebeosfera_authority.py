@@ -38,7 +38,9 @@ def direct_candidate(q):
     }}
 
 def process(path):
-    q=json.loads(path.read_text(encoding='utf-8'));rid=str(q.get('requestId') or path.stem);key=str(q.get('cacheKey') or rid)
+    q=json.loads(path.read_text(encoding='utf-8'));
+    if q.get('sourceMode')=='publisher':return
+    rid=str(q.get('requestId') or path.stem);key=str(q.get('cacheKey') or rid)
     res=RES/f'{rid}.json'
     # Si ya existe una respuesta Tebeosfera válida, no repetirla.
     if res.exists():
