@@ -12,7 +12,8 @@ masterView=async function(){
  state.publisher=filters.publisher||state.publisher||'';
  state.q=filters.q||state.q||'';
  return head('Maestro',idx.totalIssues.toLocaleString('es-ES')+' ejemplares · '+idx.totalSeries.toLocaleString('es-ES')+' series · '+idx.totalPublishers.toLocaleString('es-ES')+' editoriales')+
- '<div class="panel mc-master-series-panel"><div class="mc-master-filter-dashboard">'+
+ '<div class="mc-master-info" role="note" style="margin:8px 0 12px;padding:10px 14px;font-size:12px;line-height:1.5">El Catálogo Maestro es una referencia bibliográfica en evolución y no garantiza la inclusión de todas las publicaciones, números, ediciones o portadas. Comprueba los datos en fuentes oficiales de las editoriales y bibliotecas. Puedes añadir manualmente cualquier cómic que falte.</div>'+ 
+'<div class="panel mc-master-series-panel"><div class="mc-master-filter-dashboard">'+
  '<label class="mc-mf mc-mf-search"><span>⌕ BUSCAR COLECCIÓN</span><input id="mq" value="'+esc(state.q)+'" placeholder="Editorial, serie, etapa…" aria-label="Buscar colección"></label>'+
  '<label class="mc-mf mc-mf-publisher"><span>▣ EDITORIAL</span><select id="mpub" aria-label="Editorial">'+option('','Todas las editoriales',state.publisher)+(idx.publishers||[]).map(p=>option(p.publisher,p.publisher,state.publisher)).join('')+'</select></label>'+
  '<label class="mc-mf mc-mf-header"><span>▤ CABECERA / SERIE</span><select data-master-filter="catalogHeader" aria-label="Cabecera">'+option('','Todas las cabeceras',state.header)+'</select></label>'+
