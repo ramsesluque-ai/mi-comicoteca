@@ -7,7 +7,8 @@ const { chromium } = require('playwright');
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
-  const response = await page.goto('http://127.0.0.1:8765/', { waitUntil: 'domcontentloaded', timeout: 30000 });
+  const baseUrl = process.env.COMICTECA_BASE_URL || 'http://127.0.0.1:8765/';
+  const response = await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForTimeout(4500);
   const report = await page.evaluate(() => ({
     title: document.title,
@@ -17,6 +18,7 @@ const { chromium } = require('playwright');
     viewText: (document.querySelector('#view')?.innerText || '').slice(0, 500),
     logoLoaded: [...document.querySelectorAll('img[src*="comicteca-logo"]')].every(img => img.complete && img.naturalWidth > 0)
   }));
+  report.url = page.url();
   report.httpStatus = response.status();
   report.pageErrors = errors;
   await page.screenshot({ path: 'artifacts/bi-browser.png', fullPage: true });
