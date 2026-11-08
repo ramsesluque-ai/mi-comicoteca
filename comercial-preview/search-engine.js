@@ -1,0 +1,113 @@
+'use strict';
+/* MI COMICOTECA v31-master
+   Motor único: búsqueda inmediata contra Maestro España estático + overlay local.
+   No realiza búsquedas bibliográficas externas al pulsar Buscar. */
+
+const MC_SEARCH_BUILD='v31-master';
+const MCSearch={ficha:[],quick:[],selectedFicha:0,selectedQuick:0,quickId:'',quickEncoded:'',quickScroll:0,lastDataOnly:0};
+const MCMasterData={base:'./master-data/',index:null,overrides:null,isbnIndex:null,chunks:new Map()};
+
+function mcSENorm(v){return norm(String(v??''));}
+function mcSECode(v){return String(v??'').replace(/[^0-9Xx]/g,'').toUpperCase();}
+function mcSEIssue(v){const s=String(v??'').trim().toLowerCase().replace(/[º°]/g,'').replace(/\s+/g,'');if(/^0*\d+$/.test(s))return String(parseInt(s,10));return s.replace(/^0+(?=\d)/,'')}
+function mcSEIssueExact(a,b){return !!mcSEIssue(a)&&mcSEIssue(a)===mcSEIssue(b)}
+function mcSETokens(v){const stop=new Set(['de','del','la','el','los','las','y','e','vol','volumen','serie','etapa','ediciones']);return mcSENorm(v).replace(/[^a-z0-9áéíóúüñ]+/gi,' ').split(/\s+/).filter(x=>x&&x.length>1&&!stop.has(x))}
+function mcSESeriesScore(a,b){const A=[...new Set(mcSETokens(a))],B=[...new Set(mcSETokens(b))];if(!A.length||!B.length)return 0;const inter=A.filter(x=>B.includes(x)).length;return Math.max(inter/A.length,inter/B.length)}
+function mcSECanonPub(v){const n=mcSENorm(v);const rules=[['ECC',/\becc\b/],['Panini',/panini/],['Planeta \/ DeAgostini',/planeta|deagostini/],['Forum',/forum/],['Zinco',/zinco/],['Vértice',/vertice/],['Bruguera',/bruguera/],['Novaro',/novaro/],['Norma',/norma/],['Glénat',/glenat/],['Salvat',/salvat/],['Astiberri',/astiberri/],['Toutain',/toutain/],['La Cúpula',/cupula/],['Dolmen',/dolmen/],['Milky Way',/milky way/],['Ivrea',/ivrea/],['Distrito Manga',/distrito manga/],['Yermo',/yermo/],['Aleta',/aleta/],['Ediciones B',/ediciones b|grupo zeta/],['Montena',/montena/]];for(const [k,r] of rules)if(r.test(n))return k;return String(v||'').trim()}
+function mcSEPubCompatible(a,b){const A=mcSENorm(mcSECanonPub(a)),B=mcSENorm(mcSECanonPub(b));if(!A||!B)return true;return A===B||A.includes(B)||B.includes(A)}
+function mcSEMergeCovers(...lists){const out=[];for(const l of lists.flat()){const u=String(l||'').trim().replace(/^http:/,'https:');if(/^https?:\/\//i.test(u)&&!out.includes(u))out.push(u)}return out}
+function mcSECandidate(source,data,score=0,covers=[]){const all=mcSEMergeCovers(covers,data?.coverUrls||[],data?.coverUrl||'');return{source,data:{...data,coverUrls:all,coverUrl:all[0]||''},score}}
+function mcSECandidateKey(c){const d=c.data||{};return[mcSECode(d.isbn),mcSENorm(d.publisher),mcSENorm(d.series),mcSEIssue(d.issueNr),mcSENorm(d.title)].join('|')}
+async function mcSEFetchJSON(rel){const r=await fetch(MCMasterData.base+rel,{cache:'force-cache'});if(!r.ok)throw Error('No se pudo leer Maestro España: '+rel+' ('+r.status+')');return r.json()}
+async function mcSEMasterIndex(){return MCMasterData.index||(MCMasterData.index=await mcSEFetchJSON('index.json'))}
+async function mcSEOverrides(){return MCMasterData.overrides||(MCMasterData.overrides=await mcSEFetchJSON('cover-overrides.json').catch(()=>({})))}
+async function mcSEMonthlyRows(){
+  if(Array.isArray(MCMasterData.monthlyRows))return MCMasterData.monthlyRows;
+  let d=null;
+  if(window.MC_EDITORIAL_NEWS_URL){
+    try{const r=await fetch(window.MC_EDITORIAL_NEWS_URL,{cache:'no-store',signal:AbortSignal.timeout(7000)});if(r.ok)d=await r.json()}catch{}
+  }
+  if(!Array.isArray(d?.releases))d=await mcSEFetchJSON('editorial-monthly.json').catch(()=>({releases:[]}));
+  const rows=(Array.isArray(d?.releases)?d.releases:[]).filter(x=>x?.id&&x?.publisher&&x?.title&&x?.month&&x?.sourceUrl);
+  MCMasterData.monthlyRows=rows.map(x=>({
+    id:'editorial_'+String(x.id),source:'Editorial oficial · novedades',
+    sourceId:String(x.id),sourceUrl:String(x.sourceUrl),
+    publisher:String(x.publisher),catalogHeader:String(x.series||x.title),series:String(x.series||x.title),
+    issueNr:String(x.issueNr||''),issue:String(x.issueNr||''),title:String(x.title),
+    publicationDate:String(x.date||''),isbn:String(x.isbn||''),barcode:'',
+    volume:String(x.volume||''),stage:String(x.stage||''),startYear:String(x.startYear||''),
+    coverUrl:'',coverReuseAuthorized:false,newReleaseMonth:String(x.month)
+  }));
+  return MCMasterData.monthlyRows;
+}
+async function mcSEIsbnIndex(){return MCMasterData.isbnIndex||(MCMasterData.isbnIndex=await mcSEFetchJSON('isbn-index.json'))}
+async function mcSEChunk(rel){if(MCMasterData.chunks.has(rel))return MCMasterData.chunks.get(rel);const rows=await mcSEFetchJSON(rel);MCMasterData.chunks.set(rel,rows);return rows}
+async function mcSEChunks(paths){const out=[];for(const p of [...new Set(paths)])out.push(...await mcSEChunk(p));return out}
+function mcSEPublisherMeta(idx,pub){const cp=mcSECanonPub(pub),n=mcSENorm(cp);let list=(idx.publishers||[]).filter(p=>mcSENorm(p.publisher)===n);if(!list.length)list=(idx.publishers||[]).filter(p=>mcSEPubCompatible(cp,p.publisher));return list}
+function mcSERowMatch(x,r){const code=mcSECode(x.isbn||''),rowCode=mcSECode(r.isbn||r.barcode||''),wanted=mcSEIssue(x.issueNr??x.issue??''),actual=mcSEIssue(r.issueNr??r.issue??'');const isbnExact=!!code&&code===rowCode;if(code&&rowCode&&!isbnExact)return false;if(wanted&&actual&&!mcSEIssueExact(wanted,actual))return false;if(x.publisher&&r.publisher&&!mcSEPubCompatible(x.publisher,r.publisher))return false;const qs=x.catalogHeader||x.series||'',rs=r.catalogHeader||r.series||'';if(qs&&rs&&mcSESeriesScore(qs,rs)<0.55&&!isbnExact)return false;return isbnExact||!!actual}
+function mcSEFromRow(x,r,overrides){const code=mcSECode(r.isbn||r.barcode||''),o=overrides[code]||{},covers=mcSEMergeCovers(o.coverUrl,r.coverUrl);let score=3000;if(code&&code===mcSECode(x.isbn||''))score+=9000;if(mcSEIssueExact(x.issueNr??x.issue??'',r.issueNr??r.issue??''))score+=3000;if(mcSESeriesScore(x.catalogHeader||x.series||'',r.catalogHeader||r.series||'')>.9)score+=1500;if(x.startYear&&String(x.startYear)===String(r.startYear||''))score+=600;if(x.volume&&String(x.volume)===String(r.volume||''))score+=300;if(covers.length)score+=2000;return mcSECandidate(o.source?('Maestro España · '+o.source):'Maestro España',{title:o.title||r.title||'',publisher:o.publisher||r.publisher||x.publisher||'',publicationDate:o.publicationDate||r.publicationDate||'',pages:o.pages||r.pages||'',isbn:o.isbn||r.isbn||'',series:o.series||r.catalogHeader||r.series||x.catalogHeader||x.series||'',issueNr:o.issueNr||r.issueNr||r.issue||'',volume:r.volume||'',stage:r.stage||'',startYear:r.startYear||'',format:r.format||'',color:r.color||'',coverUrl:covers[0]||'',coverUrls:covers,sourceUrl:o.sourceUrl||''},score,covers)}
+function mcSEValid(x,c,needCover=true){const d=c?.data||{},wanted=mcSEIssue(x.issueNr??x.issue??''),code=mcSECode(x.isbn||'');if(wanted&&!mcSEIssueExact(wanted,d.issueNr))return false;if(code&&d.isbn&&mcSECode(d.isbn)!==code)return false;const q=x.catalogHeader||x.series||'',s=d.series||q;if(q&&s&&mcSESeriesScore(q,s)<0.55&&!(code&&mcSECode(d.isbn)===code))return false;if(x.publisher&&d.publisher&&!mcSEPubCompatible(x.publisher,d.publisher))return false;if(needCover&&!d.coverUrl)return false;return!!(d.title||d.series||d.isbn||d.publisher)}
+function mcSESort(x,a,b){return Number(b.score||0)-Number(a.score||0)}
+
+async function mcSEStaticMaster(x){
+  const idx=await mcSEMasterIndex(),over=await mcSEOverrides(),code=mcSECode(x.isbn||''),paths=[];
+  if(code){const refs=(await mcSEIsbnIndex())[code]||[];for(const ref of refs)if(ref?.[0])paths.push(ref[0])}
+  if(!paths.length&&x.publisher){for(const p of mcSEPublisherMeta(idx,x.publisher))paths.push(...(p.chunks||[]))}
+  const monthly=(await mcSEMonthlyRows()).filter(r=>!x.publisher||mcSEPubCompatible(x.publisher,r.publisher));
+  const rows=[...(paths.length?await mcSEChunks(paths):[]),...monthly];
+  const out=[];for(const r of rows)if(mcSERowMatch(x,r))out.push(mcSEFromRow(x,r,over));
+  /* Un override por ISBN es un registro verificado aunque el índice base todavía no lo localice. */
+  if(code&&over[code]&&!out.some(c=>mcSECode(c.data?.isbn)===code)){const o=over[code];out.push(mcSECandidate('Maestro España · '+(o.source||'Enriquecido'),{...o,series:o.series||x.catalogHeader||x.series||'',issueNr:o.issueNr||x.issueNr||x.issue||'',coverUrls:[o.coverUrl].filter(Boolean)},15000,[o.coverUrl]))}
+  return out;
+}
+async function mcSELocalOverlay(x){const rows=await allStore('master').catch(()=>[]),out=[];for(const r of rows){if(!mcSERowMatch(x,r))continue;const covers=mcSEMergeCovers(r.coverUrl);let score=4500;if(String(r.source||'').toLowerCase().includes('tebeosfera'))score+=6000;if(covers.length)score+=1500;out.push(mcSECandidate(r.source||'Maestro local',{title:r.title||'',publisher:r.publisher||'',publicationDate:r.publicationDate||'',pages:r.pages||'',isbn:r.isbn||'',series:r.catalogHeader||r.series||'',issueNr:r.issueNr??r.issue??'',volume:r.volume||'',stage:r.stage||'',startYear:r.startYear||'',format:r.format||'',writer:r.authors?.writer||r.writer||'',artist:r.authors?.artist||r.artist||'',inker:r.authors?.inker||r.inker||'',colorist:r.authors?.colorist||r.colorist||''},score,covers))}return out}
+async function mcSESearch(x){
+  const wanted=mcSEIssue(x.issueNr??x.issue??''),code=mcSECode(x.isbn||'');if(!wanted&&!code)return[];
+  const [local,master]=await Promise.all([mcSELocalOverlay(x),mcSEStaticMaster(x)]),all=[...local,...master],seen=new Set(),complete=[],dataOnly=[];
+  for(const c of all.sort((a,b)=>mcSESort(x,a,b))){const k=mcSECandidateKey(c);if(seen.has(k))continue;seen.add(k);if(mcSEValid(x,c,false))dataOnly.push(c);if(mcSEValid(x,c,true))complete.push(c)}
+  MCSearch.lastDataOnly=dataOnly.length;return [...complete,...dataOnly.filter(c=>!complete.some(z=>mcSECandidateKey(z)===mcSECandidateKey(c)))].slice(0,10)
+}
+
+function mcSERenderCards(list,selected,selectFn){
+  return '<div class="ficha-result-grid unified-results">'+list.map((c,i)=>{
+    const d=c.data||{},sourceLink=(typeof d.sourceUrl==='string'&&/^https:\/\//i.test(d.sourceUrl))?d.sourceUrl:'';
+    const sourceText=sourceLink?'<a href="'+esc(sourceLink)+'" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">Consultar ficha en la fuente</a>':'<span class="muted">Ficha bibliográfica sin enlace verificado</span>';
+    return '<article class="ficha-result unified-result '+(i===selected?'selected':'')+'" onclick="'+selectFn+'('+i+')" style="cursor:pointer">'+
+      '<div class="result-pick"><input type="radio" '+(i===selected?'checked':'')+' onclick="event.stopPropagation();'+selectFn+'('+i+')"></div>'+
+      '<div class="cover coverph" aria-label="Portada no redistribuida">Sin portada</div><div><span class="source-pill">'+esc(c.source)+'</span>'+
+      '<b>'+esc(d.title||d.series||'Resultado')+'</b><div class="small muted">'+esc([d.publisher,d.series,d.issueNr?('Nº '+d.issueNr):'',d.publicationDate,d.isbn?('ISBN '+d.isbn):''].filter(Boolean).join(' · '))+'</div>'+
+      '<div class="small">'+sourceText+'</div></div></article>';
+  }).join('')+'</div>';
+}
+function mcSEEmpty(x){const extra=MCSearch.lastDataOnly?`<br><span class="muted">El Maestro ha localizado ${MCSearch.lastDataOnly} ficha(s) bibliográfica(s) exacta(s), pero su portada todavía no está incorporada al Maestro.</span>`:'';return`<div class="notice"><b>No hay todavía una coincidencia completa con datos + portada para ${esc(x.catalogHeader||x.series||'esta ficha')} nº ${esc(x.issueNr||x.issue||'')}.</b>${extra}</div>`}
+function mcSESelectFicha(i){MCSearch.selectedFicha=i;document.querySelectorAll('#mcFichaSearchBox .unified-result').forEach((e,n)=>e.classList.toggle('selected',n===i))}
+function mcSESelectQuick(i){MCSearch.selectedQuick=i;document.querySelectorAll('#mcSeriesQuickPanel .unified-result').forEach((e,n)=>e.classList.toggle('selected',n===i))}
+
+mcSearchFichaAll=async function(){const x=mcFormComic();if(!mcSEIssue(x.issueNr??x.issue??'')&&!mcSECode(x.isbn||''))return toast('Informa al menos el número de la serie o un ISBN/EAN');MCSearch.ficha=[];MCSearch.selectedFicha=0;MCSearch.lastDataOnly=0;mcShowSearch('Buscar ficha bibliográfica',`<div class="muted">Consultando Maestro España: ${esc(x.catalogHeader||x.series||'')} · nº ${esc(x.issueNr||x.issue||'')}…</div>`);try{const list=await mcSESearch(x);MCSearch.ficha=list;if(!list.length)return mcShowSearch('Resultados de búsqueda',mcSEEmpty(x)+`<div class="result-actions"><button class="btn" onclick="mcCancelUnified()">Cancelar</button></div>`);mcShowSearch('Resultados de búsqueda',mcSERenderCards(list,0,'mcSESelectFicha')+`<div class="result-actions"><button class="btn" onclick="mcCancelUnified()">Cancelar</button><button class="btn primary" onclick="mcAcceptUnified()">Aceptar</button></div>`)}catch(e){console.error(e);mcShowSearch('Resultados',`<div class="notice"><b>No se pudo leer el Maestro España.</b><br>${esc(e.message||e)}</div><div class="result-actions"><button class="btn" onclick="mcCancelUnified()">Cancelar</button></div>`)}};
+mcSearchFichaData=mcSearchFichaAll;mcSearchFichaCover=mcSearchFichaAll;mcCompleteByCode=async function(){await mcSearchFichaAll()};
+function mcCancelUnified(){MCSearch.ficha=[];MCSearch.selectedFicha=0;const b=document.getElementById('mcFichaSearchBox');if(b)b.classList.add('hidden')}
+async function mcSEApplyFields(d){mcSetBlank('publisher',d.publisher);mcSetBlank('catalogHeader',d.series);mcSetBlank('series',d.series);mcSetBlank('volume',d.volume);mcSetBlank('stage',d.stage);mcSetBlank('startYear',d.startYear);mcSetBlank('title',d.title);mcSetBlank('publicationDate',d.publicationDate);mcSetBlank('pages',d.pages);mcSetBlank('isbn',d.isbn);mcSetBlank('format',d.format);mcSetBlank('color',d.color);mcSetBlank('writer',d.writer);mcSetBlank('artist',d.artist);mcSetBlank('inker',d.inker);mcSetBlank('colorist',d.colorist)}
+async function mcSEAttachCover(record,candidate){
+  // Nunca descargar una portada de terceros durante la consulta bibliográfica;
+  // únicamente imágenes con autorización expresa y verificada para redistribución.
+  if(candidate?.data?.coverReuseAuthorized!==true)throw Error('Portada sin permiso de reproducción: consulta la ficha original o sube una imagen autorizada.');
+  const urls=candidate.data.coverUrls||[candidate.data.coverUrl].filter(Boolean);
+  for(const u of urls){if(!/^https:\/\//i.test(u))continue;return CoverVault.attach(record,u)}
+  throw Error('No existe una portada autorizada.');
+}
+async function mcAcceptUnified(){
+ const c=MCSearch.ficha[MCSearch.selectedFicha];
+ if(!c)return toast('Selecciona un resultado');
+ busy(true,'Guardando datos bibliográficos…');
+ try{
+   await mcSEApplyFields(c.data||{});
+   const r=await mcPersistFormForCover();
+   if(c.data?.coverReuseAuthorized===true&&c.data?.coverUrl){await mcSEAttachCover(r,c)}
+   toast('Ficha bibliográfica guardada. Portada pendiente de autorización o carga propia.');
+   await editComic(r.id);
+ }catch(e){toast('No se pudo completar la ficha: '+(e.message||e))}finally{busy(false)}
+}
+mcQuickSearchSeriesIssue=async function(id,encoded,ev){ev?.stopPropagation?.();mcRememberSeriesScroll();mcSeriesReturnEncoded=encoded;MCSearch.quickId=id;MCSearch.quickEncoded=encoded;MCSearch.quickScroll=$('#modal .modalbody')?.scrollTop||0;MCSearch.quick=[];MCSearch.selectedQuick=0;const x=await getStore('comics',id);if(!x)return toast('No se encontró la ficha');mcSeriesQuickPanel(`<div class="muted">Consultando Maestro España: ${esc(x.catalogHeader||x.series||'')} · nº ${esc(x.issueNr||x.issue||'')}…</div>`);try{const list=await mcSESearch(x);MCSearch.quick=list;if(!list.length)return mcSeriesQuickPanel(mcSEEmpty(x)+`<div class="result-actions"><button class="btn" onclick="mcCancelSeriesQuick()">Cancelar</button></div>`,'Resultados');mcSeriesQuickPanel(mcSERenderCards(list,0,'mcSESelectQuick')+`<div class="result-actions"><button class="btn" onclick="mcCancelSeriesQuick()">Cancelar</button><button class="btn primary" onclick="mcAcceptSeriesQuick()">Aceptar</button></div>`,'Resultados de búsqueda')}catch(e){console.error(e);mcSeriesQuickPanel(`<div class="notice">No se pudo leer el Maestro España.</div>`,'Resultados')}};
+async function mcAcceptSeriesQuick(){const c=MCSearch.quick[MCSearch.selectedQuick],id=MCSearch.quickId;if(!c||!id)return toast('Selecciona un resultado');const x=await getStore('comics',id);if(!x)return toast('No se encontró la ficha');const d=c.data||{},a=x.authors||{};const y=cleanComic({...x,publisher:x.publisher||d.publisher,catalogHeader:x.catalogHeader||x.series||d.series,series:x.series||x.catalogHeader||d.series,volume:x.volume||d.volume,stage:x.stage||d.stage,startYear:x.startYear||d.startYear,title:x.title||d.title,publicationDate:x.publicationDate||d.publicationDate,pages:x.pages||d.pages,isbn:x.isbn||d.isbn,format:x.format||d.format,color:x.color||d.color,authors:{...a,writer:a.writer||d.writer||'',artist:a.artist||d.artist||'',inker:a.inker||d.inker||'',colorist:a.colorist||d.colorist||''}});busy(true,'Guardando datos y portada…');try{await putStore('comics',y);if(!x.coverKey&&!x.coverUrl&&c.data?.coverReuseAuthorized===true)await mcSEAttachCover(y,c);const enc=MCSearch.quickEncoded,scroll=MCSearch.quickScroll;mcCancelSeriesQuick();toast('Datos bibliográficos guardados');await openSeries(enc);const b=$('#modal .modalbody');if(b)b.scrollTop=scroll}catch(e){toast('No se pudo completar la ficha: '+(e.message||e))}finally{busy(false)}}
+
+(function(){const s=document.createElement('style');s.id='mc-search-engine-style';s.textContent=`#mcFichaSearchBox .result-actions,#mcSeriesQuickPanel .result-actions{position:sticky;bottom:0;z-index:30;display:flex;gap:10px;justify-content:flex-end;padding:12px;background:#071829;border-top:1px solid #294764}.unified-result.selected{outline:2px solid #5c7cff}`;document.head.appendChild(s);const put=()=>{let e=document.getElementById('mc-build-badge');if(!e){e=document.createElement('div');e.id='mc-build-badge';e.style.cssText='position:fixed;right:8px;bottom:8px;z-index:9999;font:11px system-ui;padding:4px 7px;border-radius:8px;background:#071829cc;color:#8fb7dc;border:1px solid #294764;pointer-events:none';document.body.appendChild(e)}e.textContent='MI COMICOTECA '+MC_SEARCH_BUILD};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',put);else put()})();

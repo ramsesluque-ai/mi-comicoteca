@@ -1,0 +1,97 @@
+name: Maestro static smoke
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'search-engine.js'
+      - 'master-static.js'
+      - 'app38.js'
+      - 'app39.js'
+      - 'master-data/**'
+      - 'index.html'
+      - 'sw.js'
+      - '.github/workflows/master-static-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: maestro-static-smoke
+  cancel-in-progress: true
+
+jobs:
+  browser-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check v51 syntax
+        run: |
+          node --check app38.js
+          node --check app39.js
+      - name: Start static app
+        run: |
+          python3 -m http.server 8765 >/tmp/mc-http.log 2>&1 &
+          echo $! >/tmp/mc-http.pid
+      - name: Prepare Puppeteer
+        run: |
+          mkdir -p /tmp/mc-master-test
+          cd /tmp/mc-master-test
+          npm init -y >/dev/null 2>&1
+          npm install puppeteer-core@24 >/dev/null 2>&1
+          cat > test.cjs <<'NODE'
+          const puppeteer=require('puppeteer-core');
+          const fs=require('fs');
+          (async()=>{
+            const chrome=['/usr/bin/google-chrome','/usr/bin/google-chrome-stable','/usr/bin/chromium','/usr/bin/chromium-browser'].find(fs.existsSync);
+            if(!chrome)throw new Error('Chrome no disponible');
+            const browser=await puppeteer.launch({executablePath:chrome,headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
+            const page=await browser.newPage();
+            const pageErrors=[];
+            page.on('console',m=>console.log('BROWSER',m.type(),m.text()));
+            page.on('pageerror',e=>{const s=e.stack||e.message;pageErrors.push(s);console.log('PAGEERROR',s)});
+            await page.goto('http://127.0.0.1:8765/?master-smoke='+Date.now(),{waitUntil:'networkidle2',timeout:60000});
+            await page.waitForFunction(()=>typeof mcSESearch==='function'&&typeof mcSEMasterIndex==='function'&&window.mcCollectionIdentityV50&&window.mcSeriesFilterV51,{timeout:30000});
+            const stats=await page.evaluate(async()=>{const i=await mcSEMasterIndex();return {issues:i.totalIssues,series:i.totalSeries,publishers:i.totalPublishers,build:MC_SEARCH_BUILD}});
+            console.log('MASTER_STATS',JSON.stringify(stats));
+            if(stats.issues!==160472||stats.series!==5459||stats.publishers!==337)throw new Error('Cifras Maestro v51 inesperadas');
+            const identity=await page.evaluate(async()=>{
+              const api=window.mcCollectionIdentityV50;
+              const correct={publisher:'ECC',catalogHeader:'All-Star Batman: Renacimiento',series:'All-Star Batman: Renacimiento',volume:'',stage:'',startYear:'2016',issueNr:'1',issue:'1'};
+              const old={publisher:'ECC',catalogHeader:'All-Star All-Star Batman: Renacimiento',series:'All-Star All-Star Batman: Renacimiento',volume:'',stage:'',startYear:'',issueNr:'1',issue:'1'};
+              const st=await api.currentStatic([correct]);
+              const target=api.fullKey(correct),resolved=api.resolvedKey(old,st),entry=st.full.get(target);
+              return {canonicalOld:api.canonical(old.catalogHeader),canonicalCorrect:api.canonical(correct.catalogHeader),target,resolved,total:entry?.total||0};
+            });
+            console.log('IDENTITY_V50',JSON.stringify(identity));
+            if(identity.canonicalOld!==identity.canonicalCorrect)throw new Error('All-Star duplicado no se canonicaliza');
+            if(identity.resolved!==identity.target)throw new Error('Edición sin año no se resuelve a ECC 2016');
+            if(identity.total!==15)throw new Error('All-Star Batman debe tener 15 números en Maestro');
+            const filterTest=await page.evaluate(()=>{
+              const rows=[
+                {publisher:'ECC',catalogHeader:'All-Star Batman: Renacimiento',series:'All-Star Batman: Renacimiento',volume:'',stage:'',startYear:'2016',status:'In Collection',issueNr:'1'},
+                {publisher:'Bruguera',catalogHeader:'Batman - BRUGUERA',series:'Batman - BRUGUERA',volume:'',stage:'',startYear:'',status:'In Collection',issueNr:'1'},
+                {publisher:'ECC',catalogHeader:'Animal Man',series:'Animal Man',volume:'1',stage:'',startYear:'2012',status:'On Wish List',issueNr:'1'}
+              ];
+              const ecc=window.mcSeriesFilterV51(rows,{publisher:'ECC'});
+              const eccOwned=window.mcSeriesFilterV51(rows,{publisher:'ECC',status:'In Collection'});
+              const animal=window.mcSeriesFilterV51(rows,{publisher:'ECC',catalogHeader:'Animal Man',status:'On Wish List'});
+              return {ecc:ecc.map(x=>x.publisher),eccOwned:eccOwned.map(x=>x.catalogHeader),animal:animal.map(x=>x.catalogHeader)};
+            });
+            console.log('FILTER_V51',JSON.stringify(filterTest));
+            if(filterTest.ecc.length!==2||filterTest.ecc.some(x=>x!=='ECC'))throw new Error('Filtro editorial ECC no se respeta');
+            if(filterTest.eccOwned.length!==1||filterTest.eccOwned[0]!=='All-Star Batman: Renacimiento')throw new Error('Filtro Editorial+Estado no se respeta');
+            if(filterTest.animal.length!==1||filterTest.animal[0]!=='Animal Man')throw new Error('Filtro Editorial+Cabecera+Estado no se respeta');
+            const base={publisher:'ECC',catalogHeader:'All-Star Batman: Renacimiento',series:'All-Star Batman: Renacimiento',stage:'',startYear:'2016',issueNr:'1',issue:'1'};
+            const bySeries=await page.evaluate(async x=>await mcSESearch(x),base);
+            console.log('SERIES_RESULT',JSON.stringify(bySeries));
+            const c1=bySeries.find(c=>String(c?.data?.issueNr)==='1'&&String(c?.data?.isbn)==='9788416945313');
+            if(!c1)throw new Error('Búsqueda serie+nº no devuelve All-Star Batman nº1');
+            if(pageErrors.length)throw new Error('Errores JavaScript en página: '+pageErrors.join(' | '));
+            console.log('SMOKE_PASS true');
+            await browser.close();
+          })().catch(e=>{console.error('SMOKE_FAIL',e);process.exit(1)});
+          NODE
+      - name: Run browser test
+        run: node /tmp/mc-master-test/test.cjs

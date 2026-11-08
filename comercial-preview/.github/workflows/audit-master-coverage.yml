@@ -1,0 +1,38 @@
+name: Audit Maestro Spain coverage
+on:
+  workflow_dispatch:
+  push:
+    branches: [commercial-published]
+    paths:
+      - 'scripts/audit_master_coverage.py'
+      - 'master-data/**'
+      - '.github/workflows/audit-master-coverage.yml'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate coverage report
+        run: python scripts/audit_master_coverage.py
+      - name: Prepare bulk cover enrichment queue
+        run: python scripts/prepare_cover_enrichment_queue.py
+      - name: Verify counts against Maestro index
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          idx=json.loads(Path('master-data/index.json').read_text())
+          audit=json.loads(Path('master-data/coverage-audit.json').read_text())
+          assert audit['issues']==idx['totalIssues'], (audit['issues'],idx['totalIssues'])
+          assert audit['publishers']==idx['totalPublishers'], (audit['publishers'],idx['totalPublishers'])
+          print('Coverage audit passed')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: maestro-spain-coverage-audit
+          path: |
+            master-data/coverage-audit.json
+            master-data/coverage-priority.csv
+            master-data/cover-enrichment-queue.csv

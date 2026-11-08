@@ -1,0 +1,11 @@
+name: Legacy mixed cover backfill (retired)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  retired:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Retired
+        run: echo 'Retired. Tebeosfera collection/fallback pipelines are the only automatic cover source.'

@@ -1,0 +1,79 @@
+.master-update-card{display:flex;justify-content:space-between;gap:18px;align-items:center;margin:0 0 14px;padding:16px 18px;border:1px solid rgba(52,201,143,.35);border-radius:15px;background:linear-gradient(135deg,rgba(52,201,143,.09),rgba(47,128,255,.08));box-shadow:0 10px 28px rgba(0,0,0,.12)}.master-update-card>div:first-child{display:grid;gap:4px}.master-update-card b{font-size:16px}.master-update-card span,.master-update-card small{color:#8fa8bf}.master-update-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.master-update-actions .btn{white-space:nowrap}@media(max-width:760px){.master-update-card{align-items:flex-start;flex-direction:column}.master-update-actions{width:100%}.master-update-actions .btn{width:100%}}
+
+/* Maestro v2: same visual hierarchy as Colecciones */
+.mc-master-series-panel{min-width:0}
+.mc-master-series-filters{display:grid!important;grid-template-columns:minmax(210px,2fr) minmax(170px,1.25fr)!important;gap:10px!important;align-items:center}
+#mc-master-detail-filters{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;min-width:0}
+.mc-master-series-filters input,.mc-master-series-filters select,#mc-master-detail-filters select{width:100%;min-width:0;max-width:100%;font-size:13px!important}
+.mc-master-info,.mc-master-help{font-size:12px;color:#a9bfd8;padding:12px 16px}
+.mc-master-publishers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:12px 16px}
+.mc-master-publisher{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:7px;min-height:76px;padding:12px 15px;border:1px solid #2b4969;border-radius:10px;background:#0a2035;color:#f0f5ff;text-align:left;cursor:pointer}
+.mc-master-publisher:hover{border-color:#6199f6;background:#12314e}
+.mc-master-publisher strong{font-size:15px;overflow-wrap:anywhere}
+.mc-master-publisher small{font-size:11px;color:#9fb6cf}
+.mc-master-summary{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 16px 0;font-size:12px;color:#b9cde2}
+.mc-master-summary strong{font-size:14px;color:#fff}
+.mc-master-series-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+.mc-master-series-card{cursor:pointer;min-height:152px!important;grid-template-columns:94px minmax(0,1fr)!important}
+.mc-master-series-card .series-cover{align-items:start}
+.mc-master-series-card .seriescover{width:90px!important;height:132px!important;object-fit:contain!important}
+.mc-master-series-card .series-content{display:flex;flex-direction:column;gap:5px}
+.mc-master-series-card .series-title{font-size:16px;overflow-wrap:anywhere}
+.mc-master-series-card .series-stats{margin-top:auto}
+.mc-master-open{font-size:11px;color:#87b6ff;font-weight:700}
+@media(max-width:1120px){.mc-master-series-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.mc-master-publishers{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.mc-master-series-filters{grid-template-columns:1fr!important}#mc-master-detail-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.mc-master-series-grid,.mc-master-publishers{grid-template-columns:1fr!important}}
+
+
+/* Maestro filters match Colecciones: search + editorial, optional compact advanced filters */
+.mc-master-series-panel>.mc-master-series-filters{display:grid!important;grid-template-columns:minmax(0,2fr) minmax(190px,1fr)!important;gap:10px!important;align-items:center;padding-bottom:8px}
+.mc-master-series-filters input,.mc-master-series-filters select{font-size:13px!important;min-height:38px}
+.mc-master-advanced-wrap{padding:0 12px 8px}
+.mc-master-advanced-toggle{font-size:11px!important;padding:5px 10px!important;min-height:28px!important}
+#mc-master-detail-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding-top:8px}
+#mc-master-detail-filters[hidden]{display:none!important}
+#mc-master-detail-filters select{font-size:12px!important;min-height:34px}
+@media(max-width:700px){.mc-master-series-panel>.mc-master-series-filters{grid-template-columns:1fr!important}#mc-master-detail-filters{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* Maestro filter dashboard — match Colecciones reference (7 visible fields). */
+.mc-master-filter-dashboard{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:8px;padding:12px}
+.mc-master-filter-dashboard .mc-mf{min-width:0;min-height:72px;border:1px solid #254461;border-left:3px solid #456be5;border-radius:12px;background:#081b2e;padding:10px 11px;display:flex;flex-direction:column;gap:7px}
+.mc-master-filter-dashboard .mc-mf>span{font-size:10px!important;font-weight:800;letter-spacing:.045em;color:#e3efff}
+.mc-master-filter-dashboard .mc-mf input,.mc-master-filter-dashboard .mc-mf select{width:100%;max-width:100%;min-width:0;min-height:30px!important;border:0!important;box-shadow:none!important;background:transparent!important;color:#f4f8ff!important;padding:4px 2px!important;font-size:12px!important;font-weight:600}
+.mc-master-filter-dashboard .mc-mf input::placeholder{color:#9fb4ce}
+.mc-master-filter-dashboard .mc-mf-search{grid-column:span 2;border-left-color:#0ca36b}
+.mc-master-filter-dashboard .mc-mf-publisher{border-left-color:#7956e8}
+.mc-master-filter-dashboard .mc-mf-header{border-left-color:#4785df}
+.mc-master-filter-dashboard .mc-mf-volume{border-left-color:#e98432}
+.mc-master-filter-dashboard .mc-mf-stage{border-left-color:#e4489c}
+.mc-master-filter-dashboard .mc-mf-year{border-left-color:#08b975}
+.mc-master-filter-dashboard .mc-mf-status{border-left-color:#10b9a9}
+.mc-master-filter-dashboard .mc-mf-hint{grid-column:1/-1;color:#819cb9;font-size:10px;padding:1px 3px}
+@media(max-width:900px){.mc-master-filter-dashboard{grid-template-columns:repeat(2,minmax(0,1fr))}.mc-master-filter-dashboard .mc-mf-search{grid-column:span 2}}
+@media(max-width:500px){.mc-master-filter-dashboard{grid-template-columns:1fr}.mc-master-filter-dashboard .mc-mf-search{grid-column:1}}
+
+/* Six-field Maestro: balanced second row without personal status. */
+.mc-master-filter-dashboard .mc-mf-volume,.mc-master-filter-dashboard .mc-mf-stage,.mc-master-filter-dashboard .mc-mf-year{grid-column:span 1}
+.mc-master-filter-dashboard .mc-mf-year{grid-column:span 2}
+@media(max-width:900px){.mc-master-filter-dashboard .mc-mf-year{grid-column:span 2}}
+@media(max-width:500px){.mc-master-filter-dashboard .mc-mf-year{grid-column:1}}
+
+.mc-master-personal-only{padding:16px 12px;border-top:1px solid #35516c;margin-top:14px}.mc-master-personal-only h3{font-size:15px;margin:0 0 6px}.mc-master-personal-only>p{font-size:11px;color:#a4bbd3;margin:0 0 12px}.mc-master-personal-only .comic-kicker{color:#f2bd69}
+
+/* Portadas: same filter dashboard geometry as Catálogo and Maestro. */
+.mc-cover-filter-dashboard{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:8px;padding:12px}
+.mc-cover-filter-dashboard .mc-cf{min-width:0;min-height:72px;border:1px solid #254461;border-left:3px solid #456be5;border-radius:12px;background:#081b2e;padding:10px 11px;display:flex;flex-direction:column;gap:7px}
+.mc-cover-filter-dashboard .mc-cf>span{font-size:10px!important;font-weight:800;letter-spacing:.045em;color:#e3efff}
+.mc-cover-filter-dashboard .mc-cf input,.mc-cover-filter-dashboard .mc-cf select{width:100%;min-width:0;max-width:100%;min-height:30px!important;border:0!important;box-shadow:none!important;background:transparent!important;color:#f4f8ff!important;padding:4px 2px!important;font-size:12px!important;font-weight:600}
+.mc-cover-filter-dashboard .mc-cf input::placeholder{color:#9fb4ce}
+.mc-cover-filter-dashboard .mc-cf-search{grid-column:span 2;border-left-color:#0ca36b}
+.mc-cover-filter-dashboard .mc-cf-pub{border-left-color:#7956e8}
+.mc-cover-filter-dashboard .mc-cf-series{border-left-color:#4785df}
+.mc-cover-filter-dashboard .mc-cf-volume{border-left-color:#e98432}
+.mc-cover-filter-dashboard .mc-cf-stage{border-left-color:#e4489c}
+.mc-cover-filter-dashboard .mc-cf-year{border-left-color:#08b975}
+.mc-cover-filter-dashboard .mc-cf-state{border-left-color:#10b9a9}
+.mc-cover-filter-dashboard .mc-cf-hint{grid-column:1/-1;color:#819cb9;font-size:10px;padding:1px 3px}
+@media(max-width:900px){.mc-cover-filter-dashboard{grid-template-columns:repeat(2,minmax(0,1fr))}.mc-cover-filter-dashboard .mc-cf-search{grid-column:span 2}}
+@media(max-width:500px){.mc-cover-filter-dashboard{grid-template-columns:1fr}.mc-cover-filter-dashboard .mc-cf-search{grid-column:1}}
