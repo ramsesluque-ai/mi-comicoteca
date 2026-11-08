@@ -11,20 +11,17 @@
   ];
   // Solo fechas conocidas y títulos publicados en fuentes oficiales. La ausencia
   // de fecha exacta se conserva: no se inventan días ni números de ejemplar.
-  const RELEASES=[
-    {id:'ast-2026-11-lengua',publisher:'Astiberri',month:'2026-11',date:'2026-11-05',title:'Lengua materna',series:'Lengua materna',sourceUrl:'https://www.astiberri.com/posts/novedades-astiberri-noviembre26'},
-    {id:'ast-2026-11-genia',publisher:'Astiberri',month:'2026-11',date:'2026-11-12',title:'La pequeña genia y la noche de las brujas',series:'La pequeña genia',issueNr:'3',sourceUrl:'https://www.astiberri.com/posts/novedades-astiberri-noviembre26'},
-    {id:'ast-2026-11-thb',publisher:'Astiberri',month:'2026-11',date:'2026-11-26',title:'Total THB. Volumen 1',series:'Total THB',issueNr:'1',sourceUrl:'https://www.astiberri.com/posts/novedades-astiberri-noviembre26'},
-    {id:'ast-2026-11-ocupacion',publisher:'Astiberri',month:'2026-11',date:'2026-11-26',title:'La ocupación de los terrenos',series:'La ocupación de los terrenos',sourceUrl:'https://www.astiberri.com/posts/novedades-astiberri-noviembre26'},
-    {id:'pla-2026-11-orgullo',publisher:'Planeta Cómic',month:'2026-11',title:'Orgullo y prejuicio (novela gráfica)',series:'Orgullo y prejuicio',sourceUrl:'https://www.planetadelibros.com/blog/revista-forum/articulo-ng-noviembre-26'},
-    {id:'pla-2026-11-sacamantecas',publisher:'Planeta Cómic',month:'2026-11',title:'Sacamantecas',series:'Sacamantecas',sourceUrl:'https://www.planetadelibros.com/blog/revista-forum/articulo-ng-noviembre-26'},
-    {id:'pla-2026-11-cult',publisher:'Planeta Cómic',month:'2026-11',title:'Cult of the Lamb nº 01',series:'Cult of the Lamb',issueNr:'1',sourceUrl:'https://www.planetadelibros.com/editorial/planeta-comic/54'},
-    {id:'pla-2026-11-onepiece',publisher:'Planeta Cómic',month:'2026-11',title:'One Piece nº 114',series:'One Piece',issueNr:'114',sourceUrl:'https://www.planetadelibros.com/editorial/planeta-comic/54'},
-    {id:'ast-2026-12-bass',publisher:'Astiberri',month:'2026-12',date:'2026-12-03',title:'Marshal Bass. Integral vol. 3',series:'Marshal Bass',issueNr:'3',sourceUrl:'https://www.astiberri.com/posts/novedades-astiberri-diciembre26'},
-    {id:'ast-2026-12-pyongyang',publisher:'Astiberri',month:'2026-12',date:'2026-12-03',title:'Pyongyang. Edición cartoné',series:'Pyongyang',sourceUrl:'https://www.astiberri.com/posts/novedades-astiberri-diciembre26'},
-    {id:'ast-2026-12-paracuellos',publisher:'Astiberri',month:'2026-12',date:'2026-12-03',title:'Paracuellos. Euskarazko edizioa',series:'Paracuellos',sourceUrl:'https://www.astiberri.com/posts/novedades-astiberri-diciembre26'},
-    {id:'ast-2026-12-sucesos',publisher:'Astiberri',month:'2026-12',date:'2026-12-10',title:'Sucesos críticos variados. Volumen 2',series:'Sucesos críticos variados',issueNr:'2',sourceUrl:'https://www.astiberri.com/posts/novedades-astiberri-diciembre26'}
-  ];
+  let RELEASES=[],loaded=false;
+  async function loadReleases(){
+    if(loaded)return RELEASES;
+    const r=await fetch('./master-data/editorial-monthly.json',{cache:'no-cache'});
+    if(!r.ok)throw Error('Novedades mensuales no disponibles');
+    const data=await r.json();
+    if(!data||!Array.isArray(data.releases))throw Error('Formato editorial no válido');
+    RELEASES=data.releases.filter(x=>x&&x.id&&x.publisher&&x.month&&x.title&&x.sourceUrl&&!x.coverUrl);
+    loaded=true;
+    return RELEASES;
+  }
   const today=new Date(),state={month:today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0'),publisher:'',q:''};
   function safeUrl(u){try{const x=new URL(u);return x.protocol==='https:'?x.href:''}catch{return ''}}
   function dateLabel(x){if(!x.date)return 'Fecha exacta no publicada en la selección';const v=x.date.split('-');return v[2]+'/'+v[1]+'/'+v[0]}
@@ -33,6 +30,7 @@
       (!state.q||norm([x.publisher,x.title,x.series,x.issueNr||''].join(' ')).includes(norm(state.q))));
   }
   async function view(){
+    try{await loadReleases()}catch(e){console.warn('Novedades:',e);return head('Novedades','El calendario editorial no está disponible en este momento. La colección personal no se ha modificado.')}
     const items=matching();
     const grouped=SOURCES.filter(s=>!state.publisher||state.publisher===s.name).map(s=>({
       source:s,items:items.filter(x=>x.publisher===s.name)
@@ -67,6 +65,7 @@
     document.querySelectorAll('[data-release-id][data-release-status]').forEach(b=>b.onclick=()=>add(b.dataset.releaseId,b.dataset.releaseStatus));
   }
   async function add(id,status){
+    await loadReleases();
     const x=RELEASES.find(x=>x.id===id);if(!x||!['In Collection','On Wish List'].includes(status))return;
     const rows=await allStore('comics');
     const repeated=rows.some(r=>r.sourceReleaseId===x.id||
