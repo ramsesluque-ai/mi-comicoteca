@@ -1,8 +1,0 @@
-{
-  "batch": 60,
-  "rounds": 6,
-  "workers": 3,
-  "publisher": "",
-  "reset": true,
-  "source": "Tebeosfera-first full rebuild"
-}

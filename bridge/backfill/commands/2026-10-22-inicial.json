@@ -1,6 +1,0 @@
-{
-  "batch": 250,
-  "rounds": 4,
-  "reason": "Segundo ciclo continuo con OpenLibrary, Google Books y MilComics optimizado por ISBN exacto",
-  "run": 10
-}

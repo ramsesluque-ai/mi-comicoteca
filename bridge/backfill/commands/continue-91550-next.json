@@ -1,5 +1,0 @@
-{
-  "batch": 250,
-  "rounds": 6,
-  "reason": "Segundo ciclo consecutivo del backfill Maestro tras el bloque iniciado en 91.550"
-}
