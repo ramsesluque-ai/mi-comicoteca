@@ -49,7 +49,29 @@
  async function attachFile(comic,file,opts={}){if(!comic?.id)throw Error('Ficha no válida');const blob=await compress(file);let updated=await markLocal(comic,blob,'archivo local');if(opts.sync===true&&pass()&&token()){try{updated=await syncOne(updated)}catch(e){console.warn('Portada guardada localmente; sincronización pendiente:',e)}}return updated}
  async function syncPending(limit=30,onProgress){if(!pass()||!token())throw Error('Carga la clave y la credencial GitHub en Sincronizar');const rows=(await allStore('comics')).filter(x=>x.coverKey&&x.coverSyncPending===true),batch=rows.slice(0,Math.max(1,Math.min(Number(limit)||30,60)));let done=0,errors=0;const prev=!!window.__mcCoverBatchRunning;window.__mcCoverBatchRunning=true;try{for(const x of batch){try{await syncOne(x);done++}catch(e){console.warn('Sync cover',x.id,e);errors++;if(String(e?.message||e).includes('Límite de seguridad'))break}onProgress?.({done,errors,total:batch.length,remaining:Math.max(0,rows.length-done-errors)})}}finally{window.__mcCoverBatchRunning=prev;setTimeout(()=>window.CloudSync?.schedule?.(),250)}return{done,errors,total:batch.length,remaining:Math.max(0,rows.length-done-errors)}}
  async function pendingCount(){return(await allStore('comics')).filter(x=>x.coverKey&&x.coverSyncPending===true).length}
- async function hydrate(root=document){const slots=[...root.querySelectorAll('.mc-cover-slot[data-cover-key]:not([data-loading])')];for(const el of slots){el.dataset.loading='1';const k=el.dataset.coverKey,src=el.dataset.coverSource||'';objectUrl(k,src).then(u=>{const im=document.createElement('img');im.className=el.className.replace(/\bmc-cover-slot\b/g,'').replace(/\bcoverph\b/g,'').trim();im.src=u;im.alt='Portada';im.loading='lazy';im.decoding='async';el.replaceWith(im)}).catch(()=>{el.textContent='🔒 Portada guardada';el.classList.add('coverph')})}}
+ async function hydrate(root=document){
+  const slots=[...root.querySelectorAll('.mc-cover-slot[data-cover-key]:not([data-loading])')];
+  for(const el of slots){
+   el.dataset.loading='1';
+   const k=el.dataset.coverKey,src=el.dataset.coverSource||'';
+   objectUrl(k,src).then(u=>{
+    if(!el.isConnected)return;
+    const im=document.createElement('img');
+    im.className=el.className.replace(/\\bmc-cover-slot\\b/g,'').replace(/\\bcoverph\\b/g,'').trim();
+    im.src=u;im.alt='Portada';im.loading='lazy';im.decoding='async';
+    im.onerror=()=>{if(im.isConnected){const fallback=document.createElement('div');fallback.className='mc-cover-slot coverph';fallback.dataset.coverKey=k;fallback.dataset.coverSource=src;fallback.textContent='Portada no disponible · Reintentar';fallback.style.cursor='pointer';fallback.addEventListener('click',e=>{e.stopPropagation();delete fallback.dataset.loading;hydrate(fallback.parentElement)});im.replaceWith(fallback)}};
+    el.replaceWith(im);
+   }).catch(e=>{
+    if(!el.isConnected)return;
+    el.textContent='Portada no disponible · Reintentar';
+    el.title=String(e?.message||'Comprueba la clave de sincronización y la disponibilidad de la imagen');
+    el.classList.add('coverph');
+    el.style.cursor='pointer';
+    el.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();delete el.dataset.loading;hydrate(el.parentElement)},{once:true});
+   });
+  }
+ }
+
  const obs=new MutationObserver(()=>hydrate());window.addEventListener('load',()=>{obs.observe(document.body,{subtree:true,childList:true});ensurePersistent();hydrate()});
  window.CoverVault={attach,attachFile,syncOne,syncPending,pendingCount,objectUrl,hydrate,fetchAndCompress,storageInfo,ensurePersistent,hasCredentials:()=>!!(pass()&&token()),passReady:()=>!!pass(),tokenReady:()=>!!token()};
 })();
