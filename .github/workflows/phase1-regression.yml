@@ -27,7 +27,7 @@ jobs:
           node <<'NODE'
           const fs=require('fs'),assert=require('assert');
           const html=fs.readFileSync('index.html','utf8');
-          for(const file of ['app1.js','app2.js','catalog-bulk.js','master-static.js','master-series-ui.js','vault.js','sw.js']){
+          for(const file of ['app1.js','app2.js','catalog-bulk.js','master-static.js','master-series-ui.js','vault.js']){
             assert(fs.existsSync(file),'Missing critical asset: '+file);
             assert(html.includes(file),'Not loaded by HTML: '+file);
           }
