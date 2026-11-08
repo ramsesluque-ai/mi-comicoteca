@@ -8,121 +8,121 @@
     "publicationDate": "2016-12-01",
     "pages": "28",
     "isbn": "9788416945313",
-    "coverUrl": "https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/bridge-data/bridge/covers/all-star-batman-renacimiento-ecc-1-9788416945313-v2-1.webp",
-    "sourceUrl": "https://www.milcomics.com/comics-descatalogados/all-star-batman-01-renacimiento-103770.html"
+    "sourceUrl": "https://www.milcomics.com/comics-descatalogados/all-star-batman-01-renacimiento-103770.html",
+    "coverReuseStatus": "rights_pending"
   },
   "8446801884": {
     "isbn": "8446801884",
-    "coverUrl": "https://covers.openlibrary.org/b/id/12788728-L.jpg",
     "source": "Open Library (ISBN verified)",
-    "sourceUrl": "http://openlibrary.org/books/OL38243767M/Batman_Grendel"
+    "sourceUrl": "http://openlibrary.org/books/OL38243767M/Batman_Grendel",
+    "coverReuseStatus": "rights_pending"
   },
   "8446801981": {
     "isbn": "8446801981",
-    "coverUrl": "https://covers.openlibrary.org/b/id/12788729-L.jpg",
     "source": "Open Library (ISBN verified)",
-    "sourceUrl": "http://openlibrary.org/books/OL38243768M/Batman_Grendel"
+    "sourceUrl": "http://openlibrary.org/books/OL38243768M/Batman_Grendel",
+    "coverReuseStatus": "rights_pending"
   },
   "9788498858075": {
     "isbn": "9788498858075",
-    "coverUrl": "https://covers.openlibrary.org/b/id/7396141-L.jpg",
     "source": "Open Library (ISBN verified)",
-    "sourceUrl": "http://openlibrary.org/books/OL25891853M/Assassin's_creed_the_fall"
+    "sourceUrl": "http://openlibrary.org/books/OL25891853M/Assassin's_creed_the_fall",
+    "coverReuseStatus": "rights_pending"
   },
   "9788498858211": {
     "isbn": "9788498858211",
-    "coverUrl": "https://covers.openlibrary.org/b/id/13704509-L.jpg",
     "source": "Open Library (ISBN verified)",
-    "sourceUrl": "http://openlibrary.org/books/OL47255835M/Halo"
+    "sourceUrl": "http://openlibrary.org/books/OL47255835M/Halo",
+    "coverReuseStatus": "rights_pending"
   },
   "9788490240144": {
     "isbn": "9788490240144",
-    "coverUrl": "https://covers.openlibrary.org/b/id/13705002-L.jpg",
     "source": "Open Library (ISBN verified)",
-    "sourceUrl": "http://openlibrary.org/books/OL47256222M/HALO"
+    "sourceUrl": "http://openlibrary.org/books/OL47256222M/HALO",
+    "coverReuseStatus": "rights_pending"
   },
   "9788498857177": {
     "isbn": "9788498857177",
-    "coverUrl": "https://covers.openlibrary.org/b/id/10575616-L.jpg",
     "source": "Open Library (ISBN verified)",
-    "sourceUrl": "http://openlibrary.org/books/OL31890065M/Halo"
+    "sourceUrl": "http://openlibrary.org/books/OL31890065M/Halo",
+    "coverReuseStatus": "rights_pending"
   },
   "9788490247006": {
     "isbn": "9788490247006",
-    "coverUrl": "https://covers.openlibrary.org/b/id/13704986-L.jpg",
     "source": "Open Library (ISBN verified)",
-    "sourceUrl": "http://openlibrary.org/books/OL47256209M/POWERS_15._FEDERALES._PARTE_1"
+    "sourceUrl": "http://openlibrary.org/books/OL47256209M/POWERS_15._FEDERALES._PARTE_1",
+    "coverReuseStatus": "rights_pending"
   },
   "9788498851144": {
     "isbn": "9788498851144",
-    "coverUrl": "https://covers.openlibrary.org/b/id/13755599-L.jpg",
     "source": "Open Library (ISBN verified)",
-    "sourceUrl": "http://openlibrary.org/books/OL47293814M/Powers_Para_siempre"
+    "sourceUrl": "http://openlibrary.org/books/OL47293814M/Powers_Para_siempre",
+    "coverReuseStatus": "rights_pending"
   },
   "9788491670896": {
     "isbn": "9788491670896",
-    "coverUrl": "https://covers.openlibrary.org/b/id/13925901-L.jpg",
     "source": "Open Library (ISBN verified)",
-    "sourceUrl": "http://openlibrary.org/books/OL47337613M/Dinosáurio_Diabólico_Jack_Kirby"
+    "sourceUrl": "http://openlibrary.org/books/OL47337613M/Dinosáurio_Diabólico_Jack_Kirby",
+    "coverReuseStatus": "rights_pending"
   },
   "9788491672814": {
     "isbn": "9788491672814",
-    "coverUrl": "https://covers.openlibrary.org/b/id/13925865-L.jpg",
     "source": "Open Library (ISBN verified)",
-    "sourceUrl": "http://openlibrary.org/books/OL47337578M/El_Castigador._Círculo_De_Sangre"
+    "sourceUrl": "http://openlibrary.org/books/OL47337578M/El_Castigador._Círculo_De_Sangre",
+    "coverReuseStatus": "rights_pending"
   },
   "9788491670230": {
     "isbn": "9788491670230",
-    "coverUrl": "https://covers.openlibrary.org/b/id/13916113-L.jpg",
     "source": "Open Library (ISBN verified)",
-    "sourceUrl": "http://openlibrary.org/books/OL47330179M/El_Increíble_Hulk_De_John_Byrne"
+    "sourceUrl": "http://openlibrary.org/books/OL47330179M/El_Increíble_Hulk_De_John_Byrne",
+    "coverReuseStatus": "rights_pending"
   },
   "9788490948804": {
     "isbn": "9788490948804",
-    "coverUrl": "https://covers.openlibrary.org/b/id/13925969-L.jpg",
     "source": "Open Library (ISBN verified)",
-    "sourceUrl": "http://openlibrary.org/books/OL47337675M/Lobezno"
+    "sourceUrl": "http://openlibrary.org/books/OL47337675M/Lobezno",
+    "coverReuseStatus": "rights_pending"
   },
   "9788490947340": {
     "isbn": "9788490947340",
-    "coverUrl": "https://covers.openlibrary.org/b/id/11108555-L.jpg",
     "source": "Open Library (ISBN verified)",
-    "sourceUrl": "http://openlibrary.org/books/OL32449729M/MOON_GIRL_Y_DINOSAURIO_DIABÓLICO"
+    "sourceUrl": "http://openlibrary.org/books/OL32449729M/MOON_GIRL_Y_DINOSAURIO_DIABÓLICO",
+    "coverReuseStatus": "rights_pending"
   },
   "9788490949733": {
     "isbn": "9788490949733",
-    "coverUrl": "https://covers.openlibrary.org/b/id/11108590-L.jpg",
     "source": "Open Library (ISBN verified)",
-    "sourceUrl": "http://openlibrary.org/books/OL32449757M/MOON_GIRL_X_DINOSAURIO_DIABOLICO"
+    "sourceUrl": "http://openlibrary.org/books/OL32449757M/MOON_GIRL_X_DINOSAURIO_DIABOLICO",
+    "coverReuseStatus": "rights_pending"
   },
   "9788491671886": {
     "isbn": "9788491671886",
-    "coverUrl": "https://covers.openlibrary.org/b/id/11116775-L.jpg",
     "source": "Open Library (ISBN verified)",
-    "sourceUrl": "http://openlibrary.org/books/OL32458941M/MOON_GIRL_Y_DINOSAURIO_DIABOLICO"
+    "sourceUrl": "http://openlibrary.org/books/OL32458941M/MOON_GIRL_Y_DINOSAURIO_DIABOLICO",
+    "coverReuseStatus": "rights_pending"
   },
   "9788491674030": {
     "isbn": "9788491674030",
-    "coverUrl": "https://covers.openlibrary.org/b/id/11116812-L.jpg",
     "source": "Open Library (ISBN verified)",
-    "sourceUrl": "http://openlibrary.org/books/OL32458979M/MOON_GIRL"
+    "sourceUrl": "http://openlibrary.org/books/OL32458979M/MOON_GIRL",
+    "coverReuseStatus": "rights_pending"
   },
   "9788491676027": {
     "isbn": "9788491676027",
-    "coverUrl": "https://covers.openlibrary.org/b/id/11116825-L.jpg",
     "source": "Open Library (ISBN verified)",
-    "sourceUrl": "http://openlibrary.org/books/OL32459039M/MOON_GIRL_Y_DINOSAURIO_DIABÓLICO"
+    "sourceUrl": "http://openlibrary.org/books/OL32459039M/MOON_GIRL_Y_DINOSAURIO_DIABÓLICO",
+    "coverReuseStatus": "rights_pending"
   },
   "9788490249918": {
     "isbn": "9788490249918",
-    "coverUrl": "https://covers.openlibrary.org/b/id/13925988-L.jpg",
     "source": "Open Library (ISBN verified)",
-    "sourceUrl": "http://openlibrary.org/books/OL47337692M/Colección_100_Caballero_Luna_1._De_Entre_Los_Muertos"
+    "sourceUrl": "http://openlibrary.org/books/OL47337692M/Colección_100_Caballero_Luna_1._De_Entre_Los_Muertos",
+    "coverReuseStatus": "rights_pending"
   },
   "9788490249284": {
     "isbn": "9788490249284",
-    "coverUrl": "https://covers.openlibrary.org/b/id/13926671-L.jpg",
     "source": "Open Library (ISBN verified)",
-    "sourceUrl": "http://openlibrary.org/books/OL47338259M/Colección_100_Cable_Y_X-Force"
+    "sourceUrl": "http://openlibrary.org/books/OL47338259M/Colección_100_Cable_Y_X-Force",
+    "coverReuseStatus": "rights_pending"
   }
 }
