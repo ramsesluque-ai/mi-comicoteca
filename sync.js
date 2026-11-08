@@ -34,7 +34,9 @@ async function pullUI(){try{await pull(inputs(),false)}catch{}}
 async function saveUI(){inputs();await push(false)}
 async function test(){inputs();if(!token){msg('Falta la credencial GitHub',true);return}try{busy(true,'Comprobando permiso…');await ghfile();msg('Credencial válida: este dispositivo puede guardar cambios.')}catch(x){msg(x.message||String(x),true)}finally{busy(false)}}
 function schedule(){if(suppress||!pass||!token||window.__mcCoverBatchRunning)return;clearTimeout(timer);timer=setTimeout(()=>push(true),2200)}
-async function bootstrap(){addButton();try{const rows=await allStore('comics'),e=await remote(true);if(pass&&e&&((e.revision||0)>rev()||!rows.length))await pull(pass,true);else if(!rows.length)setTimeout(show,300)}catch(x){console.warn('Sync:',x)}}
+async function bootstrap(){addButton();try{const rows=await allStore('comics'),e=await remote(true);if(pass&&e&&((e.revision||0)>rev()||!rows.length))await pull(pass,true);// A new browser must start with an empty collection; recovery is always optional.
+    // Never auto-open owner GitHub sync on a public/commercial deployment.
+    else if(!rows.length)badge('↻ Sincronizar · opcional')}catch(x){console.warn('Sync:',x)}}
 function wrap(){for(const n of['putStore','delStore','clearStore','bulkPut']){const o=window[n];if(typeof o!=='function'||o.__sw)continue;const w=async function(...a){const r=await o.apply(this,a);schedule();return r};w.__sw=true;window[n]=w}}
 window.CloudSync={show,close,pull,push,pullUI,saveUI,test,schedule};wrap();window.addEventListener('load',bootstrap);
 })();
