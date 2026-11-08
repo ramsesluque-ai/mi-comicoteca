@@ -24,6 +24,13 @@ function mcImportMap(raw){
  return cleanComic(obj);
 }
 function mcImportKey(x){const n=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();return [n(x.publisher),n(x.catalogHeader||x.series),n(x.volume),n(x.stage),n(x.startYear),n(x.issueNr||x.issue),n(x.isbn)].join('|')}
+// Detect incomplete collection identities without guessing their edition.
+function mcImportIdentityConflict(a,b){
+ const n=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+ if(n(a.publisher)!==n(b.publisher)||n(a.catalogHeader||a.series)!==n(b.catalogHeader||b.series)||n(a.issueNr||a.issue)!==n(b.issueNr||b.issue))return false;
+ const fields=['volume','stage','startYear'];
+ return fields.some(k=>!n(a[k])||!n(b[k]))&&fields.every(k=>!n(a[k])||!n(b[k])||n(a[k])===n(b[k]));
+}
 let mcImportPending=null;
 function mcImportStatus(message,isError=false){
  const el=document.getElementById('mcImportStatus');
@@ -44,12 +51,12 @@ async function importFile(file,target='comics'){
   const rows=raw.map(mcImportMap).filter(x=>x.publisher&&(x.catalogHeader||x.series));
   const rejected=raw.length-rows.length;
   const existing=await allStore(target),existingKeys=new Set(existing.map(mcImportKey)),seen=new Set();
-  const unique=[],duplicates=[];
-  for(const x of rows){const key=mcImportKey(x);if(seen.has(key)||existingKeys.has(key))duplicates.push(x);else{seen.add(key);unique.push(x)}}
-  mcImportPending={file:file.name,target,unique,duplicates,rejected,backup};
-  mcImportStatus('Archivo leído: '+raw.length+' filas; '+unique.length+' nuevas, '+duplicates.length+' duplicadas y '+rejected+' rechazadas. Confirma en la ventana de vista previa.');
+  const unique=[],duplicates=[],ambiguous=[];
+  for(const x of rows){const key=mcImportKey(x);if(seen.has(key)||existingKeys.has(key))duplicates.push(x);else if(target==='comics'&&[...existing,...unique].some(y=>mcImportIdentityConflict(x,y))){ambiguous.push(x)}else{seen.add(key);unique.push(x)}}
+  mcImportPending={file:file.name,target,unique,duplicates,ambiguous,rejected,backup};
+  mcImportStatus('Archivo leído: '+raw.length+' filas; '+unique.length+' nuevas, '+duplicates.length+' duplicadas  , '+ambiguous.length+' ambiguas y '+rejected+' rechazadas. Confirma en la ventana de vista previa.');
   const modal=document.getElementById('modal');
-  modal.innerHTML=`<div class="modalbox"><div class="modalhead"><div><b>Vista previa de importación</b><div class="muted small">${esc(file.name)}</div></div><button class="btn" onclick="closeModal()">Cerrar</button></div><div class="modalbody"><p><b>${raw.length.toLocaleString('es-ES')}</b> filas leídas · <b>${unique.length.toLocaleString('es-ES')}</b> nuevas · <b>${duplicates.length.toLocaleString('es-ES')}</b> duplicadas · <b>${rejected}</b> sin editorial/cabecera.</p><p class="muted">Solo se añadirán registros nuevos. No se borrarán ni sobrescribirán fichas existentes. Los duplicados se omiten.</p><div style="max-height:260px;overflow:auto"><table><thead><tr><th>Editorial</th><th>Cabecera</th><th>Número</th><th>Estado</th></tr></thead><tbody>${unique.slice(0,30).map(x=>`<tr><td>${esc(x.publisher)}</td><td>${esc(x.catalogHeader)}</td><td>${esc(x.issueNr)}</td><td>${esc(x.status)}</td></tr>`).join('')}</tbody></table></div><div class="actions" style="margin-top:18px"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="mcImportConfirm()">Importar ${unique.length.toLocaleString('es-ES')} nuevos</button></div></div></div>`;
+  modal.innerHTML=`<div class="modalbox"><div class="modalhead"><div><b>Vista previa de importación</b><div class="muted small">${esc(file.name)}</div></div><button class="btn" onclick="closeModal()">Cerrar</button></div><div class="modalbody"><p><b>${raw.length.toLocaleString('es-ES')}</b> filas leídas · <b>${unique.length.toLocaleString('es-ES')}</b> nuevas · <b>${duplicates.length.toLocaleString('es-ES')}</b> duplicadas · <b>${ambiguous.length}</b> ambiguas sin edición completa · <b>${rejected}</b> sin editorial/cabecera.</p><p class="muted">Solo se añadirán registros nuevos. No se borrarán ni sobrescribirán fichas existentes. Los duplicados se omiten. Las coincidencias ambiguas con volumen/etapa/año incompletos quedan bloqueadas para revisión; no se asigna una edición automáticamente.</p><div style="max-height:260px;overflow:auto"><table><thead><tr><th>Editorial</th><th>Cabecera</th><th>Número</th><th>Estado</th></tr></thead><tbody>${unique.slice(0,30).map(x=>`<tr><td>${esc(x.publisher)}</td><td>${esc(x.catalogHeader)}</td><td>${esc(x.issueNr)}</td><td>${esc(x.status)}</td></tr>`).join('')}</tbody></table></div>${ambiguous.length?`<p class="muted"><b>${ambiguous.length} filas bloqueadas por posible coincidencia con otra edición:</b> ${ambiguous.slice(0,12).map(x=>esc((x.publisher||'')+' · '+(x.catalogHeader||x.series||'')+' #'+(x.issueNr||x.issue||''))).join('; ')}. Completa volumen, etapa y año en el archivo para diferenciarlas antes de reimportar.</p>`:''}<div class="actions" style="margin-top:18px"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="mcImportConfirm()">Importar ${unique.length.toLocaleString('es-ES')} nuevos</button></div></div></div>`;
   modal.classList.remove('hidden');
  }catch(e){console.error(e);mcImportStatus('Error de importación: '+(e.message||e),true);toast('Error de importación: '+(e.message||e))}finally{busy(false)}
 }
