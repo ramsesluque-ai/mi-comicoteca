@@ -1,0 +1,38 @@
+name: COMICTECA browser smoke (commercial preview)
+on:
+  workflow_dispatch:
+  push:
+    branches: [commercial-published]
+    paths:
+      - '.github/workflows/browser-smoke.yml'
+permissions:
+  contents: read
+jobs:
+  browser-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: commercial-published
+          persist-credentials: false
+      - name: Install Chromium and Playwright
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Launch local HTTP server and test dashboard
+        shell: bash
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/comicteca-server.log 2>&1 &
+          sleep 2
+          node tests/bi-browser-smoke.cjs
+      - name: Upload browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: comicteca-bi-browser-evidence
+          path: |
+            artifacts/bi-browser.png
+            artifacts/bi-browser-report.json
+          if-no-files-found: warn
+          retention-days: 7
