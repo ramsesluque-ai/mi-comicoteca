@@ -3,7 +3,7 @@
 (function(){
   if(typeof window.editComic!=='function'||typeof getStore!=='function'||typeof putStore!=='function')return;
   const baseEdit=window.editComic;
-  const CACHE='mi-comicoteca-cover-vault-v1';
+  const CACHE='mi-comicoteca-cover-vault-commercial-v1';
   const safe=s=>String(s||'cover').replace(/[^a-zA-Z0-9_.-]/g,'_');
   const cacheUrl=k=>'https://mi-comicoteca.local/cover/'+encodeURIComponent(safe(k));
   const hasCover=r=>!!String(r?.coverKey||r?.coverUrl||r?.coverSourceUrl||'').trim();
