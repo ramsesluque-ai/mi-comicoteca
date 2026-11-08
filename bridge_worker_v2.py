@@ -318,7 +318,9 @@ if __name__=='__main__':
     files=sorted(REQ_DIR.glob('*.json'),key=lambda p:p.stat().st_mtime)
     for p in files[-12:]:
         try:
-            q=json.loads(p.read_text(encoding='utf-8')); rid=str(q.get('requestId') or p.stem)
+            q=json.loads(p.read_text(encoding='utf-8'));
+            if q.get('sourceMode')=='publisher':continue
+            rid=str(q.get('requestId') or p.stem)
             # Reprocess when prior result is missing or failed, so extractor improvements can fix old requests.
             rp=RES_DIR/f'{rid}.json'
             if rp.exists():
