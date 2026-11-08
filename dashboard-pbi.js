@@ -136,6 +136,19 @@
     if(typeof current!=='undefined' && current==='dashboard' && typeof render==='function'){
       Promise.resolve().then(()=>render()).catch(err=>{
         console.error('No se pudo iniciar el dashboard BI',err);
+        const target=document.getElementById('view');
+        if(target && typeof current!=='undefined' && current==='dashboard'){
+          const notice=document.createElement('div');
+          notice.setAttribute('role','alert');
+          notice.className='card';
+          notice.style.cssText='margin:20px;padding:20px;border:1px solid #e9a23b';
+          const heading=document.createElement('h2');
+          heading.textContent='No se ha podido cargar el dashboard BI';
+          const message=document.createElement('p');
+          message.textContent='Tus datos no se han modificado. Recarga la página; si el problema continúa, consulta la consola del navegador.';
+          notice.append(heading,message);
+          target.replaceChildren(notice);
+        }
       });
     }
   }
