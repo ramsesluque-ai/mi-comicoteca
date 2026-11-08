@@ -14,13 +14,27 @@
   let RELEASES=[],loaded=false;
   async function loadReleases(){
     if(loaded)return RELEASES;
-    const r=await fetch('./master-data/editorial-monthly.json',{cache:'no-cache'});
-    if(!r.ok)throw Error('Novedades mensuales no disponibles');
-    const data=await r.json();
-    if(!data||!Array.isArray(data.releases))throw Error('Formato editorial no válido');
-    RELEASES=data.releases.filter(x=>x&&x.id&&x.publisher&&x.month&&x.title&&x.sourceUrl&&!x.coverUrl);
-    loaded=true;
-    return RELEASES;
+    const sources=[window.MC_EDITORIAL_NEWS_URL,'./master-data/editorial-monthly.json'].filter(Boolean);
+    let data=null;
+    for(const url of sources){
+      try{
+        const r=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(7000)});
+        if(!r.ok)continue;
+        const response=await r.json();
+        if(Array.isArray(response?.releases)){data=response;break}
+      }catch(e){console.warn('Fuente editorial no disponible',url,e)}
+    }
+    if(!data)throw Error('No se pudo leer el calendario editorial');
+    const known=new Map(SOURCES.map(s=>[s.name,new URL(s.url).hostname.replace(/^www\\./,'')]));
+    RELEASES=data.releases.filter(x=>{
+      try{
+        if(!x||!x.id||!x.title||!x.month||!x.sourceUrl||x.coverUrl)return false;
+        const root=known.get(x.publisher);if(!root)return false;
+        const url=new URL(x.sourceUrl);
+        return url.protocol==='https:'&&(url.hostname===root||url.hostname.endsWith('.'+root));
+      }catch{return false}
+    });
+    loaded=true;return RELEASES;
   }
   const state={month:'',publisher:'',q:''};
   const key=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
