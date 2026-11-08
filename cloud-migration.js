@@ -1,6 +1,7 @@
 'use strict';
 /* Commercial migration: COPY local CoverVault -> private Supabase Storage. Never deletes local data. */
 (function(){
+if(new URLSearchParams(location.search).get('modo') === 'prueba-importacion') return;
  const CACHE='mi-comicoteca-cover-vault-v1';
  const SESSION='mc_supabase_session_v1';
  const cfg=()=>window.MI_COMICOTECA_CLOUD||{};
