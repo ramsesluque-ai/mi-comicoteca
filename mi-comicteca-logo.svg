@@ -1,1 +1,62 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 420" role="img" aria-label="MI COMICTECA"><defs><linearGradient id="bg" x2="0" y2="1"><stop stop-color="#071d3a"/><stop offset="1" stop-color="#020917"/></linearGradient><linearGradient id="badge" x2=".9" y2="1"><stop stop-color="#20b7ff"/><stop offset=".4" stop-color="#0054ce"/><stop offset="1" stop-color="#032c80"/></linearGradient><linearGradient id="wood" x2="0" y2="1"><stop stop-color="#ffbf55"/><stop offset=".5" stop-color="#bc6518"/><stop offset="1" stop-color="#71350c"/></linearGradient></defs><rect width="700" height="420" fill="url(#bg)"/><g stroke="#0b1221" stroke-width="4"><rect x="130" y="96" width="59" height="125" rx="8" fill="#eb332e"/><rect x="191" y="90" width="60" height="131" rx="8" fill="#1687d5"/><rect x="253" y="98" width="59" height="123" rx="8" fill="#f9bd25"/><rect x="314" y="91" width="59" height="130" rx="8" fill="#ece7cb"/><rect x="375" y="95" width="59" height="126" rx="8" fill="#28a752"/><rect x="436" y="101" width="59" height="120" rx="8" fill="#8d43d4"/><rect x="497" y="103" width="59" height="118" rx="8" fill="#e67b20"/></g><g fill="#07152b" opacity=".8"><path d="M142 190l18-64 16 64zm62 0 16-70 17 70zm62 0 18-66 15 66zm61 0 16-63 18 63zm62 0 17-64 16 64zm61 0 18-66 14 66zm62 0 17-65 16 65z"/></g><g fill="#fff" opacity=".85"><path d="M154 128h13v9h-13zm62-7h13v9h-13zm62 9h13v9h-13zm61-9h13v9h-13zm61 6h13v9h-13zm61 6h13v9h-13zm61 3h13v9h-13z"/></g><rect x="115" y="217" width="510" height="24" rx="4" fill="url(#wood)" stroke="#ffd17a" stroke-width="3"/><g transform="translate(47 172) rotate(-5 80 50)"><rect width="150" height="96" rx="20" fill="url(#badge)" stroke="#38d9ff" stroke-width="5"/><text x="75" y="69" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="73" fill="#fff">MI</text></g><text x="350" y="335" text-anchor="middle" font-family="Arial,sans-serif" font-size="94" font-weight="900" letter-spacing="-5"><tspan fill="#fff">COMIC</tspan><tspan fill="#02d9f3">TECA</tspan></text><path d="M92 367 Q350 341 608 367" fill="none" stroke="#00d7f5" stroke-width="8" stroke-linecap="round"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 620" role="img" aria-labelledby="t d">
+<title id="t">MI COMICTECA</title><desc id="d">Logotipo con insignia MI, estantería detallada de cómics genéricos y palabra COMICTECA en blanco y azul cian.</desc>
+<defs>
+ <linearGradient id="back" x2="0" y2="1"><stop stop-color="#071f3a"/><stop offset=".62" stop-color="#020e22"/><stop offset="1" stop-color="#020a18"/></linearGradient>
+ <radialGradient id="glow"><stop stop-color="#2e7dbd" stop-opacity=".32"/><stop offset="1" stop-color="#002348" stop-opacity="0"/></radialGradient>
+ <linearGradient id="mi" x1=".15" y1="0" x2=".95" y2="1"><stop stop-color="#1dc6ff"/><stop offset=".28" stop-color="#006bde"/><stop offset=".7" stop-color="#0042ad"/><stop offset="1" stop-color="#002b71"/></linearGradient>
+ <linearGradient id="wood" x2="0" y2="1"><stop stop-color="#fff0a5"/><stop offset=".13" stop-color="#ffbe3e"/><stop offset=".45" stop-color="#bf640f"/><stop offset=".85" stop-color="#713005"/><stop offset="1" stop-color="#d48b25"/></linearGradient>
+ <linearGradient id="edge" x2="1" y2="0"><stop stop-color="#070d20"/><stop offset=".13" stop-color="#fff" stop-opacity=".85"/><stop offset=".3" stop-color="#fff" stop-opacity=".07"/><stop offset=".82" stop-color="#000" stop-opacity=".15"/><stop offset="1" stop-color="#000" stop-opacity=".7"/></linearGradient>
+ <linearGradient id="red" x2=".8" y2="1"><stop stop-color="#ff6029"/><stop offset=".43" stop-color="#f1211e"/><stop offset="1" stop-color="#760d11"/></linearGradient>
+ <linearGradient id="blue" x2=".8" y2="1"><stop stop-color="#27d6f1"/><stop offset=".35" stop-color="#075dda"/><stop offset="1" stop-color="#00245e"/></linearGradient>
+ <linearGradient id="yellow" x2="1" y2="1"><stop stop-color="#ffeb3b"/><stop offset=".4" stop-color="#ffd11b"/><stop offset="1" stop-color="#d37500"/></linearGradient>
+ <linearGradient id="paper" x2="1" y2="1"><stop stop-color="#fffcd9"/><stop offset=".6" stop-color="#e9e4c6"/><stop offset="1" stop-color="#bbb8a4"/></linearGradient>
+ <linearGradient id="green" x2=".7" y2="1"><stop stop-color="#b6f03f"/><stop offset=".45" stop-color="#37cd19"/><stop offset="1" stop-color="#0b5a2d"/></linearGradient>
+ <linearGradient id="purple" x2=".7" y2="1"><stop stop-color="#cf75ff"/><stop offset=".42" stop-color="#8e33e0"/><stop offset="1" stop-color="#3b126b"/></linearGradient>
+ <linearGradient id="orange" x2=".8" y2="1"><stop stop-color="#ffbb18"/><stop offset=".5" stop-color="#ff7327"/><stop offset="1" stop-color="#85380c"/></linearGradient>
+ <linearGradient id="textBlue" x2="0" y2="1"><stop stop-color="#82f7ff"/><stop offset=".35" stop-color="#00e3ff"/><stop offset="1" stop-color="#008fd4"/></linearGradient>
+ <linearGradient id="textWhite" x2="0" y2="1"><stop stop-color="#fff"/><stop offset=".75" stop-color="#fff"/><stop offset="1" stop-color="#ccd9e8"/></linearGradient>
+ <pattern id="dots" width="12" height="12" patternUnits="userSpaceOnUse"><circle cx="3" cy="3" r="1.4" fill="#031022" opacity=".35"/></pattern>
+ <filter id="shadow" x="-25%" y="-35%" width="150%" height="180%"><feDropShadow dx="0" dy="11" stdDeviation="11" flood-color="#000814" flood-opacity=".8"/></filter>
+ <filter id="typeShadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="2" dy="8" stdDeviation="4" flood-color="#00020b" flood-opacity=".9"/></filter>
+</defs>
+<rect width="1000" height="620" fill="url(#back)"/><ellipse cx="500" cy="270" rx="455" ry="290" fill="url(#glow)"/>
+<g stroke="#050b18" stroke-width="6" filter="url(#shadow)">
+ <rect x="154" y="95" width="89" height="231" rx="10" fill="url(#red)"/>
+ <rect x="244" y="91" width="89" height="235" rx="10" fill="url(#blue)"/>
+ <rect x="334" y="91" width="90" height="235" rx="10" fill="url(#yellow)"/>
+ <rect x="425" y="90" width="90" height="236" rx="10" fill="url(#paper)"/>
+ <rect x="516" y="97" width="90" height="229" rx="10" fill="url(#green)"/>
+ <rect x="607" y="97" width="90" height="229" rx="10" fill="url(#purple)"/>
+ <rect x="698" y="108" width="90" height="218" rx="10" fill="url(#orange)"/>
+</g>
+<g opacity=".28" fill="url(#dots)"><rect x="158" y="100" width="625" height="215"/></g>
+<g fill="none" stroke="#fffeeb" stroke-opacity=".6" stroke-width="5"><path d="M168 112h64M258 108h62M348 108h64M439 108h63M530 114h63M620 114h64M712 123h62"/></g>
+<!-- Each spine has unique, original artwork: starburst, skyline, traveller, rocket, dragon, masked explorer, western. -->
+<path d="M196 135l10 29 30-11-16 26 18 18-28-3-12 33-9-31-29 3 23-21-13-25 29 12z" fill="#fff5c5" stroke="#1a1720" stroke-width="4"/>
+<g fill="#03162f"><path d="M251 297v-47h13v-38h18v-46h10v15h10v43h12v-31h11v104z"/><path d="M282 166l5-31 5 31"/></g>
+<g fill="#152434"><path d="M352 265l17-65 13-11 8-48 13 6 5 37 12 31-20-13-6 63-19 28z"/><path d="M369 205l-21 19-3 26 23-9z"/></g>
+<path d="M459 288l11-63-10-23 5-25 10-18 10 18 5 25-10 23 11 63z" fill="#f8fff3" stroke="#112538" stroke-width="4"/><path d="M465 216l-18 22 4 23 14-17M484 216l18 22-4 23-14-17" fill="#fbf1d3" stroke="#132538" stroke-width="3"/><circle cx="475" cy="190" r="5" fill="#1e2b32"/>
+<path d="M540 283q-15-49 10-64-11-18 8-38 22-8 27 6-15-4-17 8 34 9 20 34 17 6 4 33-10 25-41 22z" fill="#022a1b" stroke="#071426" stroke-width="4"/><path d="M576 211l17 4-16 8z" fill="#0e1720"/>
+<path d="M628 285q-5-31 12-54-9-10-8-28 1-35 29-35 27 1 29 35 1 21-8 27 19 29 13 55z" fill="#181331"/><path d="M646 204l12 5 12-5" fill="none" stroke="#e3e6fa" stroke-width="4"/><path d="M641 252l35 0" stroke="#7f48d6" stroke-width="4"/>
+<path d="M713 269q10-26 24-36 11-13 7-31l-20 6 13-25 22-1 15 17-19 8q0 17-11 26 18 13 20 36z" fill="#242015"/><path d="M726 209h42" stroke="#17171d" stroke-width="6"/>
+<!-- Glossy edges and inks -->
+<g opacity=".48"><path d="M166 112v184M255 109v184M347 110v182M438 110v181M529 114v184M619 114v184M710 122v176" fill="none" stroke="#fff" stroke-width="5"/></g>
+<g opacity=".38" fill="#fff"><path d="M170 127h3v119h-3zm90-5h3v119h-3zm90-5h3v119h-3zm90-5h3v119h-3zm91 6h3v119h-3zm90 5h3v119h-3zm91 6h3v119h-3z"/></g>
+<!-- Right-side horizontal graphic novels -->
+<g filter="url(#shadow)" stroke="#101522" stroke-width="4"><path d="M780 271l136 0 12-18-130-14z" fill="#f5e9ce"/><path d="M796 237l139-1 4-14-131-4z" fill="#d43429"/><path d="M803 216l142 1 2-13-142-4z" fill="#efdfc7"/><path d="M793 200l151 1 7-12-148-6z" fill="#e8b14b"/><path d="M794 181l153 1 6-12-144-10z" fill="#f0e7d5"/></g>
+<!-- Shelf in rich wood texture -->
+<g filter="url(#shadow)"><rect x="131" y="317" width="828" height="42" rx="9" fill="url(#wood)" stroke="#ffc45f" stroke-width="4"/><path d="M138 324h812M144 333h801M145 348h800" fill="none" stroke="#502407" stroke-opacity=".45" stroke-width="3"/><path d="M889 357v30h30v-30" fill="#8b3b09" stroke="#b25d15" stroke-width="4"/></g>
+<!-- Blue MI badge inspired by approved social logo -->
+<g transform="translate(57 255) rotate(-7 110 75)" filter="url(#shadow)">
+ <rect x="0" y="0" width="230" height="133" rx="29" fill="url(#mi)" stroke="#19d7ff" stroke-width="8"/>
+ <path d="M20 17q100-12 189-3" fill="none" stroke="#b5f8ff" stroke-width="5" opacity=".7"/>
+ <text x="115" y="103" text-anchor="middle" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-weight="900" font-style="italic" font-size="113" letter-spacing="-7" stroke="#b4dbff" stroke-width="1.8" paint-order="stroke">MI</text>
+</g>
+<!-- Giant classic wordmark -->
+<g filter="url(#typeShadow)" font-family="Arial Black,Arial,Helvetica,sans-serif" font-size="127" font-weight="900" letter-spacing="-7">
+ <text x="42" y="487" fill="url(#textWhite)" stroke="#f7fbff" stroke-width=".6">COMIC</text>
+ <text x="527" y="487" fill="url(#textBlue)">TECA</text>
+</g>
+<path d="M110 530q390-55 776-1" fill="none" stroke="#12c6ee" stroke-width="11" stroke-linecap="round"/>
+<path d="M130 526q380-44 728-3" fill="none" stroke="#78f6ff" stroke-width="3" stroke-linecap="round"/>
+</svg>
