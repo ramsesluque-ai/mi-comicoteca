@@ -70,6 +70,5 @@ function addButton(){
  btn.textContent='⌕ Buscar en editoriales';
  btn.addEventListener('click',lookup);foot.appendChild(btn);
 }
-const previous=window.editComic;
-if(typeof previous==='function')window.editComic=async function(...args){const v=await previous.apply(this,args);addButton();return v};
+// No button in the comic editor: keep publisher lookup available for other workflows if needed.
 })();
