@@ -1,0 +1,100 @@
+'use strict';
+/* MI COMICTECA: novedades editoriales, ventana móvil de dos meses.
+   Datos editoriales curados con fuente; las portadas no se copian. */
+(function(){
+ const MONTHS=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+ let records=[],publisherDirectory=[],loaded=false,loading=false,lastUpdate='',error='';
+ const ui={publisher:'',month:'',q:''};
+ const sanitize=x=>typeof esc==='function'?esc(x):String(x??'').replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+ const monthKey=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+ function allowedMonths(){const now=new Date(),previous=new Date(now.getFullYear(),now.getMonth()-1,1);return [monthKey(now),monthKey(previous)]}
+ function monthLabel(key){const [y,m]=String(key).split('-');return MONTHS[Number(m)-1]+' de '+y}
+ function dateLabel(r){if(r.publicationDate&&/^\d{4}-\d{2}-\d{2}$/.test(r.publicationDate)){const [y,m,d]=r.publicationDate.split('-');return d+' de '+MONTHS[Number(m)-1]+' de '+y}return monthLabel(r.releaseMonth)+' · día sin confirmar'}
+ function urlSafe(u){try{const x=new URL(String(u));return x.protocol==='https:'?x.href:''}catch{return ''}}
+ function shortDate(iso){return /^\d{4}-\d{2}-\d{2}$/.test(iso||'')?iso.slice(8)+'/'+iso.slice(5,7)+'/'+iso.slice(0,4):''}
+ function valueText(v){return v===null||v===undefined?'':String(v)}
+ const classify=(r)=>r.publicationDate&&r.publicationDate>new Date().toISOString().slice(0,10)?'Próximamente':r.publicationDate?'Publicado':'Anunciado';
+ async function load(){
+   if(loading)return;
+   loading=true;error='';
+   try{
+     const response=await fetch('./novedades-editoriales.json?v=2',{cache:'no-store'});
+     if(!response.ok)throw new Error('No se pudo obtener el catálogo de novedades ('+response.status+')');
+     const body=await response.json();
+     if(!Array.isArray(body.items)||!Array.isArray(body.publishers))throw new Error('Formato de novedades no válido');
+     const months=allowedMonths();
+     publisherDirectory=body.publishers.filter(x=>x&&x.publisher&&urlSafe(x.site));
+     records=body.items.filter(x=>x&&x.id&&x.publisher&&x.title&&months.includes(x.releaseMonth)&&urlSafe(x.sourceUrl));
+     const seen=new Set();records=records.filter(x=>{const key=[x.publisher,x.title,x.issueNr,x.releaseMonth].join('|').toLowerCase();if(seen.has(key))return false;seen.add(key);return true});
+     records.sort((a,b)=>b.releaseMonth.localeCompare(a.releaseMonth)||(b.publicationDate||'').localeCompare(a.publicationDate||'')||a.publisher.localeCompare(b.publisher,'es'));
+     loaded=true;lastUpdate=String(body.updatedAt||'');
+   }catch(e){loaded=false;records=[];error=e.message||String(e)}
+   finally{loading=false}
+ }
+ function card(r){
+   const href=urlSafe(r.sourceUrl),status=classify(r),issue=r.issueNr?(' · Nº '+sanitize(r.issueNr)):'',price=Number(r.price)>0?Number(r.price).toLocaleString('es-ES',{style:'currency',currency:'EUR'}):'';
+   const details=[r.authors&&'Autores: '+r.authors,r.format&&'Formato: '+r.format,r.pages&&r.pages+' páginas',price&&'PVP: '+price].filter(Boolean);
+   return '<article class="mc-novedad">'+
+     '<div class="mc-novedad-cover" aria-label="Portada no alojada"><span aria-hidden="true">▤</span><small>Sin portada autorizada</small></div>'+
+     '<div class="mc-novedad-content">'+
+       '<div class="mc-novedad-top"><span class="mc-novedad-publisher">'+sanitize(r.publisher)+'</span><span class="mc-novedad-state">'+sanitize(status)+'</span></div>'+
+       '<h3>'+sanitize(r.title)+issue+'</h3><p class="mc-novedad-date">◷ '+sanitize(dateLabel(r))+'</p>'+
+       (details.length?'<p class="mc-novedad-details">'+details.map(sanitize).join(' · ')+'</p>':'')+
+       '<div class="mc-novedad-actions"><button type="button" class="btn sm" onclick="mcNovedadesDraft(\''+sanitize(r.id)+'\',\'In Collection\')">+ A colección</button>'+
+       '<button type="button" class="btn sm" onclick="mcNovedadesDraft(\''+sanitize(r.id)+'\',\'On Wish List\')">♡ Wishlist</button>'+
+       '<a class="btn sm mc-novedad-source" target="_blank" rel="noopener noreferrer" href="'+sanitize(href)+'">Ver fuente ↗</a></div>'+
+       '<div class="mc-novedad-info">La ficha se prepara sin guardarse. Confirma edición y número antes de añadirla.</div>'+
+     '</div></article>';
+ }
+ function paint(){
+   const area=document.getElementById('mcNovedadesArea');if(!area)return;
+   const q=(ui.q||'').toLocaleLowerCase('es');
+   const list=records.filter(r=>(!ui.publisher||r.publisher===ui.publisher)&&(!ui.month||r.releaseMonth===ui.month)&&(!q||[r.publisher,r.title,r.issueNr,r.authors].join(' ').toLocaleLowerCase('es').includes(q)));
+   const count=document.getElementById('mcNovedadesCount');if(count)count.textContent=list.length+' novedades verificadas';
+   area.innerHTML=list.length?'<div class="mc-novedades-grid">'+list.map(card).join('')+'</div>':
+     '<div class="card mc-novedad-empty">No hay novedades verificadas para los filtros seleccionados. Puedes consultar las editoriales desde sus enlaces oficiales.</div>';
+ }
+ async function view(){
+   if(!loaded)await load();
+   const months=allowedMonths();
+   const options=publisherDirectory.map(p=>'<option value="'+sanitize(p.publisher)+'" '+(p.publisher===ui.publisher?'selected':'')+'>'+sanitize(p.publisher)+'</option>').join('');
+   const monthOpts=months.map(m=>'<option value="'+sanitize(m)+'" '+(ui.month===m?'selected':'')+'>'+sanitize(monthLabel(m))+'</option>').join('');
+   const dirs=publisherDirectory.map(p=>'<a href="'+sanitize(urlSafe(p.site))+'" target="_blank" rel="noopener noreferrer">'+sanitize(p.publisher)+'</a>').join('');
+   return '<div class="top"><div><h1>Novedades</h1><div class="sub">Novedades editoriales de '+sanitize(monthLabel(months[1]))+' y '+sanitize(monthLabel(months[0]))+'. La ventana avanza automáticamente cada mes.</div></div></div>'+
+   '<div class="mc-novedades-panel"><div class="mc-novedades-intro"><div><b>Últimos dos meses</b><p>Selección documentada de las principales editoriales españolas. Sin descarga automática de portadas protegidas.</p></div><span id="mcNovedadesCount">'+records.length+' novedades verificadas</span></div>'+
+   (error?'<div class="notice">No se ha podido cargar la sección: '+sanitize(error)+'. <button class="btn sm" type="button" onclick="mcNovedadesReload()">Reintentar</button></div>':'')+
+   '<div class="mc-novedades-filters"><label>Editorial<select id="mcNovedadesPublisher"><option value="">Todas las editoriales</option>'+options+'</select></label>'+
+   '<label>Mes<select id="mcNovedadesMonth"><option value="">Los dos meses</option>'+monthOpts+'</select></label>'+
+   '<label>Buscar<input id="mcNovedadesSearch" type="search" value="'+sanitize(ui.q)+'" placeholder="Cabecera, número o autor"></label></div>'+
+   '<div id="mcNovedadesArea"></div>'+
+   '<div class="mc-novedades-foot"><p><b>Editoras incluidas:</b> '+dirs+'.</p>'+
+   '<p>Fecha de actualización de la selección: '+sanitize(shortDate(lastUpdate)||'sin confirmar')+'. Los lanzamientos sin día confirmado se muestran con su mes editorial. Para datos completos, consulta la fuente. Las incorporaciones a tu colección requieren guardar manualmente la ficha.</p></div></div>';
+ }
+ async function renderCurrent(){
+   const node=document.getElementById('view');if(!node)return;
+   node.innerHTML=await view();
+   const pub=document.getElementById('mcNovedadesPublisher'),month=document.getElementById('mcNovedadesMonth'),q=document.getElementById('mcNovedadesSearch');
+   if(pub)pub.onchange=()=>{ui.publisher=pub.value;paint()};
+   if(month)month.onchange=()=>{ui.month=month.value;paint()};
+   if(q)q.oninput=()=>{ui.q=q.value;paint()};
+   paint();
+ }
+ window.mcNovedadesReload=async function(){loaded=false;await renderCurrent()};
+ window.mcNovedadesDraft=async function(id,status){
+   const r=records.find(x=>x.id===id);if(!r)return;
+   if(typeof editComic!=='function'){toast('No se puede abrir la ficha');return}
+   await editComic();
+   const field=(key,value)=>{const node=document.getElementById('m_'+key);if(node&&value!==undefined&&value!==null)node.value=String(value)};
+   field('publisher',r.publisher);field('catalogHeader',r.series||r.title);field('series',r.series||r.title);
+   field('title',r.title);field('issueNr',r.issueNr||'');field('volume',r.volume||'');field('stage',r.stage||'');
+   field('publicationDate',r.publicationDate||'');field('format',r.format||'');field('pages',r.pages||'');field('status',status);
+   const notes=document.getElementById('m_notes');
+   if(notes)notes.value='Novedad editorial ('+monthLabel(r.releaseMonth)+'). '+(r.authors?'Autores: '+r.authors+'. ':'')+'Fuente: '+urlSafe(r.sourceUrl);
+   const header=document.querySelector('.mc-comic-kicker');if(header)header.textContent='Nueva ficha desde Novedades · Revisar edición';
+   const body=document.querySelector('#modal .modalbody');
+   if(body){const notice=document.createElement('p');notice.className='notice';notice.textContent='Ficha sin guardar. Verifica editorial, volumen/etapa, año y número; añade una portada únicamente si tienes permiso para utilizarla.';body.prepend(notice)}
+   document.getElementById('m_issueNr')?.focus();
+ };
+ const baseRender=window.render;
+ if(typeof baseRender==='function')window.render=async function(...args){if(current==='novedades')return renderCurrent();return baseRender.apply(this,args)};
+})();
