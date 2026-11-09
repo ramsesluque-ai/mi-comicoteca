@@ -31,13 +31,35 @@
  }
  function accessScreen(state){
   let gate=document.getElementById('mcAccessGate');
-  if(!gate){gate=document.createElement('div');gate.id='mcAccessGate';gate.style.cssText='position:fixed;inset:0;z-index:99990;background:#030b16;color:#f4f8fe;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto';document.body.appendChild(gate)}
-  if(state==='active'){gate.remove();return}
-  const title=state==='guest'?'Tu colección empieza aquí':state==='inactive'?'Activa tu membresía':'Estamos verificando tu acceso';
-  const desc=state==='guest'?'Crea tu cuenta o inicia sesión para empezar a organizar tus cómics.':state==='inactive'?'Tu colección estará disponible cuando tu suscripción esté activa.':'Por seguridad, el acceso permanece cerrado hasta comprobar tu cuenta.';
-  gate.innerHTML='<section style="width:min(100%,480px);background:#091b30;border:1px solid #28445e;border-radius:20px;padding:36px;text-align:center;box-shadow:0 24px 80px #0008"><img src="comicteca-logo-real.webp" alt="COMICTECA" style="width:180px;max-width:80%;margin-bottom:20px"><h1 style="font-size:28px;margin:0 0 12px">'+title+'</h1><p style="color:#b9c7d5;font-size:16px;line-height:1.5">'+desc+'</p><button id="mcGateAccount" class="btn primary" style="margin-top:16px">'+(state==='guest'?'Entrar o crear cuenta':'Cuenta y suscripción')+'</button></section>';
-  gate.querySelector('#mcGateAccount').onclick=()=>show();
+  if(state==='active'){gate?.remove();document.body.classList.add('mc-access-ready');return}
+  if(!gate){gate=document.createElement('div');gate.id='mcAccessGate';document.body.appendChild(gate)}
+  document.body.classList.add('mc-access-ready');
+  if(state==='guest'){
+   gate.innerHTML=`<div class="mc-landing">
+    <header class="mc-landing-header"><img src="comicteca-logo-real.webp" alt="COMICTECA"><nav><a href="#mc-features">Funciones</a><a href="#mc-how">Cómo funciona</a><a href="#mc-plan">Membresía</a></nav><button class="btn mc-landing-login" data-mc-account>Entrar</button></header>
+    <main>
+     <section class="mc-hero"><div class="mc-hero-copy"><span class="mc-eyebrow">TU COLECCIÓN, ORGANIZADA</span><h1>Todos tus cómics.<br><em>Una sola COMICTECA.</em></h1><p>Organiza tus colecciones, identifica los números que tienes, prepara tu lista de deseos y consulta tu catálogo desde un mismo lugar.</p><div class="mc-hero-actions"><button class="btn primary" data-mc-account>Crear mi cuenta</button><a class="mc-text-link" href="#mc-features">Descubrir COMICTECA ↓</a></div><div class="mc-hero-tags"><span>Catálogo y colecciones</span><span>Wishlist</span><span>Importación desde Excel</span></div></div><div class="mc-hero-art"><img src="comicteca-logo-real.webp" alt="Logotipo de COMICTECA"><div>Tu universo del cómic, en orden.</div></div></section>
+     <section id="mc-features" class="mc-landing-section"><span class="mc-eyebrow">TODO EN UN MISMO SITIO</span><h2>Una herramienta pensada para coleccionistas</h2><div class="mc-feature-grid">
+      <article><span class="mc-feature-icon">▦</span><h3>Mi catálogo</h3><p>Registra tus ejemplares y consulta sus fichas con editorial, cabecera, volumen y número.</p></article>
+      <article><span class="mc-feature-icon">▤</span><h3>Colecciones</h3><p>Organiza tus series por editorial y edición, y sigue qué números tienes.</p></article>
+      <article><span class="mc-feature-icon">☆</span><h3>Lista de deseos</h3><p>Guarda los cómics que buscas para completar tus colecciones.</p></article>
+      <article><span class="mc-feature-icon">▧</span><h3>Portadas</h3><p>Gestiona las imágenes asociadas a tus fichas y localiza las que faltan.</p></article>
+      <article><span class="mc-feature-icon">◫</span><h3>Panel de control</h3><p>Consulta el estado de tu colección mediante resúmenes e indicadores.</p></article>
+      <article><span class="mc-feature-icon">⇧</span><h3>Importación y copias</h3><p>Incorpora registros desde Excel, CSV o JSON y exporta tus datos.</p></article>
+     </div></section>
+     <section id="mc-how" class="mc-landing-section mc-how"><span class="mc-eyebrow">EMPEZAR ES SENCILLO</span><h2>Tu colección, paso a paso</h2><div class="mc-how-grid"><div><b>01</b><h3>Crea tu cuenta</h3><p>Regístrate con tu correo y accede a tu espacio personal.</p></div><div><b>02</b><h3>Activa tu membresía</h3><p>Contrata el acceso desde tu cuenta.</p></div><div><b>03</b><h3>Organiza tus cómics</h3><p>Añade fichas, importa tu colección y consulta tus series.</p></div></div></section>
+     <section id="mc-plan" class="mc-landing-section mc-plan"><div><span class="mc-eyebrow">COMICTECA</span><h2>Tu colección merece su espacio</h2><p>Acceso mediante suscripción mensual. La membresía se activa tras la confirmación del pago.</p></div><div class="mc-plan-card"><span>Membresía mensual</span><strong>9,99 € <small>/ mes</small></strong><p>Gestión de colecciones, wishlist, importación, portadas y copias de seguridad.</p><button class="btn primary" data-mc-account>Crear cuenta y continuar</button></div></section>
+    </main><footer class="mc-landing-footer"><img src="comicteca-logo-real.webp" alt=""><span>COMICTECA · Tu colección, a tu manera.</span></footer>
+   </div>`;
+   gate.querySelectorAll('[data-mc-account]').forEach(b=>b.addEventListener('click',show));
+   return;
+  }
+  const title=state==='inactive'?'Tu COMICTECA está lista para empezar':'Estamos verificando tu acceso';
+  const desc=state==='inactive'?'Activa tu membresía para acceder a tu colección y comenzar a organizar tus cómics.':'No podemos comprobar tu acceso ahora mismo. Inténtalo de nuevo desde tu cuenta.';
+  gate.innerHTML='<div class="mc-gate-simple"><img src="comicteca-logo-real.webp" alt="COMICTECA"><h1>'+title+'</h1><p>'+desc+'</p><button class="btn primary" data-mc-account>Cuenta y membresía</button></div>';
+  gate.querySelector('[data-mc-account]').onclick=show;
  }
+
  async function verifyAccess(){
   if(new URLSearchParams(location.search).get('modo')==='prueba-importacion')return;
   accessScreen('checking');
