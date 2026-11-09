@@ -28,7 +28,7 @@ function mcNormalizeDate(v){v=String(v||'').trim();if(/^\d{4}-\d{2}-\d{2}$/.test
 async function mcSearchFichaAll(){
   const x=mcFormComic(),series=x.catalogHeader||x.series,title=x.title||series,code=String(x.isbn||'').replace(/[^0-9A-Za-z]/g,'');
   if(!code&&!series&&!title)return toast('Informa un código, cabecera/serie o título para buscar');
-  mcUnifiedCandidates=[];mcShowSearch('Buscar datos y portada','<div class="muted">Consultando fuentes por código y por datos de la ficha…</div>');
+  mcUnifiedCandidates=[];mcShowSearch('Buscar datos y portada','<div class="muted">Buscando información y portada del cómic…</div>');
   try{
     if(code){
       try{
