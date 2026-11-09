@@ -34,9 +34,21 @@ const { chromium } = require('playwright');
     dashboardStillActive: !!document.querySelector('#view .pbi-shell'),
     closeButton: !!document.querySelector('#view .pbi-drill button[onclick*="clearDrill"]')
   }));
+  await page.screenshot({ path: 'artifacts/bi-drilldown.png', fullPage: true });
   await page.locator('#view .pbi-drill button[onclick*="clearDrill"]').click();
   await page.locator('#view .pbi-drill').waitFor({ state: 'detached', timeout: 10000 });
   report.drilldown.closed = !await page.locator('#view .pbi-drill').count();
+  // Validate every BI category opens a rendered drilldown and returns to the dashboard.
+  report.drilldown.categories = {};
+  for (const kind of ['character', 'universe', 'author', 'decade']) {
+    const label = kind === 'decade' ? '1990–1999' : 'Filtro de prueba ' + kind;
+    await page.evaluate(({ kind, label }) => window.PbiDashboard.filter(kind, encodeURIComponent(label)), { kind, label });
+    await page.locator('#view .pbi-drill h2').waitFor({ state: 'visible', timeout: 10000 });
+    const heading = await page.locator('#view .pbi-drill h2').innerText();
+    await page.locator('#view .pbi-drill button[onclick*="clearDrill"]').click();
+    await page.locator('#view .pbi-drill').waitFor({ state: 'detached', timeout: 10000 });
+    report.drilldown.categories[kind] = heading.trim() === label && await page.locator('#view .pbi-shell').isVisible();
+  }
   report.url = page.url();
   report.httpStatus = response.status();
   report.pageErrors = errors;
@@ -44,5 +56,5 @@ const { chromium } = require('playwright');
   fs.writeFileSync('artifacts/bi-browser-report.json', JSON.stringify(report, null, 2));
   await browser.close();
   console.log(JSON.stringify(report, null, 2));
-  if (report.httpStatus !== 200 || !report.dashboardButton || !report.biModule || !report.biNodes || !report.dashboardVisible || !report.biCssApplied || !report.logoCount || !report.logoLoaded || !report.logoVisible || !report.drilldown.visible || report.drilldown.heading !== 'Editorial de prueba' || !report.drilldown.dashboardStillActive || !report.drilldown.closeButton || !report.drilldown.closed || errors.length) process.exitCode = 1;
+  if (report.httpStatus !== 200 || !report.dashboardButton || !report.biModule || !report.biNodes || !report.dashboardVisible || !report.biCssApplied || !report.logoCount || !report.logoLoaded || !report.logoVisible || !report.drilldown.visible || report.drilldown.heading !== 'Editorial de prueba' || !report.drilldown.dashboardStillActive || !report.drilldown.closeButton || !report.drilldown.closed || Object.values(report.drilldown.categories).some(ok => !ok) || errors.length) process.exitCode = 1;
 })().catch(err => { console.error(err); process.exitCode = 1; });
