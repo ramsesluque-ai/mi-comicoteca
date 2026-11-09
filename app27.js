@@ -128,7 +128,7 @@
     const x=mcFormComic();
     if(!issue(x.issueNr??x.issue??'')&&!code(x.isbn||''))return toast('Informa al menos el número de la serie o un ISBN/EAN');
     MCSearch.ficha=[];MCSearch.selectedFicha=0;MCSearch.lastDataOnly=0;
-    mcShowSearch('Buscar datos y portada',`<div class="muted">Consultando Maestro y Tebeosfera: ${esc(x.catalogHeader||x.series||'')} · nº ${esc(x.issueNr||x.issue||'')}…</div>`);
+    mcShowSearch('Buscar datos y portada',`<div class="muted">Buscando información y portada del cómic…</div>`);
     try{
       let base=await BASE_SEARCH(x),list=(base||[]).filter(hasCover),rows=[];
       if(!list.length)rows=await dataOnly(x);
