@@ -21,8 +21,8 @@ self.addEventListener('install',event=>{
       // Reject wrong MIME types before caching mandatory BI and branding assets.
       if(critical.has(path)){
         const type=(response.headers.get('content-type')||'').toLowerCase();
-        const expected=path.endsWith('.js')?/javascript|ecmascript/:path.endsWith('.css')?/text\\/css/:path.endsWith('.webp')?/image\\/webp/:/text\\/html/;
-        if(!expected.test(type))throw new Error('Critical asset has wrong MIME: '+path+' ('+type+')');
+        const expected=path.endsWith('.js')?['javascript','ecmascript']:path.endsWith('.css')?['text/css']:path.endsWith('.webp')?['image/webp']:['text/html'];
+        if(!expected.some(mime=>type.includes(mime)))throw new Error('Critical asset has wrong MIME: '+path+' ('+type+')');
       }
       await cache.put(path,response);
     }));
