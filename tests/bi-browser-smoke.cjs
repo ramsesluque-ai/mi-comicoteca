@@ -10,13 +10,18 @@ const { chromium } = require('playwright');
   const baseUrl = process.env.COMICTECA_BASE_URL || 'http://127.0.0.1:8765/';
   const response = await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForTimeout(4500);
+  await page.locator('[data-v="dashboard"]').click();
+  await page.waitForTimeout(500);
   const report = await page.evaluate(() => ({
     title: document.title,
     dashboardButton: !!document.querySelector('[data-v="dashboard"]'),
     biModule: !!window.PbiDashboard,
     biNodes: document.querySelectorAll('[class*="pbi-"]').length,
     viewText: (document.querySelector('#view')?.innerText || '').slice(0, 500),
-    logoLoaded: [...document.querySelectorAll('img[src*="comicteca-logo"]')].every(img => img.complete && img.naturalWidth > 0)
+    logoCount: document.querySelectorAll('img[src*="comicteca-logo"]').length,
+    logoLoaded: [...document.querySelectorAll('img[src*="comicteca-logo"]')].every(img => img.complete && img.naturalWidth > 0),
+    dashboardVisible: [...document.querySelectorAll('#view [class*="pbi-"]')].some(el => el.getClientRects().length > 0),
+    logoVisible: [...document.querySelectorAll('img[src*="comicteca-logo"]')].some(img => img.getClientRects().length > 0 && img.naturalWidth > 0)
   }));
   report.url = page.url();
   report.httpStatus = response.status();
@@ -25,5 +30,5 @@ const { chromium } = require('playwright');
   fs.writeFileSync('artifacts/bi-browser-report.json', JSON.stringify(report, null, 2));
   await browser.close();
   console.log(JSON.stringify(report, null, 2));
-  if (report.httpStatus !== 200 || !report.dashboardButton || !report.biModule || !report.biNodes || !report.logoLoaded || errors.length) process.exitCode = 1;
+  if (report.httpStatus !== 200 || !report.dashboardButton || !report.biModule || !report.biNodes || !report.dashboardVisible || !report.logoCount || !report.logoLoaded || !report.logoVisible || errors.length) process.exitCode = 1;
 })().catch(err => { console.error(err); process.exitCode = 1; });
