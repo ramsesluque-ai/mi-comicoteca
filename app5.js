@@ -84,7 +84,39 @@ function mcImportTemplate(){
  const quote=x=>'"'+String(x).replace(/"/g,'""')+'"';
  download('COMICTECA_plantilla_importacion.csv','\uFEFF'+columns.map(quote).join(';')+'\r\n','text/csv;charset=utf-8');
 }
-async function backupView(){const c=await allStore('comics'),m=await allStore('master'),p=await allStore('purchases');return head('Datos / copias','Importación, copias locales y portabilidad de tus datos.')+`<div class="chartrow"><div class="card"><h3>Importar colección desde fichero</h3><p class="muted">CSV, Excel (.xlsx) o JSON. Vista previa obligatoria, detección de duplicados y carga solo de fichas nuevas. Nunca se borrará tu colección.</p><button class="btn" onclick="mcImportTemplate()">Descargar plantilla CSV</button>${MC_IMPORT_TEST?`<button class="btn danger" onclick="mcResetImportTest()">Reiniciar SOLO colección de prueba</button>`:""}<p class="small muted">Puedes importar también copias JSON, sin sustituir los datos existentes. Guarda una copia antes de realizar cargas grandes.</p><p id="mcImportStatus" role="status" aria-live="polite" class="small muted">Esperando archivo para importar.</p><label class="btn primary">Importar colección<input class="hidden" type="file" accept=".json,.csv,.xlsx" onchange="importFile(this.files[0],'comics');this.value='' "></label><h3 style="margin-top:22px">Maestro</h3><p class="muted">Importa un Maestro separado desde JSON, CSV o XLSX. Se añadirá al catálogo maestro local.</p><label class="btn">Importar Maestro<input class="hidden" type="file" accept=".json,.csv,.xlsx" onchange="importFile(this.files[0],'master');this.value='' "></label></div><div class="card"><h3>Copia completa</h3><p class="muted">Guarda una copia local después de cambios importantes. Puedes trasladarla a otro dispositivo sin depender de la sincronización.</p><button class="btn primary" onclick="exportBackup()">Exportar copia JSON</button> <button class="btn" onclick="exportCSV()">Exportar catálogo CSV</button><div class="statsbar" style="margin-top:18px"><span class="statmini">${c.length.toLocaleString('es-ES')} cómics</span><span class="statmini">${m.length.toLocaleString('es-ES')} maestro</span><span class="statmini">${p.length} compras</span></div><div class="notice oknotice" style="margin-top:18px"><b>Copia local.</b> Esta exportación se descarga en tu dispositivo. Si tienes sincronización en la nube activada, verifica su estado por separado: exportar no sustituye la sincronización ni confirma una copia remota.</div><button class="btn danger" onclick="resetAll()">Borrar datos de este dispositivo</button></div></div>`}
+async function backupView(){
+ const c=await allStore('comics'),m=await allStore('master'),p=await allStore('purchases');
+ return head('Mis datos','Importa tus cómics y guarda una copia de tu colección.')+`
+ <div class="chartrow">
+  <div class="card"><h3>Importar cómics</h3>
+   <p class="muted">Añade tus cómics desde Excel, CSV o JSON. Podrás revisar los registros antes de guardarlos.</p>
+   <div class="actions" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+    <label class="btn primary" style="cursor:pointer">Seleccionar archivo<input class="hidden" type="file" accept=".json,.csv,.xlsx" onchange="importFile(this.files[0],'comics');this.value='' "></label>
+    <button class="btn" onclick="mcImportTemplate()">Descargar plantilla</button>
+   </div>
+   <p id="mcImportStatus" role="status" aria-live="polite" class="small muted" style="margin-top:12px">Formatos admitidos: Excel, CSV y JSON.</p>
+   ${MC_IMPORT_TEST?`<details style="margin-top:20px"><summary style="cursor:pointer;color:var(--muted)">Opciones de prueba</summary><p class="small muted">Vacía únicamente los cómics de este entorno de prueba.</p><button class="btn danger" onclick="mcResetImportTest()">Vaciar prueba</button></details>`:''}
+  </div>
+  <div class="card"><h3>Guardar mi colección</h3>
+   <p class="muted">Descarga una copia de seguridad o un listado de tus cómics.</p>
+   <div class="actions" style="display:flex;gap:10px;flex-wrap:wrap">
+    <button class="btn primary" onclick="exportBackup()">Descargar copia de seguridad</button>
+    <button class="btn" onclick="exportCSV()">Exportar a CSV</button>
+   </div>
+   <div class="statsbar" style="margin-top:20px"><span class="statmini">${c.length.toLocaleString('es-ES')} cómics</span><span class="statmini">${m.length.toLocaleString('es-ES')} fichas de referencia</span><span class="statmini">${p.length} compras</span></div>
+   <details style="margin-top:20px"><summary style="cursor:pointer;color:var(--muted)">Gestión avanzada</summary>
+    <p class="small muted">Estas opciones modifican los datos guardados en este navegador.</p>
+    <button class="btn danger" onclick="resetAll()">Eliminar datos locales</button>
+   </details>
+  </div>
+ </div>
+ <details class="card" style="margin-top:16px"><summary style="cursor:pointer;font-weight:700">Herramientas avanzadas</summary>
+  <div style="margin-top:16px"><h3>Importar fichas de referencia</h3><p class="muted">Añade fichas a tu Maestro desde un archivo.</p>
+   <label class="btn" style="cursor:pointer">Seleccionar archivo del Maestro<input class="hidden" type="file" accept=".json,.csv,.xlsx" onchange="importFile(this.files[0],'master');this.value='' "></label>
+  </div>
+ </details>`;
+}
+
 async function exportBackup(){const data={app:'MI COMICOTECA',version:3,exportedAt:new Date().toISOString(),comics:await allStore('comics'),purchases:await allStore('purchases'),master:await allStore('master')};download('MI_COMICOTECA_BACKUP_'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify(data),'application/json')}
 async function exportCSV(){const rows=await allStore('comics'),cols=['publisher','catalogHeader','volume','stage','startYear','series','issueNr','format','status','tags','group','arc','subtitle','title','isbn','legalDeposit','publicationDate','pages','color','edition','coverUrl','purchaseDate','paid','estimated','condition','location','read','priority','seller','review','notes'],q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';download('MI_COMICOTECA_CATALOGO.csv','\ufeff'+cols.join(';')+'\n'+rows.map(r=>cols.map(c=>q(r[c])).join(';')).join('\n'),'text/csv;charset=utf-8')}
 async function resetAll(){if(!confirm('¿Borrar colección, maestro y compras guardados en ESTE dispositivo? Exporta antes una copia si la necesitas.'))return;for(const s of ['comics','master','purchases'])await clearStore(s);toast('Datos locales borrados');await render()}
