@@ -27,13 +27,13 @@
  async function move(direction){
   const index=sequence.indexOf(current),target=sequence[index+direction];
   if(!target)return;
-  if(!confirm('¿Abrir otra ficha? Los cambios que no hayas guardado se perderán.'))return;
+  if(!confirm('¿Abrir otra ficha? Guarda antes los cambios pendientes; si continúas, se perderán.'))return;
   await window.editComic(target);
  }
  async function copy(id){
   const source=await getStore('comics',id);
   if(!source)return;
-  if(!confirm('Crear una ficha nueva a partir de los datos comunes de este cómic. La ficha original no se modificará.'))return;
+  
   await window.editComic();
   for(const field of common)setField(field,source[field]||'');
   setField('status',source.status||'In Collection');
@@ -46,5 +46,6 @@
   document.querySelector('#modal .modalbody')?.prepend(info);
   document.getElementById('m_issueNr')?.focus();
  }
+ window.comicCopyFrom=copy;
  window.editComic=async function(id){await base(id);await decorate(id)};
 })();
