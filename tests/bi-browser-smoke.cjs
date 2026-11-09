@@ -24,6 +24,19 @@ const { chromium } = require('playwright');
     biCssApplied: [...document.querySelectorAll('#view .pbi-shell')].some(el => getComputedStyle(el).display === 'grid'),
     logoVisible: [...document.querySelectorAll('img[src*="comicteca-logo"]')].some(img => img.getClientRects().length > 0 && img.naturalWidth > 0)
   }));
+  // Exercise the interactive BI drill-down even with an empty collection.
+  // This checks actual navigation and rendering, not merely the presence of JS/CSS.
+  await page.evaluate(() => window.PbiDashboard.filter('publisher', encodeURIComponent('Editorial de prueba')));
+  await page.locator('#view .pbi-drill').waitFor({ state: 'visible', timeout: 10000 });
+  report.drilldown = await page.evaluate(() => ({
+    visible: !!document.querySelector('#view .pbi-drill'),
+    heading: document.querySelector('#view .pbi-drill h2')?.textContent?.trim(),
+    dashboardStillActive: !!document.querySelector('#view .pbi-shell'),
+    closeButton: !!document.querySelector('#view .pbi-drill button[onclick*="clearDrill"]')
+  }));
+  await page.locator('#view .pbi-drill button[onclick*="clearDrill"]').click();
+  await page.locator('#view .pbi-drill').waitFor({ state: 'detached', timeout: 10000 });
+  report.drilldown.closed = !await page.locator('#view .pbi-drill').count();
   report.url = page.url();
   report.httpStatus = response.status();
   report.pageErrors = errors;
@@ -31,5 +44,5 @@ const { chromium } = require('playwright');
   fs.writeFileSync('artifacts/bi-browser-report.json', JSON.stringify(report, null, 2));
   await browser.close();
   console.log(JSON.stringify(report, null, 2));
-  if (report.httpStatus !== 200 || !report.dashboardButton || !report.biModule || !report.biNodes || !report.dashboardVisible || !report.biCssApplied || !report.logoCount || !report.logoLoaded || !report.logoVisible || errors.length) process.exitCode = 1;
+  if (report.httpStatus !== 200 || !report.dashboardButton || !report.biModule || !report.biNodes || !report.dashboardVisible || !report.biCssApplied || !report.logoCount || !report.logoLoaded || !report.logoVisible || !report.drilldown.visible || report.drilldown.heading !== 'Editorial de prueba' || !report.drilldown.dashboardStillActive || !report.drilldown.closeButton || !report.drilldown.closed || errors.length) process.exitCode = 1;
 })().catch(err => { console.error(err); process.exitCode = 1; });
