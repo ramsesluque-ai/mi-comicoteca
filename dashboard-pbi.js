@@ -29,7 +29,7 @@
   }
   function drillRows(rows){
     if(!drill)return rows;
-    return rows.filter(x=>drill.kind==='publisher'?String(x.publisher||'Sin dato').trim()===drill.value:drill.kind==='universe'?universeName(x)===drill.value:characterName(x)===drill.value);
+    return rows.filter(x=>drill.kind==='publisher'?String(x.publisher||'Sin dato').trim()===drill.value:drill.kind==='universe'?universeName(x)===drill.value:drill.kind==='author'?countMulti([x],['writer','writers','script','author','authors','artist','artists','penciller']).some(([name])=>name===drill.value):drill.kind==='decade'?yearBand(x.startYear||x.year)===drill.value:characterName(x)===drill.value);
   }
   function drillPanel(rows){
     if(!drill)return '';
@@ -38,7 +38,7 @@
     const seriesMap=new Map();
     owned.forEach(x=>{const key=ckey(x);if(!seriesMap.has(key))seriesMap.set(key,{key,sample:x,count:0});seriesMap.get(key).count++;});
     const series=[...seriesMap.values()].sort((a,b)=>b.count-a.count);
-    const heading=drill.kind==='publisher'?'Editorial':drill.kind==='universe'?'Universo':'Personaje';
+    const heading=({publisher:'Editorial',universe:'Universo',character:'Personaje',author:'Autor',decade:'Década'})[drill.kind]||'Filtro';
     const details=owned.map(x=>`<tr><td>${esc(x.publisher||'Sin dato')}</td><td>${esc(x.catalogHeader||x.series||'Sin cabecera')}</td><td>${esc(x.volume||x.stage||'—')}</td><td>${esc(x.issueNr??x.issue??x.number??'—')}</td><td>${esc(x.title||'Sin título acreditado')}</td></tr>`).join('');
     return `<section class="pbi-drill" aria-label="Desglose interactivo"><div class="pbi-drill-head"><div><small>DESGLOSE · ${heading}</small><h2>${esc(drill.value)}</h2><p>Explora los datos sin salir del dashboard. Las cifras reflejan los registros actuales.</p></div><button class="btn sm" onclick="PbiDashboard.clearDrill()">✕ Cerrar desglose</button></div>
       <div class="pbi-drill-kpis"><div><small>En colección</small><b>${fmt(owned.length)}</b></div><div><small>Wishlist</small><b>${fmt(wish.length)}</b></div><div><small>Series / etapas</small><b>${fmt(series.length)}</b></div><div><small>Editoriales</small><b>${fmt(countBy(owned,x=>x.publisher).length)}</b></div></div>
@@ -124,7 +124,7 @@
     </div>`;
   }
   async function goto(v,status){await route(v);if(status&&v==='catalog'){filters.status=status;await render();}}
-  async function filter(kind,value){const v=decodeURIComponent(value);if(kind==='publisher'||kind==='character'||kind==='universe'){drill={kind,value:v};if(typeof render==='function')await render();return;}current='catalog';page=1;filters={status:'In Collection'};if(kind==='author')filters.q=v;else if(kind==='decade')filters.q=v.split('–')[0];setNav('catalog');await render();}
+  async function filter(kind,value){const v=decodeURIComponent(value);if(['publisher','character','universe','author','decade'].includes(kind)){drill={kind,value:v};if(typeof render==='function')await render();return;}current='catalog';page=1;filters={status:'In Collection'};if(kind==='author')filters.q=v;else if(kind==='decade')filters.q=v.split('–')[0];setNav('catalog');await render();}
   async function openCollection(encoded){const key=decodeURIComponent(encoded);current='series';page=1;setNav('series');await render();if(typeof openSeries==='function')return openSeries(encodeURIComponent(key));if(typeof window.openCollection==='function' && window.openCollection!==window.PbiDashboard.openCollection)return window.openCollection(encodeURIComponent(key));}
   window.PbiDashboard={view,goto,filter,openCollection,clearDrill};
   window.dashboard=view;
