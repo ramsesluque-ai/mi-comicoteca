@@ -62,6 +62,7 @@ jobs:
           name: comicteca-published-visual-evidence
           path: |
             artifacts/bi-browser.png
+            artifacts/bi-drilldown.png
             artifacts/bi-browser-report.json
           if-no-files-found: warn
           retention-days: 7
