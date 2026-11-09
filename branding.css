@@ -15,3 +15,9 @@
 @media(max-width:1100px){.brand img[src*="comicteca-logo-real"]{max-width:120px!important}}
 @media(max-width:760px){.brand img[src*="comicteca-logo-real"]{max-width:120px!important}}
 .platform-footer img[src*="comicteca-logo-real"]{width:140px!important;height:auto!important;opacity:1!important}
+
+/* Detallado: una sola marca integrada, sin el antiguo rótulo MI lateral. */
+.brand img[src*='mi-comicteca-logo.svg']{max-width:215px!important;filter:none!important;object-fit:contain!important}
+.platform-footer img[src*='mi-comicteca-logo.svg']{width:155px!important;height:auto!important;opacity:1!important}
+@media(max-width:1100px){.brand img[src*='mi-comicteca-logo.svg']{max-width:130px!important}}
+@media(max-width:760px){.brand img[src*='mi-comicteca-logo.svg']{max-width:110px!important}}
