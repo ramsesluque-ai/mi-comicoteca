@@ -1,0 +1,9 @@
+/* Compact actions for comic editor, including narrow screens. */
+.mc-comic-editor .modalfoot{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.mc-comic-editor .modalfoot .btn{font-size:12px;line-height:1.25;padding:7px 9px;min-height:32px;white-space:nowrap}
+.mc-comic-editor .modalfoot .mc-save-stay{background:#176caa;color:#fff;border-color:#176caa}
+.mc-comic-editor .modalfoot .mc-save-copy{background:#16775e;color:#fff;border-color:#16775e}
+.mc-comic-editor .modalfoot .mc-save-close{background:#6750c8;color:#fff;border-color:#6750c8}
+.mc-comic-editor .modalfoot .mc-ficha-nav{display:flex;flex-wrap:wrap;gap:5px;margin-right:auto}
+.mc-comic-editor .modalfoot .mc-ficha-nav .btn{background:#23394d;color:#fff;border-color:#425c71}
+@media(max-width:540px){.mc-comic-editor .modalfoot{gap:5px}.mc-comic-editor .modalfoot .btn{font-size:11px;padding:6px 7px}}
