@@ -16,6 +16,8 @@ concurrency:
 
 jobs:
   deploy:
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -35,3 +37,31 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  published-browser-check:
+    needs: deploy
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: commercial-published
+          persist-credentials: false
+      - name: Install browser dependency
+        run: npm install --no-save --no-package-lock playwright@1.56.1
+      - name: Validate the deployed site in Chromium
+        env:
+          COMICTECA_BASE_URL: ${{ needs.deploy.outputs.page_url }}
+        run: node tests/bi-browser-smoke.cjs
+      - name: Preserve screenshot and browser report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: comicteca-published-visual-evidence
+          path: |
+            artifacts/bi-browser.png
+            artifacts/bi-browser-report.json
+          if-no-files-found: warn
+          retention-days: 7
