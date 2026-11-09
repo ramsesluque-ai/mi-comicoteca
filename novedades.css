@@ -1,0 +1,31 @@
+/* MI COMICTECA: novedades editoriales, compatible con la interfaz oscura. */
+.mc-novedades-panel{background:linear-gradient(155deg,#0d2339,#091522);border:1px solid #2b4663;border-radius:16px;padding:20px;color:#e9f2ff}
+.mc-novedades-intro{display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:16px}
+.mc-novedades-intro b{font-size:17px;color:#fff}
+.mc-novedades-intro p{margin:6px 0 0;max-width:750px;color:#b0c5d7;font-size:13px;line-height:1.6}
+#mcNovedadesCount{font-size:12px;color:#8bdfff;border:1px solid #275e7b;background:#083049;padding:7px 12px;border-radius:30px}
+.mc-novedades-filters{display:grid;grid-template-columns:1fr 1fr 1.5fr;gap:12px;align-items:end;margin:16px 0 22px}
+.mc-novedades-filters label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:700;color:#bdd9ec}
+.mc-novedades-filters input,.mc-novedades-filters select{width:100%;min-height:39px;padding:7px 11px;font-size:14px;color:#eff9ff;background:#071522;border:1px solid #345572;border-radius:9px}
+.mc-novedades-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.mc-novedad{background:#102337;border:1px solid #2f4963;border-radius:15px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.mc-novedad-cover{min-height:116px;background:linear-gradient(135deg,#0a3658,#10293f 65%,#06182a);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;color:#95d6ea;border-bottom:1px solid #2a5167}
+.mc-novedad-cover span{font-size:37px;line-height:1.2}.mc-novedad-cover small{font-size:11px;color:#a1b7ca}
+.mc-novedad-content{padding:15px;display:flex;flex-direction:column;flex:1;min-width:0}
+.mc-novedad-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.mc-novedad-publisher{font-size:12px;text-transform:uppercase;letter-spacing:.045em;color:#74d2f3;font-weight:800}
+.mc-novedad-state{border:1px solid #516075;padding:4px 7px;border-radius:20px;color:#b6d2df;font-size:10px;white-space:nowrap}
+.mc-novedad h3{font-size:16px;line-height:1.35;margin:10px 0 7px;color:#fff;overflow-wrap:anywhere}
+.mc-novedad-date{font-size:12px;color:#8fb3cc;margin:0 0 8px}
+.mc-novedad-details{font-size:12px;color:#c7d5e1;line-height:1.6;margin:0 0 10px}
+.mc-novedad-actions{display:flex;gap:5px;flex-wrap:wrap;margin-top:auto}
+.mc-novedad-actions .btn{min-height:31px;font-size:11px;padding:6px 9px;border-radius:7px;text-decoration:none;white-space:nowrap}
+.mc-novedad-actions .btn:nth-child(1){background:#1265a6;color:#fff;border:1px solid #257aa9}
+.mc-novedad-actions .btn:nth-child(2){background:#155c51;color:#fff;border:1px solid #287d6b}
+.mc-novedad-actions a.mc-novedad-source{background:#162c46;border:1px solid #55718b;color:#c7e9ff}
+.mc-novedad-info{margin-top:11px;border-top:1px solid #31485e;padding-top:9px;color:#a2b8cc;font-size:10px;line-height:1.5}
+.mc-novedades-foot{border-top:1px solid #2d4660;margin-top:20px;padding-top:12px;font-size:11px;line-height:1.6;color:#9bb8ce}
+.mc-novedades-foot a{color:#8cdbf8;text-decoration:underline;text-underline-offset:2px;margin-right:9px}
+.mc-novedad-empty{padding:25px;color:#c4d6e4;background:#112740}
+@media(max-width:1180px){.mc-novedades-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.mc-novedades-panel{padding:12px}.mc-novedades-grid{grid-template-columns:1fr}.mc-novedades-filters{grid-template-columns:1fr;gap:9px}}
