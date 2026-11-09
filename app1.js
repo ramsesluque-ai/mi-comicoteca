@@ -1,6 +1,8 @@
 'use strict';
 const MC_IMPORT_TEST = new URLSearchParams(location.search).get('modo') === 'prueba-importacion';
-const DBN=MC_IMPORT_TEST?'comicteca-importacion-prueba-v2':'mi-comicoteca-v3', DBV=1, PAGE=50;let db,current='dashboard',page=1,filters={},masterCollection=null,deferredInstall=null;
+function mcAccountStorageId(){try{const s=JSON.parse(sessionStorage.getItem('mc_supabase_session_v1')||'null');const id=s?.user?.id;return typeof id==='string'&&/^[0-9a-f-]{36}$/i.test(id)?id:null}catch{return null}}
+const MC_ACCOUNT_ID=mcAccountStorageId();
+const DBN=MC_IMPORT_TEST?'comicteca-importacion-prueba-v2':MC_ACCOUNT_ID?'comicteca-user-'+MC_ACCOUNT_ID:'comicteca-guest-v1', DBV=1, PAGE=50;let db,current='dashboard',page=1,filters={},masterCollection=null,deferredInstall=null;
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 const norm=s=>String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
