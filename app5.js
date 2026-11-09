@@ -86,33 +86,38 @@ function mcImportTemplate(){
 }
 async function backupView(){
  const c=await allStore('comics'),m=await allStore('master'),p=await allStore('purchases');
- return head('Mis datos','Importa tus cómics y guarda una copia de tu colección.')+`
- <div class="chartrow">
-  <div class="card"><h3>Importar cómics</h3>
-   <p class="muted">Añade tus cómics desde Excel, CSV o JSON. Podrás revisar los registros antes de guardarlos.</p>
-   <div class="actions" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-    <label class="btn primary" style="cursor:pointer">Seleccionar archivo<input class="hidden" type="file" accept=".json,.csv,.xlsx" onchange="importFile(this.files[0],'comics');this.value='' "></label>
-    <button class="btn" onclick="mcImportTemplate()">Descargar plantilla</button>
-   </div>
-   <p id="mcImportStatus" role="status" aria-live="polite" class="small muted" style="margin-top:12px">Formatos admitidos: Excel, CSV y JSON.</p>
-   ${MC_IMPORT_TEST?`<details style="margin-top:20px"><summary style="cursor:pointer;color:var(--muted)">Opciones de prueba</summary><p class="small muted">Vacía únicamente los cómics de este entorno de prueba.</p><button class="btn danger" onclick="mcResetImportTest()">Vaciar prueba</button></details>`:''}
-  </div>
-  <div class="card"><h3>Guardar mi colección</h3>
-   <p class="muted">Descarga una copia de seguridad o un listado de tus cómics.</p>
-   <div class="actions" style="display:flex;gap:10px;flex-wrap:wrap">
-    <button class="btn primary" onclick="exportBackup()">Descargar copia de seguridad</button>
-    <button class="btn" onclick="exportCSV()">Exportar a CSV</button>
-   </div>
-   <div class="statsbar" style="margin-top:20px"><span class="statmini">${c.length.toLocaleString('es-ES')} cómics</span><span class="statmini">${m.length.toLocaleString('es-ES')} fichas de referencia</span><span class="statmini">${p.length} compras</span></div>
-   <details style="margin-top:20px"><summary style="cursor:pointer;color:var(--muted)">Gestión avanzada</summary>
-    <p class="small muted">Estas opciones modifican los datos guardados en este navegador.</p>
-    <button class="btn danger" onclick="resetAll()">Eliminar datos locales</button>
-   </details>
-  </div>
+ return head('Mi colección · Importar y exportar','Gestiona tus cómics en tres pasos sencillos.')+`
+ <div class="mc-data-grid">
+  <section class="card mc-data-card">
+   <div class="mc-data-step">01 · AÑADIR CÓMICS</div>
+   <h3>Importa tu colección</h3>
+   <p class="muted">¿Ya tienes tus cómics en un Excel? Súbelo aquí. Revisaremos los datos antes de añadirlos.</p>
+   <label class="btn primary mc-data-action">Importar archivo<input class="hidden" type="file" accept=".json,.csv,.xlsx" onchange="importFile(this.files[0],'comics');this.value='' "></label>
+   <p class="muted small">Excel (.xlsx), CSV o JSON</p>
+   <p id="mcImportStatus" role="status" aria-live="polite" class="small muted"> </p>
+  </section>
+  <section class="card mc-data-card">
+   <div class="mc-data-step">02 · EMPEZAR DESDE CERO</div>
+   <h3>Prepara tu archivo</h3>
+   <p class="muted">Descarga una plantilla con los campos de COMICTECA, rellénala y después impórtala.</p>
+   <button class="btn mc-data-action" onclick="mcImportTemplate()">Descargar plantilla Excel/CSV</button>
+   <p class="muted small">También puedes añadir cómics uno a uno desde Catálogo.</p>
+  </section>
+  <section class="card mc-data-card">
+   <div class="mc-data-step">03 · GUARDAR TUS DATOS</div>
+   <h3>Haz una copia de seguridad</h3>
+   <p class="muted">Descarga tus datos para conservarlos o llevarlos a otro dispositivo.</p>
+   <button class="btn primary mc-data-action" onclick="exportBackup()">Descargar mi copia</button>
+   <button class="btn mc-data-secondary" onclick="exportCSV()">Exportar listado CSV</button>
+   <p class="muted small">${c.length.toLocaleString('es-ES')} cómics en tu colección</p>
+  </section>
  </div>
- <details class="card" style="margin-top:16px"><summary style="cursor:pointer;font-weight:700">Herramientas avanzadas</summary>
-  <div style="margin-top:16px"><h3>Importar fichas de referencia</h3><p class="muted">Añade fichas a tu Maestro desde un archivo.</p>
-   <label class="btn" style="cursor:pointer">Seleccionar archivo del Maestro<input class="hidden" type="file" accept=".json,.csv,.xlsx" onchange="importFile(this.files[0],'master');this.value='' "></label>
+ <details class="card mc-data-more"><summary>Más opciones</summary>
+  <div class="mc-data-more-body">
+   <div><h3>Importar fichas al Maestro</h3><p class="muted">Incorpora fichas de referencia desde un archivo.</p><label class="btn">Seleccionar archivo<input class="hidden" type="file" accept=".json,.csv,.xlsx" onchange="importFile(this.files[0],'master');this.value='' "></label></div>
+   <div><h3>Administrar datos locales</h3><p class="muted">${m.length.toLocaleString('es-ES')} fichas de referencia · ${p.length} compras.</p>
+    ${MC_IMPORT_TEST?`<button class="btn" onclick="mcResetImportTest()">Vaciar colección actual</button>`:`<button class="btn danger" onclick="resetAll()">Eliminar datos de este dispositivo</button>`}
+   </div>
   </div>
  </details>`;
 }
