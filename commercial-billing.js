@@ -19,6 +19,30 @@
  el.querySelector('#cbLogout').onclick=()=>{setSession(null);location.reload()};el.querySelector('#cbClose').onclick=()=>el.style.display='none';el._refresh=refresh;return el}
  async function show(){const el=modal();el.style.display='flex';el.querySelector('#cbState').textContent='';await el._refresh();}
  function addButton(){const nav=document.querySelector('.nav');if(!nav||document.getElementById('commercialAccountBtn'))return;const b=document.createElement('button');b.id='commercialAccountBtn';b.type='button';b.textContent='Cuenta / Suscripción';b.onclick=show;nav.appendChild(b)}
- document.addEventListener('DOMContentLoaded',()=>{addButton();const q=new URLSearchParams(location.search).get('checkout');if(q==='success')setTimeout(()=>{show();document.querySelector('#cbState').textContent='Regreso desde Checkout. El pago y la membresía solo se confirman cuando el servidor valida el evento de Stripe; esta pantalla no confirma un cobro.'},300);if(q==='cancelled')setTimeout(()=>{show();document.querySelector('#cbState').textContent='Checkout cancelado. No se ha realizado ningún cobro.'},300)});
+ // Fail closed: a local IndexedDB cache is not proof of entitlement.
+ async function entitlement(){
+  const u=await currentUser();if(!u)return {state:'guest'};
+  const session=getSession(),c=cfg();
+  const r=await fetch(c.url+'/rest/v1/profiles?id=eq.'+encodeURIComponent(u.id)+'&select=membership_active,membership_valid_until,role',{headers:{apikey:c.publishableKey,Authorization:'Bearer '+session.access_token,Accept:'application/json'}});
+  if(!r.ok)throw Error('No se pudo comprobar la membresía');
+  const rows=await r.json(),p=rows[0];if(!p)return {state:'inactive'};
+  const active=p.role==='admin'||(p.membership_active===true&&(!p.membership_valid_until||Date.parse(p.membership_valid_until)>Date.now()));
+  return {state:active?'active':'inactive'};
+ }
+ function accessScreen(state){
+  let gate=document.getElementById('mcAccessGate');
+  if(!gate){gate=document.createElement('div');gate.id='mcAccessGate';gate.style.cssText='position:fixed;inset:0;z-index:99990;background:#030b16;color:#f4f8fe;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto';document.body.appendChild(gate)}
+  if(state==='active'){gate.remove();return}
+  const title=state==='guest'?'Tu colección empieza aquí':state==='inactive'?'Activa tu membresía':'Estamos verificando tu acceso';
+  const desc=state==='guest'?'Crea tu cuenta o inicia sesión para empezar a organizar tus cómics.':state==='inactive'?'Tu colección estará disponible cuando tu suscripción esté activa.':'Por seguridad, el acceso permanece cerrado hasta comprobar tu cuenta.';
+  gate.innerHTML='<section style="width:min(100%,480px);background:#091b30;border:1px solid #28445e;border-radius:20px;padding:36px;text-align:center;box-shadow:0 24px 80px #0008"><img src="comicteca-logo-real.webp" alt="COMICTECA" style="width:180px;max-width:80%;margin-bottom:20px"><h1 style="font-size:28px;margin:0 0 12px">'+title+'</h1><p style="color:#b9c7d5;font-size:16px;line-height:1.5">'+desc+'</p><button id="mcGateAccount" class="btn primary" style="margin-top:16px">'+(state==='guest'?'Entrar o crear cuenta':'Cuenta y suscripción')+'</button></section>';
+  gate.querySelector('#mcGateAccount').onclick=()=>show();
+ }
+ async function verifyAccess(){
+  if(new URLSearchParams(location.search).get('modo')==='prueba-importacion')return;
+  accessScreen('checking');
+  try{const e=await entitlement();accessScreen(e.state)}catch(err){console.warn('Membership check:',err);accessScreen('error')}
+ }
+ document.addEventListener('DOMContentLoaded',()=>{addButton();verifyAccess();const q=new URLSearchParams(location.search).get('checkout');if(q==='success')setTimeout(()=>{show();document.querySelector('#cbState').textContent='Regreso desde Checkout. El pago y la membresía solo se confirman cuando el servidor valida el evento de Stripe; esta pantalla no confirma un cobro.'},300);if(q==='cancelled')setTimeout(()=>{show();document.querySelector('#cbState').textContent='Checkout cancelado. No se ha realizado ningún cobro.'},300)});
  window.CommercialBilling={show,signIn,signUp,currentUser,checkout};
 })();
