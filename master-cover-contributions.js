@@ -5,7 +5,7 @@
 (function(){
 const SESSION='mc_supabase_session_v1', APPROVED='master_cover_approved', PROPOSALS='master_cover_proposals';
 const cfg=()=>window.MI_COMICOTECA_CLOUD||{};
-const session=()=>{try{return JSON.parse(localStorage.getItem(SESSION)||'null')}catch{return null}};
+const session=()=>{try{return JSON.parse(sessionStorage.getItem(SESSION)||localStorage.getItem(SESSION)||'null')}catch{return null}};
 function authHeaders(json=false){const s=session(),c=cfg();if(!s?.access_token)throw Error('Inicia sesión para proponer una portada.');return {apikey:c.publishableKey,Authorization:'Bearer '+s.access_token,...(json?{'Content-Type':'application/json'}:{})}}
 async function checked(url,opt){const r=await fetch(url,opt),j=await r.json().catch(()=>({}));if(!r.ok)throw Error(j.message||j.error||('HTTP '+r.status));return j}
 let approved={};let lastRead=0;
