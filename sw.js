@@ -1,5 +1,5 @@
 // COMICTECA: offline cache isolated by asset type; never serve HTML as JavaScript/CSS.
-const CACHE='comicteca-v128-optional-unapproved-logo';
+const CACHE='comicteca-v129-scoped-offline-fallback';
 const COVER_CACHES=['mi-comicoteca-cover-vault-v1'];
 const ASSETS=['./','./index.html','./styles.css','./visual.css','./classic.css','./rich-theme.css','./ficha-search.css','./branding.css','./master-update.css','./novedades.css','./contacto.css','./mobile-navigation.css','./mobile-navigation.js','./novedades.js','./novedades-editoriales.json','./mi-comicteca-logo.svg','./icon.svg','./sync.css','./filter-ui.css','./brand-logo.svg','./comicteca-logo-real.webp','./app1.js','./app2.js','./app3.js','./app4.js','./app5.js','./app6.js','./app7.js','./app8.js','./app9.js','./app10.js','./app11.js','./app12.js','./app14.js','./app15.js','./app24.js','./app26.js','./app27.js','./app28.js','./app29.js','./app30.js','./app31.js','./app32.js','./app33.js','./app34.js','./app35.js','./app36.js','./app37.js','./app38.js','./app39.js','./app40.js','./app41.js','./app42.js','./app43.js','./app44.js','./app45.js','./app46.js','./app47.js','./app48.js','./app49.js','./filter-ui.js','./search-engine.js','./master-static.js','./vault.js','./migration.js','./sync.js','./setup.js','./master-data/index.json','./master-data/cover-overrides.json','./dashboard-pbi.css','./dashboard-pbi.js','./navigation-fix.js','./cloud-migration.js','./commercial-billing.js','./master-series-ui.js','./bridge-client.js','./publisher-search.js','./catalog-bulk.js','./manifest.webmanifest','./icon.svg'];
 const NAV_FALLBACK='./index.html';
@@ -78,10 +78,13 @@ self.addEventListener('fetch',event=>{
       return response;
     }catch(error){
       // Versioned assets are precached without ?v=; match the same path offline.
-      const cached=await caches.match(request,{ignoreSearch:true});
+      // Read only the active application cache: caches.match() across all caches
+      // can return a stale BI script from an older service worker cache.
+      const activeCache=await caches.open(CACHE);
+      const cached=isStatic?await activeCache.match(request,{ignoreSearch:true}):null;
       if(cached)return cached;
       if(request.mode==='navigate'){
-        const shell=await caches.match(NAV_FALLBACK);
+        const shell=await activeCache.match(NAV_FALLBACK);
         if(shell)return shell;
       }
       // No HTML fallback for JS/CSS/JSON/images: avoids MIME errors and bogus data.
