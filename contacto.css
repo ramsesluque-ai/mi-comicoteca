@@ -1,0 +1,21 @@
+/* Atención al cliente — MI COMICTECA. */
+.mc-contact-layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(260px,.85fr);gap:18px;align-items:start}
+.mc-contact-card{background:linear-gradient(145deg,#0a2237,#071728);border:1px solid #2e5069;border-radius:17px;padding:25px;color:#e8f4fb;min-width:0}
+.mc-contact-eyebrow{font-size:11px;letter-spacing:.14em;color:#58cce9;font-weight:800}
+.mc-contact-card h2{font-size:clamp(22px,3vw,29px);margin:12px 0 15px;color:#fff}
+.mc-contact-card h3{font-size:18px;margin:2px 0 20px;color:#fff}
+.mc-contact-card p{font-size:14px;color:#bdd2de;line-height:1.7;margin:10px 0}
+.mc-contact-email{display:flex;flex-direction:column;gap:5px;border:1px solid #3d7591;background:#09283c;border-radius:12px;margin:22px 0;padding:17px}
+.mc-contact-email span{font-size:12px;color:#91cde4}
+.mc-contact-email strong{font-size:clamp(16px,2.2vw,23px);color:#fff;overflow-wrap:anywhere}
+.mc-contact-email small{font-size:11px;color:#bcd3dd;line-height:1.6}
+.mc-contact-actions{display:flex;flex-wrap:wrap;gap:10px}
+.mc-contact-actions .btn{text-decoration:none;display:inline-flex;align-items:center;justify-content:center;min-height:38px;font-size:13px}
+.mc-contact-item{border-bottom:1px solid #28455b;padding:12px 0}
+.mc-contact-item:last-of-type{border-bottom:0}
+.mc-contact-item b{font-size:14px;color:#cbeffe}
+.mc-contact-item p{font-size:12px;margin:4px 0 2px;line-height:1.55}
+.mc-contact-card .mc-contact-privacy{font-size:11px;border-top:1px solid #28455b;margin-top:22px;padding-top:13px}
+.nav button[data-v=contacto]{--accent:#5cd0f2}
+.nav button[data-v=contacto]:before{content:'✉';display:inline-grid;place-items:center;width:24px;min-width:24px;font-size:17px;font-weight:800;color:var(--accent,#5cd0f2)}
+@media(max-width:800px){.mc-contact-layout{grid-template-columns:1fr}.mc-contact-card{padding:17px}}
