@@ -9,7 +9,7 @@ const session=()=>{try{return JSON.parse(sessionStorage.getItem(SESSION)||localS
 function authHeaders(json=false){const s=session(),c=cfg();if(!s?.access_token)throw Error('Inicia sesión para proponer una portada.');return {apikey:c.publishableKey,Authorization:'Bearer '+s.access_token,...(json?{'Content-Type':'application/json'}:{})}}
 async function checked(url,opt){const r=await fetch(url,opt),j=await r.json().catch(()=>({}));if(!r.ok)throw Error(j.message||j.error||('HTTP '+r.status));return j}
 let approved={};let lastRead=0;
-const clean=s=>String(s||'').normalize('NFKC').trim().replace(/\\s+/g,' ').toLocaleLowerCase('es');
+const clean=s=>String(s||'').normalize('NFKC').trim().replace(/\s+/g,' ').toLocaleLowerCase('es');
 window.mcMasterCoverKey=function(r){
  const isbn=String(r?.isbn||'').replace(/[^0-9X]/gi,'').toUpperCase();
  if(isbn.length>=8&&isbn.length<=17)return 'isbn:'+isbn;
