@@ -1,0 +1,26 @@
+/* MI COMICTECA — lateral navegable aunque haya muchos módulos.
+   El menú ocupa el espacio disponible y tiene su propia barra de desplazamiento. */
+@media (min-width:681px){
+  .side{
+    box-sizing:border-box!important;
+    height:100dvh!important;
+    max-height:100dvh!important;
+    overflow:hidden!important;
+  }
+  .side .brand{flex:0 0 auto!important}
+  .side .nav{
+    flex:1 1 auto!important;
+    min-height:0!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    align-content:start!important;
+    overscroll-behavior:contain;
+    scrollbar-width:thin;
+    scrollbar-color:#46728c transparent;
+    padding-bottom:18px!important;
+  }
+  .side .nav::-webkit-scrollbar{width:7px}
+  .side .nav::-webkit-scrollbar-thumb{background:#46728c;border-radius:9px}
+  .side .nav button{flex-shrink:0}
+  .side .sidefoot,.side .install{flex:0 0 auto!important}
+}
