@@ -56,8 +56,8 @@ const { chromium } = require('playwright');
     const assetUrl = new URL(asset, baseUrl).href;
     const assetResponse = await page.request.get(assetUrl, { failOnStatusCode: false });
     const contentType = (assetResponse.headers()['content-type'] || '').toLowerCase();
-    const expected = asset.endsWith('.js') ? /javascript|ecmascript/ : asset.endsWith('.css') ? /text\\/css/ : /image\\/svg\\+xml/;
-    report.assets[asset] = { status: assetResponse.status(), contentType, valid: assetResponse.ok() && expected.test(contentType) };
+    const expected = asset.endsWith('.js') ? ['javascript', 'ecmascript'] : asset.endsWith('.css') ? ['text/css'] : ['image/svg+xml'];
+    report.assets[asset] = { status: assetResponse.status(), contentType, valid: assetResponse.ok() && expected.some(type => contentType.includes(type)) };
   }
   report.manifest = { valid: false };
   const manifestResponse = await page.request.get(new URL('manifest.webmanifest', baseUrl).href, { failOnStatusCode: false });
