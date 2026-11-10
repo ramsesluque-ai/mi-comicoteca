@@ -1,0 +1,19 @@
+/* MI COMICTECA — Administración privada de portadas */
+#mcAdminCovers{margin-top:12px;border-left:3px solid #21c7f2!important;color:#e7f9ff!important;background:linear-gradient(90deg,#10436a,#0b243e)!important;font-weight:800!important}
+.mc-cover-admin{max-width:900px;width:min(95vw,900px);max-height:92vh;overflow:hidden;display:flex;flex-direction:column;background:linear-gradient(145deg,#0b253b,#071725);border:1px solid #2c5371;border-radius:17px;box-shadow:0 28px 85px #000a}
+.mc-cover-admin .modalhead{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:17px 21px;border-bottom:1px solid #244861}
+.mc-cover-admin .modalbody{padding:17px 20px;overflow-y:auto;display:grid;gap:16px}
+.mc-admin-notice{background:#112b42;border:1px solid #466079;color:#d5e7f4;border-radius:12px;padding:12px 15px;line-height:1.5}
+.mc-admin-item{display:grid;gap:12px;background:#0b2034;border:1px solid #31516c;border-radius:14px;padding:16px}
+.mc-admin-meta{display:flex;flex-direction:column;gap:5px}
+.mc-admin-meta strong{font-size:20px;color:#fff}
+.mc-admin-meta small{font-size:13px;color:#b9d0e4}
+.mc-admin-actions{display:flex;gap:10px;flex-wrap:wrap}
+.mc-admin-preview img{max-width:240px;max-height:340px;object-fit:contain;border:1px solid #436580;border-radius:12px}
+.mc-admin-warning{padding:10px 12px;background:#3b2919;border:1px solid #aa8141;border-radius:10px;color:#ffdda3;font-size:13px;line-height:1.5}
+.mc-admin-reviewlabel{display:grid;gap:8px;color:#e2f4ff;font-weight:650}
+.mc-admin-reviewlabel textarea{width:100%;box-sizing:border-box;color:#edf6fd;background:#071727;border:1px solid #345773;border-radius:9px;padding:11px;font:inherit;resize:vertical}
+.mc-admin-check{display:flex;gap:10px;align-items:flex-start;color:#d5e7f5;line-height:1.5;font-size:13px}
+.mc-admin-check input{margin-top:4px;accent-color:#0fa7da}
+.mc-admin-feedback{color:#8ee2ff;min-height:18px;font-size:13px}
+.mc-admin-empty{padding:30px;text-align:center;border:1px dashed #385c79;border-radius:12px;color:#c0dbed}
