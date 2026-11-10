@@ -1,0 +1,118 @@
+/* MI COMICTECA - navegación accesible en móviles.
+   Todos los elementos del menú quedan disponibles en un desplegable vertical;
+   la vista compacta de tablet también puede desplazarse. */
+.mc-mobile-menu-toggle{display:none}
+@media (min-width:681px) and (max-width:1100px){
+  .side{overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:thin}
+  .side .nav{flex:0 0 auto}
+}
+@media (max-width:680px){
+  .app{display:block}
+  .side{
+    position:sticky!important;
+    top:0!important;
+    z-index:70!important;
+    display:flex!important;
+    flex-direction:row!important;
+    align-items:center!important;
+    justify-content:space-between!important;
+    width:100%!important;
+    height:auto!important;
+    min-height:66px!important;
+    overflow:visible!important;
+    padding:7px max(12px,env(safe-area-inset-right)) 7px max(12px,env(safe-area-inset-left))!important;
+    background:#030b16!important;
+    border-right:0!important;
+    border-bottom:1px solid #25425d!important;
+    box-sizing:border-box!important;
+  }
+  .side .brand{
+    flex:0 1 auto!important;
+    min-width:0!important;
+    max-width:145px!important;
+    padding:0!important;
+    margin:0!important;
+    height:auto!important;
+    justify-content:flex-start!important;
+  }
+  .side .brand img[src*='mi-comicteca-logo.svg']{
+    width:116px!important;
+    max-width:116px!important;
+    max-height:53px!important;
+    height:auto!important;
+    object-fit:contain!important;
+  }
+  .mc-mobile-menu-toggle{
+    display:inline-flex!important;
+    flex:0 0 auto;
+    align-items:center;
+    justify-content:center;
+    gap:9px;
+    min-width:116px;
+    min-height:44px;
+    padding:10px 14px;
+    background:#0d2a43;
+    color:#eff8ff;
+    border:1px solid #416785;
+    border-radius:10px;
+    font-size:14px;
+    font-weight:700;
+    line-height:1;
+    touch-action:manipulation;
+  }
+  .mc-mobile-menu-toggle[aria-expanded="true"]{background:#145377;border-color:#4dc3e7}
+  .mc-mobile-menu-toggle .mc-menu-symbol{font-size:20px;line-height:1}
+  .side .nav{
+    display:none!important;
+    position:absolute!important;
+    top:calc(100% + 1px)!important;
+    left:0!important;
+    right:0!important;
+    width:100%!important;
+    min-width:0!important;
+    max-height:calc(100dvh - 75px)!important;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:thin;
+    padding:10px max(12px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))!important;
+    margin:0!important;
+    border-bottom:1px solid #355a74;
+    border-radius:0 0 14px 14px;
+    box-shadow:0 18px 36px rgba(0,0,0,.65);
+    background:#071726;
+    z-index:75!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    gap:3px!important;
+  }
+  .side .nav.mc-mobile-nav-open{display:grid!important}
+  .side .nav button{
+    width:100%!important;
+    min-width:0!important;
+    height:auto!important;
+    min-height:46px!important;
+    padding:10px 13px!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    gap:12px!important;
+    font-size:14px!important;
+    text-align:left!important;
+    line-height:1.35!important;
+    white-space:normal!important;
+    border-radius:9px!important;
+  }
+  .side .nav button:before{
+    display:inline-grid!important;
+    flex:0 0 24px!important;
+    width:24px!important;
+    min-width:24px!important;
+    height:28px!important;
+    margin:0!important;
+    place-items:center!important;
+    font-size:19px!important;
+  }
+  .side .install,.side .sidefoot{display:none!important}
+  .main{margin-left:0!important;width:100%!important;min-width:0!important}
+}
