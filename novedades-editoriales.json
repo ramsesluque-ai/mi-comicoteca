@@ -1,7 +1,7 @@
 {
   "version": 1,
   "updatedAt": "2026-11-10",
-  "policy": "Extracto editorial seleccionado, con atribución y enlace; sin descarga ni redistribución de portadas. Meses de lanzamiento confirmados; las fechas diarias solo se registran si constan expresamente en la fuente.",
+  "policy": "Selección documentada con enlaces a editoriales. Portadas solo con derechos documentados mediante coverRights {approved:true,basis,evidenceUrl} y coverUrl HTTPS; no se alojan copias de terceros por defecto.",
   "publishers": [
     {
       "publisher": "Panini Comics",
