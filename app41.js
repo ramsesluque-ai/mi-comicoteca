@@ -17,10 +17,10 @@
   /* app4 reconstruía la ficha desde los campos visibles y podía borrar coverKey y metadatos técnicos. */
   if(typeof window.saveComic==='function'&&typeof getStore==='function'&&typeof putStore==='function'){
     const baseSave=window.saveComic;
-    window.saveComic=saveComic=async function(id){
+    window.saveComic=saveComic=async function(id,mode='close'){
       const before=id?await getStore('comics',id):null;
       const typedCover=String(document.getElementById('m_coverUrl')?.value||'').trim();
-      await baseSave(id);
+      await baseSave(id,mode);
       if(!before)return;
       const after=await getStore('comics',id);if(!after)return;
       const next={...after,
@@ -44,7 +44,8 @@
       }
       await putStore('comics',next);
       try{window.CloudSync?.schedule?.()}catch{}
-      try{await render()}catch{}
+      // El controlador base ya gestiona la navegación según mode.
+      // En stay y copy, volver a renderizar aquí expulsaba al usuario de la ficha.
     };
   }
 
