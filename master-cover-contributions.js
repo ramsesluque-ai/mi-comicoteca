@@ -34,6 +34,11 @@ window.mcProposeMasterCover=function(encoded){
  const modal=document.getElementById('modal');
  const title=String(x.title||x.catalogHeader||x.series||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  modal.innerHTML='<div class="modalbox"><div class="modalhead"><b>Proponer portada al Maestro</b><button class="btn" id="mcContribBack">Cerrar</button></div><div class="modalbody"><p><b>'+title+'</b> · '+(isbn?'ISBN '+isbn:'Editorial, serie y número identificados (sin ISBN)')+'</p><p class="muted">La portada se guarda en privado. Solo será visible para todos después de revisar derechos y coincidencia del cómic.</p><label>Imagen (JPG, PNG o WebP; máximo 5 MB)<input id="mcContribFile" type="file" accept="image/jpeg,image/png,image/webp"></label><label>Derechos de uso<select id="mcContribRights"><option value="">Selecciona la autorización</option><option value="own_work">Soy autor o titular de los derechos</option><option value="licensed">Tengo permiso o licencia para compartirla públicamente</option><option value="public_domain">La imagen es de dominio público</option></select></label><label>Justificación / licencia<input id="mcContribNote" placeholder="Origen y permiso comprobable"></label><p id="mcContribStatus" role="status"></p><button class="btn primary" id="mcContribSend">Enviar para revisión</button></div></div>';
+ const panel=modal.querySelector('.modalbox');panel?.classList.add('mc-contrib-modal');
+ modal.querySelector('.modalhead b')?.classList.add('mc-contrib-title');
+ modal.querySelectorAll('.modalbody label').forEach(label=>label.classList.add('mc-contrib-field','mc-wide'));
+ modal.querySelector('.modalbody .muted')?.classList.add('mc-contrib-notice');
+ modal.querySelector('#mcContribStatus')?.classList.add('mc-contrib-status');
  modal.classList.remove('hidden');
  document.getElementById('mcContribBack').onclick=()=>window.closeModal?.();
  document.getElementById('mcContribSend').onclick=async()=>{
