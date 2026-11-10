@@ -85,7 +85,10 @@
       return {...x,
         universe:String(x.universe||'').trim()||String(exact.universe||'').trim()||series.universe||'',
         character:String(x.character||'').trim()||String(exact.character||'').trim()||series.character||'',
-        group:String(x.group||'').trim()||String(exact.group||'').trim()||series.group||''
+        group:String(x.group||'').trim()||String(exact.group||'').trim()||series.group||'',
+        // Bibliographic author credits belong to the exact issue. Enrich the
+        // dashboard view only; never persist them into the user's collection.
+        ...Object.fromEntries(['writer','writers','script','author','authors','artist','artists','penciller'].map(field=>[field,x[field]??exact[field]??'']))
       };
     });
     const classifiedOwned=classifiedRows.filter(x=>x.status==='In Collection');
@@ -97,7 +100,7 @@
     Object.values(collections).forEach(x=>{x.have=x.owned.size;x.total=masterIssues[x.key]?.size||0;});
     const cs=Object.values(collections),known=cs.filter(x=>x.total>0),complete=known.filter(x=>x.have>=x.total).length,incomplete=known.length-complete,unknown=cs.length-known.length,pct=known.length?Math.round(100*complete/known.length):0;
     const estimated=inc.reduce((s,x)=>s+num(x.estimated),0),now=new Date(),mk=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'),monthPurchases=purchases.filter(x=>monthKey(x.date)===mk),monthSpend=monthPurchases.reduce((s,x)=>s+num(x.price)+num(x.shipping),0);
-    const pubs=countBy(inc,x=>x.publisher),characters=countBy(classifiedOwned,characterName),universes=countBy(classifiedOwned,universeName),authors=countMulti(inc,['writer','writers','script','author','authors','artist','artists','penciller']),decades=countBy(inc,x=>yearBand(x.startYear||x.year));
+    const pubs=countBy(inc,x=>x.publisher),characters=countBy(classifiedOwned,characterName),universes=countBy(classifiedOwned,universeName),authors=countMulti(classifiedOwned,['writer','writers','script','author','authors','artist','artists','penciller']),decades=countBy(inc,x=>yearBand(x.startYear||x.year));
     const recent=[...purchases].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).slice(0,6),progress=[...cs].filter(x=>x.total).sort((a,b)=>(b.total-b.have)-(a.total-a.have)||b.total-a.total);
     const noCover=inc.filter(x=>!(x.cover||x.coverUrl||x.image||x.imageUrl)).length,noIsbn=inc.filter(x=>!(x.isbn||x.ISBN)).length,lowQuality=inc.filter(x=>String(x.quality||'').toLowerCase().includes('baj')||String(x.condition||'').toLowerCase().includes('poor')).length;
     return head('Dashboard','Centro de control interactivo de tu comicoteca.',`<button class="btn primary" onclick="editComic()">+ Añadir cómic</button>`)+`<div class="pbi-shell">
