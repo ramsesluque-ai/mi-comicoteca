@@ -18,7 +18,7 @@ window.mcSharedCovers=async function(force=false){
  return approved;
 };
 window.mcProposeMasterCover=function(encoded){
- const x=(window.MCMasterUI?.activeIssueRows||[]).find(y=>String(y.id)===decodeURIComponent(encoded));
+ const x=((typeof MCMasterUI!=='undefined'?MCMasterUI.activeIssueRows:[])).find(y=>String(y.id)===decodeURIComponent(encoded));
  if(!x)return alert('No se ha encontrado la ficha del Maestro.');
  const isbn=String(x.isbn||'').replace(/[^0-9X]/gi,'').toUpperCase();
  if(!isbn)return alert('La ficha requiere ISBN para aportar una portada compartida de forma inequívoca.');
