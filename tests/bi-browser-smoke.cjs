@@ -49,6 +49,26 @@ const { chromium } = require('playwright');
     await page.locator('#view .pbi-drill').waitFor({ state: 'detached', timeout: 10000 });
     report.drilldown.categories[kind] = heading.trim() === label && await page.locator('#view .pbi-shell').isVisible();
   }
+  // Validate the actual published asset responses, not just DOM references.
+  // A GitHub Pages HTML fallback may return 200 for a missing JS/CSS file.
+  report.assets = {};
+  for (const asset of ['dashboard-pbi.js', 'dashboard-pbi.css', 'mi-comicteca-logo.svg']) {
+    const assetUrl = new URL(asset, baseUrl).href;
+    const assetResponse = await page.request.get(assetUrl, { failOnStatusCode: false });
+    const contentType = (assetResponse.headers()['content-type'] || '').toLowerCase();
+    const expected = asset.endsWith('.js') ? /javascript|ecmascript/ : asset.endsWith('.css') ? /text\\/css/ : /image\\/svg\\+xml/;
+    report.assets[asset] = { status: assetResponse.status(), contentType, valid: assetResponse.ok() && expected.test(contentType) };
+  }
+  report.manifest = { valid: false };
+  const manifestResponse = await page.request.get(new URL('manifest.webmanifest', baseUrl).href, { failOnStatusCode: false });
+  if (manifestResponse.ok()) {
+    try {
+      const manifest = await manifestResponse.json();
+      report.manifest = { valid: manifest.name === 'COMICTECA' && manifest.short_name === 'COMICTECA', name: manifest.name, shortName: manifest.short_name };
+    } catch (error) {
+      report.manifest = { valid: false, error: String(error) };
+    }
+  }
   report.url = page.url();
   report.httpStatus = response.status();
   report.pageErrors = errors;
@@ -56,5 +76,5 @@ const { chromium } = require('playwright');
   fs.writeFileSync('artifacts/bi-browser-report.json', JSON.stringify(report, null, 2));
   await browser.close();
   console.log(JSON.stringify(report, null, 2));
-  if (report.httpStatus !== 200 || !report.dashboardButton || !report.biModule || !report.biNodes || !report.dashboardVisible || !report.biCssApplied || !report.logoCount || !report.logoLoaded || !report.logoVisible || !report.drilldown.visible || report.drilldown.heading !== 'Editorial de prueba' || !report.drilldown.dashboardStillActive || !report.drilldown.closeButton || !report.drilldown.closed || Object.values(report.drilldown.categories).some(ok => !ok) || errors.length) process.exitCode = 1;
+  if (report.httpStatus !== 200 || !report.dashboardButton || !report.biModule || !report.biNodes || !report.dashboardVisible || !report.biCssApplied || !report.logoCount || !report.logoLoaded || !report.logoVisible || !report.drilldown.visible || report.drilldown.heading !== 'Editorial de prueba' || !report.drilldown.dashboardStillActive || !report.drilldown.closeButton || !report.drilldown.closed || Object.values(report.drilldown.categories).some(ok => !ok) || !Object.values(report.assets).every(asset => asset.valid) || !report.manifest.valid || errors.length) process.exitCode = 1;
 })().catch(err => { console.error(err); process.exitCode = 1; });
