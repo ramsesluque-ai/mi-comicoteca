@@ -54,8 +54,7 @@
 </g>
 <!-- Giant classic wordmark -->
 <g filter="url(#typeShadow)" font-family="Arial Black,Arial,Helvetica,sans-serif" font-size="127" font-weight="900" letter-spacing="-7">
- <text x="42" y="487" fill="url(#textWhite)" stroke="#f7fbff" stroke-width=".6">COMIC</text>
- <text x="527" y="487" fill="url(#textBlue)">TECA</text>
+ <text x="42" y="487" stroke-width=".6"><tspan fill="url(#textWhite)" stroke="#f7fbff">COMIC</tspan><tspan fill="url(#textBlue)" stroke="none">TECA</tspan></text>
 </g>
 <path d="M110 530q390-55 776-1" fill="none" stroke="#12c6ee" stroke-width="11" stroke-linecap="round"/>
 <path d="M130 526q380-44 728-3" fill="none" stroke="#78f6ff" stroke-width="3" stroke-linecap="round"/>
