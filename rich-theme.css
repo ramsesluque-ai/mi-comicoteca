@@ -12,3 +12,6 @@ body{background:radial-gradient(circle at 82% 8%,rgba(139,92,246,.12),transparen
 /* Compact unverified collection total; keep series card inside its bounds */
 .series-card .series-unverified-note{font-size:11px!important;line-height:1.25!important;font-weight:400!important;letter-spacing:0!important;margin-top:3px!important;white-space:normal;overflow-wrap:break-word;max-width:100%;}
 .series-card .series-content{min-width:0;overflow-wrap:break-word;}
+
+/* Novedades: acento propio para distinguir las novedades editoriales. */
+.nav button[data-v=novedades]{--accent:#38cbed}
