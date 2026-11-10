@@ -29,3 +29,9 @@
 .mc-novedad-empty{padding:25px;color:#c4d6e4;background:#112740}
 @media(max-width:1180px){.mc-novedades-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.mc-novedades-panel{padding:12px}.mc-novedades-grid{grid-template-columns:1fr}.mc-novedades-filters{grid-template-columns:1fr;gap:9px}}
+
+/* Portadas con licencia comprobada, sin guardar copias locales. */
+.mc-novedad-cover-image{min-height:205px;max-height:310px;padding:12px;background:#0b1b2b;overflow:hidden}
+.mc-novedad-cover-image img{display:block;width:100%;height:245px;object-fit:contain}
+.mc-novedad-cover-image.mc-cover-missing{min-height:116px}
+.mc-novedad-cover-image.mc-cover-missing::after{content:'Portada no disponible';color:#a1b7ca;font-size:12px}
