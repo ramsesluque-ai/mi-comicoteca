@@ -6,7 +6,7 @@
  const session=()=>{try{return JSON.parse(sessionStorage.getItem(SESSION)||localStorage.getItem(SESSION)||"null")}catch{return null}};
  const escape=s=>String(s??"").replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const headers=()=>({apikey:cfg().publishableKey,Authorization:"Bearer "+session()?.access_token});
- let sending=false;
+ let sending=false,verified=false;
  async function me(){if(!session()?.access_token)return null;try{const r=await fetch(cfg().url+"/auth/v1/user",{headers:headers()});return r.ok?await r.json():null}catch{return null}}
  function add(){const nav=document.querySelector(".side .nav");if(!nav||nav.querySelector("#mcAdminEditorialMail"))return;const b=document.createElement("button");b.id="mcAdminEditorialMail";b.type="button";b.textContent="Administración · Editoriales";b.onclick=()=>window.mcEditorialMail();nav.appendChild(b)}
  async function list(){
@@ -19,9 +19,10 @@
  async function open(){
  if((await me())?.id!==OWNER)return;
  const modal=document.getElementById("modal");if(!modal)return;
- modal.innerHTML='<div class="modalbox mc-editorial-admin"><div class="modalhead"><div><b>Administración · Solicitudes a editoriales</b><div class="muted small">Envíos desde contacto@micomicteca.es</div></div><button class="btn" id="mcMailClose">Cerrar</button></div><div class="modalbody"><div class="mc-admin-notice">Los envíos están restringidos a la cuenta administradora. Solo se utilizará la cuenta oficial una vez configurada la credencial SMTP en Supabase.</div><div id="mcMailList">Cargando…</div><div id="mcMailMessages" role="status"></div><div class="mc-admin-actions"><button class="btn" id="mcMailRefresh">Actualizar</button><button class="btn primary" id="mcMailSendAll">Enviar solicitudes pendientes</button></div></div></div>';modal.classList.remove("hidden");
+ modal.innerHTML='<div class="modalbox mc-editorial-admin"><div class="modalhead"><div><b>Administración · Solicitudes a editoriales</b><div class="muted small">Envíos desde contacto@micomicteca.es</div></div><button class="btn" id="mcMailClose">Cerrar</button></div><div class="modalbody"><div class="mc-admin-notice">Los envíos están restringidos a la cuenta administradora. Solo se utilizará la cuenta oficial una vez configurada la credencial SMTP en Supabase.</div><div id="mcMailList">Cargando…</div><div id="mcMailMessages" role="status"></div><div class="mc-admin-actions"><button class="btn" id="mcMailRefresh">Actualizar</button><button class="btn" id="mcMailVerify">Comprobar conexión OVH</button><button class="btn primary" id="mcMailSendAll" disabled>Enviar solicitudes pendientes</button></div></div></div>';modal.classList.remove("hidden");
  document.getElementById("mcMailClose").onclick=()=>window.closeModal?.();
  document.getElementById("mcMailRefresh").onclick=refresh;
+ document.getElementById("mcMailVerify").onclick=verifyConnection;
  document.getElementById("mcMailSendAll").onclick=sendAll;
  await refresh();
  }
@@ -29,12 +30,16 @@
  const box=document.getElementById("mcMailList");if(!box)return;
  try{const rows=await list();box.innerHTML='<div class="mc-editorial-grid">'+rows.map(x=>'<div class="mc-editorial-row"><div><b>'+escape(x.editorial)+'</b><small>'+escape(x.recipient_email)+'</small></div><span class="mc-editorial-state">'+escape(x.status)+'</span></div>').join("")+'</div>';window.mcEditorialRecipients=rows;
  const pending=rows.filter(x=>x.status==="pending").length;
- document.getElementById("mcMailSendAll").disabled=!pending||sending;
+ document.getElementById("mcMailSendAll").disabled=!pending||sending||!verified;
  document.getElementById("mcMailSendAll").textContent="Enviar "+pending+" solicitudes pendientes";
  }catch(e){box.textContent=String(e.message||e)}
  }
+ async function verifyConnection(){
+ const status=document.getElementById("mcMailMessages"),btn=document.getElementById("mcMailVerify");btn.disabled=true;status.textContent="Comprobando conexión y autenticación con OVH, sin enviar mensajes…";
+ try{const r=await fetch(cfg().url+"/functions/v1/send-editorial-rights-request",{method:"POST",headers:{...headers(),"Content-Type":"application/json"},body:JSON.stringify({test_connection:true})});const j=await r.json().catch(()=>({}));if(!r.ok||!j.ok)throw Error(j.details||j.error||"Conexión fallida");verified=true;status.textContent="Conexión SMTP verificada. Ningún mensaje enviado. Ya puedes enviar las solicitudes pendientes.";}catch(e){verified=false;status.textContent="Prueba fallida: "+String(e.message||e)+". No se ha enviado ningún mensaje.";}finally{btn.disabled=false;await refresh()}
+ }
  async function sendAll(){
- if(sending)return;
+ if(sending||!verified)return;
  const rows=(window.mcEditorialRecipients||[]).filter(x=>x.status==="pending");
  if(!rows.length)return;
  if(!confirm("¿Enviar "+rows.length+" solicitudes individualizadas desde contacto@micomicteca.es? Los correos incluirán la petición de autorización de uso de portadas."))return;
