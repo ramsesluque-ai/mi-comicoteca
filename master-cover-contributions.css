@@ -1,0 +1,24 @@
+/* MI COMICTECA · aportaciones al Maestro: diálogo acorde a la identidad de la aplicación */
+.mc-contrib-modal{max-width:760px;width:min(94vw,760px);border:1px solid #294d70;border-radius:20px;overflow:hidden;background:linear-gradient(150deg,#0b2339,#071525);box-shadow:0 28px 90px #000a;color:#e9f5ff}
+.mc-contrib-modal .modalhead{background:linear-gradient(95deg,#0d3153,#082038);border-bottom:1px solid #244965;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.mc-contrib-title{font-size:22px;font-weight:800;letter-spacing:-.02em;color:#f1faff}
+.mc-contrib-modal .modalbody{padding:22px;display:grid;gap:18px;max-height:min(77vh,760px);overflow:auto}
+.mc-contrib-record{border:1px solid #2c526c;border-radius:14px;padding:13px 16px;background:#102b44;display:flex;flex-direction:column;gap:5px}
+.mc-contrib-kicker{color:#5fd5fb;font-size:11px;letter-spacing:.11em;text-transform:uppercase;font-weight:800}
+.mc-contrib-record strong{font-size:19px;color:white}
+.mc-contrib-muted{color:#b8cde0;font-size:13px;line-height:1.5}
+.mc-contrib-formgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.mc-contrib-field{display:flex;flex-direction:column;gap:8px;font-size:14px;font-weight:700;color:#dbeaf8}
+.mc-contrib-field.mc-wide{grid-column:1/-1}
+.mc-contrib-field input,.mc-contrib-field select{width:100%;min-height:46px;box-sizing:border-box;border-radius:11px;border:1px solid #355874;background:#061a2d;color:#f1f8ff;font:inherit;padding:11px 12px}
+.mc-contrib-field input[type=file]{padding:10px;cursor:pointer}
+.mc-contrib-field input:focus-visible,.mc-contrib-field select:focus-visible{outline:2px solid #46c5fa;outline-offset:2px}
+.mc-contrib-preview{display:none;max-height:230px;max-width:170px;object-fit:contain;border-radius:10px;border:1px solid #355874;background:#041321}
+.mc-contrib-filebox{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.mc-contrib-notice{border:1px solid #35556d;border-radius:12px;background:#102a40;padding:12px 14px;font-size:13px;line-height:1.5;color:#c8e0f1}
+.mc-contrib-notice b{color:#f6d58b}
+.mc-contrib-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap}
+.mc-contrib-actions .btn.primary{background:linear-gradient(115deg,#0867bb,#1498d3);border-color:#3195de;color:white;border-radius:10px;padding:12px 19px;font-size:14px;font-weight:800}
+.mc-contrib-actions .btn.primary:disabled{opacity:.65}
+.mc-contrib-status{font-size:13px;color:#8cddf7;flex:1;min-width:200px}
+@media(max-width:640px){.mc-contrib-modal .modalbody{padding:15px}.mc-contrib-formgrid{grid-template-columns:1fr}.mc-contrib-title{font-size:18px}}
