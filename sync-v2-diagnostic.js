@@ -5,11 +5,12 @@
  const p=new URLSearchParams(location.search);
  if(p.get('syncv2')!=='diagnostico')return;
  const session=JSON.parse(sessionStorage.getItem('mc_supabase_session_v1')||'null');
- if(session?.user?.id!=='d16a7b7d-57de-4c4f-900c-0b39fe1abbb1'){console.warn('Diagnóstico V2: cuenta no autorizada');return}
+ if(session?.user?.id!=='0bcbe06d-263d-4ac1-a516-355d27d417f1'){console.warn('Diagnóstico V2: cuenta no autorizada');return}
  const cfg=window.MI_COMICOTECA_CLOUD;
  if(!cfg?.url||!session.access_token||!window.MCReconcileV2){console.warn('Diagnóstico V2: sesión o motor no disponible');return}
  const result={local:0,cloud:0,conflicts:0,downloads:0,updates:0,errors:[]};
  try{
+  if(typeof db==='undefined'||!db)await new Promise(resolve=>window.addEventListener('load',resolve,{once:true}));
   const local=await allStore('comics');result.local=local.length;
   const remote=[];
   for(let offset=0;;offset+=500){
