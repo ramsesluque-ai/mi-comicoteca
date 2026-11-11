@@ -80,7 +80,12 @@
        if(image){slot.classList.add('mc-novedad-cover-image');slot.innerHTML='<img loading="lazy" referrerpolicy="no-referrer" src="'+sanitize(image)+'" alt="Portada de '+sanitize(r.title)+'" onerror="this.closest(\'.mc-novedad-cover\').innerHTML=\'<small>Portada no disponible</small>\'">'}
        else{slot.innerHTML='<span aria-hidden="true">▤</span><small>Portada no disponible · <a target="_blank" rel="noopener noreferrer" href="'+sanitize(urlSafe(r.sourceUrl))+'">Ver editorial ↗</a></small>'}
      }
-   }catch(e){console.warn('Portada de novedad no disponible',r.id,e)}
+   }catch(e){
+     console.warn('Portada de novedad no disponible',r.id,e);
+     coverCache.set(r.id,'');
+     const slot=document.querySelector('[data-novedad-cover="'+r.id+'"]');
+     if(slot)slot.innerHTML='<span aria-hidden="true">▤</span><small>Portada no disponible · <a target="_blank" rel="noopener noreferrer" href="'+sanitize(urlSafe(r.sourceUrl))+'">Ver editorial ↗</a></small>';
+   }
    finally{coverInFlight.delete(r.id)}
  }
  function activateCoverLookup(){
