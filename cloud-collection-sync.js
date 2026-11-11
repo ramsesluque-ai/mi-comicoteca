@@ -17,7 +17,7 @@
    const issue=String(x.issueNr??x.issue??x.number??'').trim().toLocaleLowerCase('es');
    if(!issue)return '';
    const key=typeof ckey==='function'?ckey(x):'';
-   return key&&key.replace(/\\|/g,'').trim()?key+'|'+issue:'';
+   return key&&key.split('|').join('').trim()?key+'|'+issue:'';
  };
  const status=x=>x==='In Collection'?'owned':x==='On Wish List'?'wishlist':'pending';
  async function credentials(){
