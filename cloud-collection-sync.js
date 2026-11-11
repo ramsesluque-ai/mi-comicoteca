@@ -99,7 +99,17 @@
      const fingerprints=JSON.parse(localStorage.getItem('mc_cloud_fingerprints_'+s.user.id)||'{}');
      const fingerprint=r=>{const str=JSON.stringify(r),n=str.length;let h=2166136261;for(let i=0;i<n;i++)h=Math.imul(h^str.charCodeAt(i),16777619);return (h>>>0).toString(16)+':'+n};
      suspended=true;
-     let downloaded=0,uploaded=0;
+     let downloaded=0,uploaded=0,removed=0;
+     // Tombstones are authoritative across devices. Keep deletion markers remotely
+     // so another device cannot re-upload an older local copy.
+     for(const store of STORES){
+       for(const record of local[store]){
+         if(record?.id&&deleted.has(localId(store,record.id))){
+           await delStore(store,record.id);
+           removed++;
+         }
+       }
+     }
      for(const item of cloud){
        const kind=item.metadata?.kind,record=item.metadata?.record;
        if(!STORES.includes(kind)||!record?.id||item.user_id!==s.user.id||deleted.has(item.local_id))continue;
