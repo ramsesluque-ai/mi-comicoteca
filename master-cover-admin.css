@@ -17,3 +17,11 @@
 .mc-admin-check input{margin-top:4px;accent-color:#0fa7da}
 .mc-admin-feedback{color:#8ee2ff;min-height:18px;font-size:13px}
 .mc-admin-empty{padding:30px;text-align:center;border:1px dashed #385c79;border-radius:12px;color:#c0dbed}
+
+/* Vista de revisión: portada y decisión visibles simultáneamente, sin desplazamiento vertical */
+.mc-admin-review-layout{display:grid;grid-template-columns:minmax(180px,260px) minmax(0,1fr);gap:18px;align-items:start}
+.mc-admin-review-controls{display:grid;gap:12px;min-width:0}
+.mc-admin-review-layout .mc-admin-preview{position:sticky;top:0;min-height:210px;display:flex;align-items:flex-start;justify-content:center;padding:12px;border:1px solid #31516c;border-radius:12px;background:#061829;color:#b9d0e4;text-align:center}
+.mc-admin-review-layout .mc-admin-preview img{display:block;width:auto;max-width:100%;height:auto;max-height:360px}
+.mc-admin-review-controls .mc-admin-feedback{margin:0}
+@media(max-width:650px){.mc-admin-review-layout{grid-template-columns:1fr}.mc-admin-review-layout .mc-admin-preview{position:static;min-height:120px}.mc-admin-review-layout .mc-admin-preview img{max-height:240px}}
