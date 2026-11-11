@@ -10,7 +10,30 @@ const { chromium } = require('playwright');
   const baseUrl = process.env.COMICTECA_BASE_URL || 'http://127.0.0.1:8765/';
   const response = await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForTimeout(4500);
-  await page.locator('[data-v="dashboard"]').click();
+  // The public landing/auth gate intentionally blocks navigation for anonymous users.
+  // Fail fast with actionable visual evidence rather than timing out and cancelling CI.
+  const accessGate = await page.locator('#mcAccessGate').evaluateAll(nodes =>
+    nodes.some(node => {
+      const style = getComputedStyle(node);
+      return style.display !== 'none' && style.visibility !== 'hidden' &&
+        node.getClientRects().length > 0 && style.pointerEvents !== 'none';
+    })
+  );
+  if (accessGate) {
+    const report = {
+      url: page.url(), httpStatus: response?.status() || null,
+      blocked: 'public-access-gate', dashboardVerified: false,
+      reason: 'The public landing/auth gate intercepts Dashboard clicks; an authenticated test fixture is required.',
+      pageErrors: errors
+    };
+    await page.screenshot({ path: 'artifacts/bi-browser.png', fullPage: true });
+    fs.writeFileSync('artifacts/bi-browser-report.json', JSON.stringify(report, null, 2));
+    console.error(JSON.stringify(report, null, 2));
+    await browser.close();
+    process.exitCode = 1;
+    return;
+  }
+  await page.locator('[data-v="dashboard"]').click({ timeout: 10000 });
   await page.waitForTimeout(500);
   const report = await page.evaluate(() => ({
     title: document.title,
