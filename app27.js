@@ -84,7 +84,8 @@
   }
   async function openISBN(x,rows){
     const out=[];
-    for(const c of (rows||[]).slice(0,8)){
+    const probes=[{data:{isbn:x.isbn||'',series:x.catalogHeader||x.series||'',publisher:x.publisher||'',title:x.title||''}},...(rows||[])].slice(0,9);
+    for(const c of probes){
       const d=c?.data||{},isbn=code(d.isbn||x.isbn||'');if(!isbn)continue;
       const cover=await coverByISBN(isbn);if(!cover)continue;
       try{if(window.CoverVault?.fetchAndCompress)await window.CoverVault.fetchAndCompress(cover)}catch{continue}
