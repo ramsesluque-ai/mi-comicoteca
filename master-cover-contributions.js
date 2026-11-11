@@ -54,9 +54,21 @@ window.mcProposeMasterCover=function(encoded){
     try{const r=await fetch('https://openlibrary.org/api/books?bibkeys='+encodeURIComponent(k)+'&format=json&jscmd=data');if(r.ok){const b=(await r.json())[k];if(b?.cover?.medium||b?.cover?.large)add(b.cover.large||b.cover.medium,b.title||title,'Open Library · ISBN',b.url||'https://openlibrary.org/isbn/'+code)}}catch{}
     try{const r=await fetch('https://www.googleapis.com/books/v1/volumes?q='+encodeURIComponent('isbn:'+code)+'&maxResults=5');if(r.ok){const j=await r.json();for(const it of j.items||[]){const d=it.volumeInfo||{};if(!(d.industryIdentifiers||[]).some(i=>String(i.identifier||'').replace(/[^0-9X]/gi,'')===code))continue;const u=d.imageLinks?.thumbnail||d.imageLinks?.smallThumbnail;if(u)add(u.replace(/^http:/,'https:'),d.title||title,'Google Books · ISBN',d.infoLink||'')}}}catch{}
    }
-   const q=String(x.title||x.catalogHeader||x.series||'').trim();
+   const q=String(x.catalogHeader||x.series||x.title||'').trim();
    if(q){try{const r=await fetch('https://openlibrary.org/search.json?title='+encodeURIComponent(q)+'&limit=12');if(r.ok){const j=await r.json(),words=q.toLowerCase().split(/\\s+/).filter(w=>w.length>3);for(const d of j.docs||[]){if(!d.cover_i||!words.some(w=>String(d.title||'').toLowerCase().includes(w)))continue;add('https://covers.openlibrary.org/b/id/'+d.cover_i+'-M.jpg',d.title||q,'Open Library · verificar edición',d.key?'https://openlibrary.org'+d.key:'')}}}catch{}}
-   box.innerHTML=results.length?'<div class="mc-contrib-resultgrid">'+results.slice(0,8).map(a=>'<a class="mc-contrib-result" href="'+safe(a.link||a.url)+'" target="_blank" rel="noopener noreferrer"><img src="'+safe(a.url)+'" loading="lazy" referrerpolicy="no-referrer" alt="Portada candidata" onerror="this.style.display=\'none\'"><span><b>'+safe(a.label)+'</b><small>'+safe(a.source)+'</small><small>Consultar fuente ↗</small></span></a>').join('')+'</div><p class="mc-contrib-muted">Estas imágenes son referencias externas. No se descargan ni se publican en el Maestro.</p>':'<p class="mc-contrib-muted">No se ha encontrado una portada en estas fuentes. Puedes consultar la editorial o proponer una imagen autorizada.</p>';
+   // Historical issues often lack ISBN and are absent from book-cover APIs.
+   // Offer edition-specific source lookups without claiming that an image exists.
+   const edition=[x.publisher||'',x.catalogHeader||x.series||'',x.issueNr||x.issue||'',x.startYear||''].map(s=>String(s||'').trim()).filter(Boolean).join(' ');
+   const lookupLinks=[];
+   const gcdId=String(x.sourceId||x.id||'').replace(/^gcd_/i,'');
+   if(/^\\d+$/.test(gcdId))lookupLinks.push({label:'Consultar ficha original en Grand Comics Database',url:'https://www.comics.org/issue/'+gcdId+'/'});
+   if(edition){
+     lookupLinks.push({label:'Buscar esta edición en Tebeosfera',url:'https://www.google.com/search?q='+encodeURIComponent('site:tebeosfera.com '+edition)});
+     lookupLinks.push({label:'Buscar portada de esta edición',url:'https://www.google.com/search?tbm=isch&q='+encodeURIComponent(edition+' portada')});
+   }
+   const alternatives=lookupLinks.length?'<div class="mc-contrib-alternatives"><b>Fuentes para cómics sin ISBN</b><p class="mc-contrib-muted">Estas opciones abren una búsqueda de la edición identificada. No implican que exista una portada disponible ni autorizan copiarla.</p>'+lookupLinks.map(a=>'<a href="'+safe(a.url)+'" target="_blank" rel="noopener noreferrer">'+safe(a.label)+' ↗</a>').join('')+'</div>':'';
+   box.innerHTML=results.length?'<div class="mc-contrib-resultgrid">'+results.slice(0,8).map(a=>'<a class="mc-contrib-result" href="'+safe(a.link||a.url)+'" target="_blank" rel="noopener noreferrer"><img src="'+safe(a.url)+'" loading="lazy" referrerpolicy="no-referrer" alt="Portada candidata" onerror="this.style.display=\'none\'"><span><b>'+safe(a.label)+'</b><small>'+safe(a.source)+'</small><small>Consultar fuente ↗</small></span></a>').join('')+'</div><p class="mc-contrib-muted">Estas imágenes son referencias externas. No se descargan ni se publican en el Maestro.</p>':'<p class="mc-contrib-muted">No hay portada confirmada en Open Library o Google Books para esta ficha. Consulta también las fuentes históricas siguientes.</p>';
+   box.innerHTML+=alternatives;
   }catch(e){box.textContent='No se pudo completar la consulta: '+(e.message||e)}
   finally{button.disabled=false}
  };
