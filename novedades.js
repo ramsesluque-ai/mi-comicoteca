@@ -93,7 +93,7 @@
    await editComic();
    const set=(key,value)=>{const node=document.getElementById('m_'+key);if(node&&value!==undefined&&value!==null)node.value=String(value)};
    const series=r.series||r.title;
-   const issue=String(r.issueNr??'').trim();
+   const issue=String(r.issueNr??'').trim()||(r.isbn?'':'Único');
    const year=String(r.startYear||r.publicationDate?.slice(0,4)||r.releaseMonth?.slice(0,4)||'');
    const fields={publisher:r.publisher,catalogHeader:series,series,title:r.title,subtitle:r.subtitle||'',issueNr:issue,volume:r.volume||'',stage:r.stage||'',startYear:year,publicationDate:r.publicationDate||'',format:r.format||'',pages:r.pages??'',status,isbn:r.isbn||'',color:r.color||'',edition:r.edition||'',arc:r.arc||'',group:r.group||'',tags:r.tags||'',coverUrl:authorizedCover(r)||'',estimated:r.estimated??'',paid:'',notes:[r.synopsis||'',r.description||'',r.authors?'Autores: '+r.authors:'',r.price!=null?'PVP editorial: '+r.price+' EUR':'','Fuente editorial: '+urlSafe(r.sourceUrl),'Novedad: '+monthLabel(r.releaseMonth)].filter(Boolean).join('\\n')};
    for(const [key,value] of Object.entries(fields))set(key,value);
@@ -104,8 +104,8 @@
    if(modal){modal.dataset.novedadId=r.id;modal.dataset.novedadSource=JSON.stringify(r);}
    const header=document.querySelector('.mc-comic-kicker');if(header)header.textContent='Nueva ficha desde Novedades · Revisar edición';
    const body=document.querySelector('#modal .modalbody');
-   if(body){const notice=document.createElement('p');notice.className='notice';notice.textContent=issue?'Ficha preparada con datos editoriales. Revisa la edición antes de guardar.':'Ficha preparada con datos editoriales. Falta confirmar el número del ejemplar antes de guardar.';body.prepend(notice)}
-   document.getElementById(issue?'m_title':'m_issueNr')?.focus();
+   if(body){const notice=document.createElement('p');notice.className='notice';notice.textContent=issue?'Ficha preparada con datos editoriales. Revisa la edición antes de guardar.':'Ficha preparada con datos editoriales. Edición sin numeración: se ha identificado como número Único; revísalo antes de guardar.';body.prepend(notice)}
+   document.getElementById('m_title')?.focus();
  };
  // Enrich the saved record with the complete source metadata, without changing
  // the user's edits or storing unlicensed cover URLs as local images.
