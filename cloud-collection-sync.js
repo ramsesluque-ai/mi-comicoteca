@@ -2,6 +2,12 @@
 /* COMICTECA cross-device sync v1: additive first migration, per-account RLS.
    Never clears local IndexedDB or sends an empty collection as a deletion. */
 (function(){
+ // INCIDENT 2026-11-11: pause all automatic cloud mutations/downloads until
+ // identity reconciliation and field-preserving merge are verified.
+ // Do not delete local IndexedDB, remote rows, sessions, or cover assets.
+ window.ComictecaCloudSync={sync:async()=>({paused:true}),getStatus:()=>({ready:false,running:false,pending:0,lastError:'Sincronización pausada para proteger los datos'})};
+ console.warn('MI COMICTECA: sincronización temporalmente pausada para proteger títulos y universos');
+ return;
  const SESSION='mc_supabase_session_v1', STORES=['comics','purchases'];
  const deletedKey=uid=>'mc_cloud_deleted_'+uid;
  const deletedSet=uid=>{try{return new Set(JSON.parse(localStorage.getItem(deletedKey(uid))||'[]'))}catch{return new Set()}};
