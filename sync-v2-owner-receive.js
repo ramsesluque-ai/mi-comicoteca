@@ -17,7 +17,7 @@
   if(!confirm('Se añadirán las fichas que falten en ESTE dispositivo. No se eliminarán ni sobrescribirán las existentes. ¿Continuar?'))return;
   button.disabled=true;let added=0,skipped=0;
   try{
-   const local=await allStore('comics'),ids=new Set(local.map(x=>String(x.id))),identity=window.MCReconcileV2.identity;
+   const local=await allStore('comics'),ids=new Set(local.map(x=>String(x.id))),identity=window.MCReconcileV2?.identity;if(typeof identity!=='function')throw Error('Motor de identidad V2 no cargado');
    const editions=new Set(local.map(identity).filter(Boolean));
    for(let offset=0;;offset+=250){
     const url=cfg.url+'/rest/v1/user_comics?select=metadata,user_id&user_id=eq.'+OWNER+'&limit=250&offset='+offset+'&order=created_at.asc';
@@ -26,7 +26,7 @@
     const rows=await resp.json();
     for(const row of rows){
      const m=row.metadata,r=m?.record;
-     if(row.user_id!==OWNER||m?.kind!=='comics'||m.deleted||!r?.id)continue;
+     if(row.user_id!==OWNER||m?.kind!=='comics'||m?.source!=='owner-local-initial'||m.deleted||!r?.id)continue;
      const key=identity(r);
      if(ids.has(String(r.id))||(key&&editions.has(key))){skipped++;continue}
      await putStore('comics',r);ids.add(String(r.id));if(key)editions.add(key);added++;
