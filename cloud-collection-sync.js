@@ -10,6 +10,15 @@
  const cfg=()=>window.MI_COMICOTECA_CLOUD||{};
  const session=()=>{try{return JSON.parse(sessionStorage.getItem(SESSION)||'null')}catch{return null}};
  const localId=(store,id)=>store+':'+String(id);
+ // Conservative reconciliation: match edition and issue, never just character/title.
+ // Ambiguous or unnumbered entries are not merged or removed automatically.
+ const issueIdentity=(store,x)=>{
+   if(store!=='comics'||!x)return '';
+   const issue=String(x.issueNr??x.issue??x.number??'').trim().toLocaleLowerCase('es');
+   if(!issue)return '';
+   const key=typeof ckey==='function'?ckey(x):'';
+   return key&&key.replace(/\\|/g,'').trim()?key+'|'+issue:'';
+ };
  const status=x=>x==='In Collection'?'owned':x==='On Wish List'?'wishlist':'pending';
  async function credentials(){
    let s=session();if(!s?.access_token||!s?.user?.id)return null;
@@ -95,6 +104,8 @@
      const deleted=deletedSet(s.user.id);
      for(const item of cloud)if(item.metadata?.deleted&&item.local_id){deleted.add(item.local_id);rememberDeleted(s.user.id,item.local_id)}
      const local={};for(const store of STORES)local[store]=await allStore(store);
+     const localIssueIds=new Set(local.comics.map(x=>issueIdentity('comics',x)).filter(Boolean));
+     const remoteIssueIds=new Set(cloud.filter(x=>x.metadata?.kind==='comics'&&!x.metadata?.deleted).map(x=>issueIdentity('comics',x.metadata.record)).filter(Boolean));
      await offerLegacyImport(s.user.id,local);
      const fingerprints=JSON.parse(localStorage.getItem('mc_cloud_fingerprints_'+s.user.id)||'{}');
      const fingerprint=r=>{const str=JSON.stringify(r),n=str.length;let h=2166136261;for(let i=0;i<n;i++)h=Math.imul(h^str.charCodeAt(i),16777619);return (h>>>0).toString(16)+':'+n};
@@ -113,6 +124,10 @@
      for(const item of cloud){
        const kind=item.metadata?.kind,record=item.metadata?.record;
        if(!STORES.includes(kind)||!record?.id||item.user_id!==s.user.id||deleted.has(item.local_id))continue;
+       // A pre-existing local edition/issue wins over a different cloud UUID.
+       // Keep both source records intact until an explicit reconciliation.
+       const sameIssue=issueIdentity(kind,record);
+       if(sameIssue&&localIssueIds.has(sameIssue)&&!local[kind].some(x=>x.id===record.id))continue;
        const previous=await getStore(kind,record.id),key=localId(kind,record.id),remoteHash=fingerprint(record);
        if(!previous){await putStore(kind,record);downloaded++}
        else if(fingerprints[key]&&fingerprint(previous)===fingerprints[key]&&remoteHash!==fingerprints[key]){await putStore(kind,record);downloaded++}
@@ -121,6 +136,8 @@
      suspended=false;
      for(const store of STORES)for(const record of local[store]){
        if(!record?.id||deleted.has(localId(store,record.id)))continue;
+       const sameIssue=issueIdentity(store,record);
+       if(sameIssue&&remoteIssueIds.has(sameIssue)&&!remote.has(localId(store,record.id)))continue;
        if(!remote.has(localId(store,record.id))){await insertMissing(store,record,s.user.id);fingerprints[localId(store,record.id)]=fingerprint(record);uploaded++}
      }
      localStorage.setItem('mc_cloud_fingerprints_'+s.user.id,JSON.stringify(fingerprints));
