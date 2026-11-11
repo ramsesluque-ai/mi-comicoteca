@@ -5,6 +5,11 @@
  const MONTHS=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
  let records=[],publisherDirectory=[],loaded=false,loading=false,lastUpdate='',error='';
  const ui={publisher:'',month:'',q:''};
+ // Shared state for lazy cover resolution. Without these declarations the
+ // Novedades renderer throws ReferenceError before any cards can appear.
+ const coverCache=new Map();
+ const coverInFlight=new Set();
+ let coverObserver=null;
  const sanitize=x=>typeof esc==='function'?esc(x):String(x??'').replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
  const monthKey=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
  function allowedMonths(){const now=new Date(),previous=new Date(now.getFullYear(),now.getMonth()-1,1);return [monthKey(now),monthKey(previous)]}
