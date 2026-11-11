@@ -18,7 +18,7 @@
  try{
   const local=await allStore('comics'),cloud=[];
   for(let offset=0;;offset+=250){
-   const url=cfg.url+'/rest/v1/user_comics?select=metadata,user_id&user_id=eq.'+OWNER+'&limit=250&offset='+offset+'&order=created_at.asc';
+   const url=cfg.url+'/rest/v1/user_comics?select=metadata,user_id&user_id=eq.'+OWNER+'&limit=250&offset='+offset+'&order=local_id.asc';
    const response=await fetch(url,{headers:{apikey:cfg.publishableKey,Authorization:'Bearer '+s.access_token},cache:'no-store'});
    if(!response.ok)throw Error('Supabase HTTP '+response.status);
    const rows=await response.json();
