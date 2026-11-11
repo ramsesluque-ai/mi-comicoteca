@@ -96,33 +96,12 @@
   }
 
   async function titleCoverCandidates(x){
-    const title=String(x.title||x.catalogHeader||x.series||'').trim();
-    if(!title)return[];
-    const queries=[title,String(x.catalogHeader||x.series||'').trim()].filter((s,i,a)=>s&&a.indexOf(s)===i);
-    const out=[],seen=new Set(),normalize=s=>String(s||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
-    const wanted=normalize(title),year=Number(x.startYear||String(x.publicationDate||'').slice(0,4))||0;
-    for(const query of queries.slice(0,2)){
-      try{
-        const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),7500);
-        let r;
-        try{r=await fetch('https://openlibrary.org/search.json?title='+encodeURIComponent(query)+'&limit=12',{cache:'no-store',signal:controller.signal})}finally{clearTimeout(timeout)}
-        if(!r.ok)continue;
-        const data=await r.json();
-        for(const d of data.docs||[]){
-          const match=normalize(d.title||''),tokens=wanted.split(' ').filter(t=>t.length>3);
-          if(!match||!tokens.some(t=>match.includes(t)))continue;
-          const coverId=Number(d.cover_i);if(!Number.isSafeInteger(coverId)||coverId<=0||seen.has(coverId))continue;
-          if(year&&d.first_publish_year&&Math.abs(Number(d.first_publish_year)-year)>20)continue;
-          seen.add(coverId);
-          const url='https://covers.openlibrary.org/b/id/'+coverId+'-M.jpg';
-          const candidate=mcSECandidate('Open Library · portada candidata, verificar edición',{title:d.title||'',series:x.catalogHeader||x.series||'',publisher:(d.publisher||[])[0]||'',publicationDate:String(d.first_publish_year||''),writer:(d.author_name||[]).join(', '),coverUrl:url,coverUrls:[url],isbn:(d.isbn||[])[0]||''},50,[url]);
-          out.push(candidate);
-        }
-      }catch(e){console.warn('Búsqueda individual de portada por título',e)}
-      if(out.length>=8)break;
-    }
-    return out.slice(0,8);
+    // Deshabilitado: buscar por título/personaje devuelve otras ediciones
+    // (p. ej. Batman Bruguera 1979 -> Batman DC 1988).
+    // Solo se admiten coincidencias por edición en Maestro/Bridge o ISBN exacto.
+    return [];
   }
+
   async function triggerBridge(x,rows){
     const token=localStorage.getItem(TOKEN_KEY)||'';if(!token)return[];
     const c=(rows||[])[0],d=c?.data||{},id=requestId(x,c),cached=await readBridge(id,x);if(cached.length)return cached;
@@ -150,7 +129,7 @@
     const overlay=await overlayTebeosfera(x,rows,true);if(overlay.length)return overlay;
     const cached=await cachedBridge(x,rows);if(cached.length)return cached.slice(0,10);
     const isbn=await openISBN(x,rows);if(isbn.length)return isbn.slice(0,10);
-    const titleCovers=await titleCoverCandidates(x);if(titleCovers.length)return titleCovers;
+    // No presentar portadas de otras ediciones por coincidencia de personaje.
     return (base||[]).length?base:rows;
   };
 
@@ -171,7 +150,7 @@
         list=await triggerBridge(x,rows);
       }
       if(!list.length)list=await openISBN(x,rows);
-      if(!list.length)list=await titleCoverCandidates(x);
+      // Sin coincidencia por edición: mostrar solo datos verificables, sin portada ajena.
       if(!list.length)list=rows.length?rows:base;
       MCSearch.ficha=list||[];
       if(!MCSearch.ficha.length){
