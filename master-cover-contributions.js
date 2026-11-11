@@ -34,6 +34,32 @@ window.mcProposeMasterCover=function(encoded){
  const modal=document.getElementById('modal');
  const title=String(x.title||x.catalogHeader||x.series||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  modal.innerHTML='<div class="modalbox"><div class="modalhead"><b>Portada y datos del cómic</b><button class="btn" id="mcContribBack">Cerrar</button></div><div class="modalbody"><div class="mc-contrib-record"><span class="mc-contrib-kicker">Ficha del Maestro</span><strong>'+title+'</strong><span class="mc-contrib-muted">'+(isbn?'ISBN '+isbn:'Editorial, serie y número identificados (sin ISBN)')+'</span></div><div class="mc-contrib-search"><div><b>Buscar datos y portada</b><p class="mc-contrib-muted">Consulta individual por ISBN y título. Comprueba la edición antes de utilizar una imagen.</p></div><button class="btn primary" type="button" id="mcContribLookup">Buscar datos y portada</button></div><div id="mcContribLookupResults" class="mc-contrib-results" aria-live="polite"></div><details class="mc-contrib-upload"><summary>Proponer una portada para revisión</summary><p class="mc-contrib-notice">La imagen se guarda en privado y no se publica sin revisar la coincidencia y los derechos.</p><div class="mc-contrib-formgrid"><label>Imagen (JPG, PNG o WebP; máximo 5 MB)<input id="mcContribFile" type="file" accept="image/jpeg,image/png,image/webp"></label><label>Derechos de uso<select id="mcContribRights"><option value="">Selecciona la autorización</option><option value="own_work">Soy autor o titular de los derechos</option><option value="licensed">Tengo permiso o licencia para compartirla públicamente</option><option value="public_domain">La imagen es de dominio público</option></select></label><label class="mc-wide">Justificación / licencia<input id="mcContribNote" placeholder="Origen y permiso comprobable"></label></div><div class="mc-contrib-actions"><span id="mcContribStatus" role="status"></span><button class="btn primary" id="mcContribSend">Enviar para revisión</button></div></details></div></div>';
+ // Individual remote image selection: user validates the edition before submitting.
+ const searchExtra=document.createElement('div');
+ searchExtra.className='mc-contrib-direct';
+ searchExtra.innerHTML='<label>URL directa de la imagen (opcional)<input id="mcContribRemoteUrl" type="url" placeholder="https://.../portada.jpg" autocomplete="off"></label><button class="btn" type="button" id="mcContribUseUrl">Previsualizar y seleccionar</button><p id="mcContribRemoteStatus" class="mc-contrib-muted" role="status"></p><img id="mcContribSelectedPreview" alt="Portada elegida" style="display:none;max-height:200px;max-width:150px;object-fit:contain;border-radius:10px">';
+ document.getElementById('mcContribLookupResults').after(searchExtra);
+ let remoteChoice=null;
+ async function chooseRemoteCover(url,source){
+  const status=document.getElementById('mcContribRemoteStatus'),preview=document.getElementById('mcContribSelectedPreview');
+  const parsed=new URL(url);
+  if(parsed.protocol!=='https:'||!parsed.hostname||parsed.username||parsed.password)throw Error('Se requiere una URL HTTPS de imagen.');
+  remoteChoice={url:parsed.href,source:source||'Fuente externa'};
+  preview.src=remoteChoice.url;preview.style.display='block';
+  document.getElementById('mcContribRemoteUrl').value=remoteChoice.url;
+  document.getElementById('mcContribRights').value='licensed';
+  document.getElementById('mcContribNote').value='Fuente: '+remoteChoice.source+' · '+remoteChoice.url+' · Autorización declarada por responsable de MI COMICTECA (pendiente de revisión editorial).';
+  document.querySelector('.mc-contrib-upload').open=true;
+  status.textContent='Portada seleccionada. Verifica la edición y pulsa Enviar para revisión; intentaremos adjuntarla sin descarga manual.';
+ }
+ document.getElementById('mcContribUseUrl').onclick=async()=>{try{await chooseRemoteCover(document.getElementById('mcContribRemoteUrl').value.trim(),'URL aportada por el usuario')}catch(e){document.getElementById('mcContribRemoteStatus').textContent=e.message}};
+ document.getElementById('mcContribLookupResults').addEventListener('click',async ev=>{
+  const btn=ev.target.closest('[data-cover-choice]');
+  if(!btn)return;
+  const i=Number(btn.dataset.coverChoice),item=window.mcCoverLookupResults?.[i];
+  if(!item)return;
+  try{await chooseRemoteCover(item.url,item.source)}catch(e){document.getElementById('mcContribRemoteStatus').textContent=e.message}
+ });
  const panel=modal.querySelector('.modalbox');panel?.classList.add('mc-contrib-modal');
  modal.querySelector('.modalhead b')?.classList.add('mc-contrib-title');
  modal.querySelectorAll('.modalbody label').forEach(label=>label.classList.add('mc-contrib-field','mc-wide'));
@@ -46,7 +72,16 @@ window.mcProposeMasterCover=function(encoded){
   button.disabled=true;box.textContent='Consultando fuentes bibliográficas…';
   const safe=s=>String(s||'').replace(/[&<>"']/g,z=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[z]));
   const results=[],seen=new Set();
+  window.mcCoverLookupResults=results;
+  // Reuse the ficha search engine (including the Maestro's verified overlays and bridge).
+  try{if(typeof window.mcSESearch==='function'){
+    const candidates=await window.mcSESearch({publisher:x.publisher||'',catalogHeader:x.catalogHeader||x.series||'',series:x.catalogHeader||x.series||'',volume:x.volume||'',stage:x.stage||'',startYear:x.startYear||'',issueNr:x.issueNr||x.issue||'',isbn:isbn||'',sourceId:x.sourceId||''});
+    for(const item of candidates||[]){const d=item.data||{};if(d.coverUrl) addCoverCandidate(d.coverUrl,d.title||x.title||title,item.source||'Maestro / búsqueda de ficha',d.sourceUrl||'')}
+  }}catch(e){console.warn('Búsqueda de candidatas del Maestro:',e)}
+ 
   const add=(url,label,source,link)=>{if(!url||seen.has(url))return;seen.add(url);results.push({url,label,source,link})};
+  function addCoverCandidate(url,label,source,link){add(url,label,source,link)}
+
   const code=isbn.replace(/[^0-9X]/gi,'');
   try{
    if(code){
@@ -67,7 +102,7 @@ window.mcProposeMasterCover=function(encoded){
      lookupLinks.push({label:'Buscar portada de esta edición',url:'https://www.google.com/search?tbm=isch&q='+encodeURIComponent(edition+' portada')});
    }
    const alternatives=lookupLinks.length?'<div class="mc-contrib-alternatives"><b>Fuentes para cómics sin ISBN</b><p class="mc-contrib-muted">Estas opciones abren una búsqueda de la edición identificada. No implican que exista una portada disponible ni autorizan copiarla.</p>'+lookupLinks.map(a=>'<a href="'+safe(a.url)+'" target="_blank" rel="noopener noreferrer">'+safe(a.label)+' ↗</a>').join('')+'</div>':'';
-   box.innerHTML=results.length?'<div class="mc-contrib-resultgrid">'+results.slice(0,8).map(a=>'<a class="mc-contrib-result" href="'+safe(a.link||a.url)+'" target="_blank" rel="noopener noreferrer"><img src="'+safe(a.url)+'" loading="lazy" referrerpolicy="no-referrer" alt="Portada candidata" onerror="this.style.display=\'none\'"><span><b>'+safe(a.label)+'</b><small>'+safe(a.source)+'</small><small>Consultar fuente ↗</small></span></a>').join('')+'</div><p class="mc-contrib-muted">Estas imágenes son referencias externas. No se descargan ni se publican en el Maestro.</p>':'<p class="mc-contrib-muted">No hay portada confirmada en Open Library o Google Books para esta ficha. Consulta también las fuentes históricas siguientes.</p>';
+   box.innerHTML=results.length?'<div class="mc-contrib-resultgrid">'+results.slice(0,12).map((a,i)=>'<div class="mc-contrib-result"><img src="'+safe(a.url)+'" loading="lazy" referrerpolicy="no-referrer" alt="Portada candidata" onerror="this.style.display=\\'none\\'"><span><b>'+safe(a.label)+'</b><small>'+safe(a.source)+'</small><button type="button" class="btn primary" data-cover-choice="'+i+'">Elegir esta portada</button><a href="'+safe(a.link||a.url)+'" target="_blank" rel="noopener noreferrer">Ver fuente ↗</a></span></div>').join('')+'</div><p class="mc-contrib-muted">Selecciona la imagen y revisa que coincida con la editorial, la serie y el número. Después se enviará a la cola privada de revisión del Maestro.</p>':'<p class="mc-contrib-muted">No hay portada automática para esta ficha. Puedes pegar una URL directa de imagen o consultar las fuentes siguientes.</p>';
    box.innerHTML+=alternatives;
   }catch(e){box.textContent='No se pudo completar la consulta: '+(e.message||e)}
   finally{button.disabled=false}
@@ -75,7 +110,22 @@ window.mcProposeMasterCover=function(encoded){
 
  document.getElementById('mcContribSend').onclick=async()=>{
  const status=document.getElementById('mcContribStatus'),button=document.getElementById('mcContribSend');
- const file=document.getElementById('mcContribFile').files[0],rights=document.getElementById('mcContribRights').value,note=document.getElementById('mcContribNote').value.trim();
+ let file=document.getElementById('mcContribFile').files[0];
+ const rights=document.getElementById('mcContribRights').value,note=document.getElementById('mcContribNote').value.trim();
+ if(!file&&remoteChoice){
+   status.textContent='Capturando portada seleccionada…';
+   try{
+     const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
+     let response;
+     try{response=await fetch(remoteChoice.url,{mode:'cors',signal:controller.signal,credentials:'omit'})}finally{clearTimeout(timer)}
+     if(!response.ok)throw Error('La fuente no permite descargar la imagen (HTTP '+response.status+').');
+     const blob=await response.blob();
+     if(!['image/jpeg','image/png','image/webp'].includes(blob.type)||blob.size>5242880||!blob.size)throw Error('La portada no es JPEG, PNG o WebP válido (máximo 5 MB).');
+     const ext=blob.type==='image/png'?'png':blob.type==='image/webp'?'webp':'jpg';
+     file=new File([blob],'portada-validada.'+ext,{type:blob.type});
+   }catch(e){status.textContent='La fuente bloquea la captura desde el navegador. Abre la fuente y utiliza la subida manual. Detalle: '+e.message;return}
+ }
+
  if(!file||!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5242880||!file.size){status.textContent='Selecciona una imagen válida de hasta 5 MB.';return}
  if(!rights||!note){status.textContent='Indica los derechos de uso y su justificación.';return}
  button.disabled=true;status.textContent='Guardando propuesta privada…';
