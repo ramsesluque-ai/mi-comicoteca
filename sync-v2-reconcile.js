@@ -64,5 +64,31 @@
    if(conflicts.length)return {status:'conflict',reason:'concurrent-field-edits',fields:conflicts};
    return {status:'merged',record};
  }
- root.MCReconcileV2={identity,merge,reconcile,threeWay};
+ // Pure planner: no writes, and never infer deletion from absence in a page.
+ function planWithBaseline(baseRows,localRows,remoteRows){
+   const base=new Map(baseRows.map(r=>[String(r.id),r]));
+   const local=new Map(localRows.map(r=>[String(r.id),r]));
+   const remote=new Map(remoteRows.map(r=>[String(r.id),r]));
+   const decisions={download:[],upload:[],merged:[],conflicts:[],unchanged:[]};
+   const keys=new Set([...base.keys(),...local.keys(),...remote.keys()]);
+   for(const id of keys){
+     const b=base.get(id),l=local.get(id),r=remote.get(id);
+     // Missing rows may be pagination gaps, never treat as tombstones.
+     if(!l&&!r){decisions.conflicts.push({id,reason:'missing-both-without-tombstone'});continue}
+     if(!b){
+       if(l&&!r)decisions.upload.push(l);
+       else if(r&&!l)decisions.download.push(r);
+       else if(JSON.stringify(l)===JSON.stringify(r))decisions.unchanged.push(id);
+       else decisions.conflicts.push({id,reason:'no-baseline'});
+       continue;
+     }
+     if(!l||!r){decisions.conflicts.push({id,reason:'missing-record-without-tombstone'});continue}
+     const outcome=threeWay(b,l,r);
+     if(outcome.status==='conflict')decisions.conflicts.push({id,...outcome});
+     else if(outcome.status==='unchanged'||(JSON.stringify(outcome.record)===JSON.stringify(l)&&JSON.stringify(l)===JSON.stringify(r)))decisions.unchanged.push(id);
+     else decisions.merged.push({id,record:outcome.record,needsLocal:JSON.stringify(outcome.record)!==JSON.stringify(l),needsRemote:JSON.stringify(outcome.record)!==JSON.stringify(r)});
+   }
+   return decisions;
+ }
+ root.MCReconcileV2={identity,merge,reconcile,threeWay,planWithBaseline};
 })(typeof window!=='undefined'?window:globalThis);
