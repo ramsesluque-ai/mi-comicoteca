@@ -20,8 +20,9 @@
     window.saveComic=saveComic=async function(id,mode='close'){
       const before=id?await getStore('comics',id):null;
       const typedCover=String(document.getElementById('m_coverUrl')?.value||'').trim();
-      await baseSave(id,mode);
-      if(!before)return;
+      const saved=await baseSave(id,mode);
+      if(saved!==true)return saved;
+      if(!before)return saved;
       const after=await getStore('comics',id);if(!after)return;
       const next={...after,
         sourceId:before.sourceId||after.sourceId||'',
