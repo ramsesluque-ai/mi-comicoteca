@@ -31,9 +31,12 @@
   const ident=window.MCReconcileV2?.identity;
   const localKeys=new Set(typeof ident==='function'?local.map(ident).filter(Boolean):[]);
   const matched=missing.filter(r=>typeof ident==='function'&&ident(r)&&localKeys.has(ident(r)));
-  const summary={local:local.length,cloud:cloud.length,missing:missing.length,extra:extra.length,matchingEditionDifferentId:matched.length,missingIds:missing.map(r=>String(r.id))};
+  const localByKey=new Map();if(typeof ident==='function')for(const r of local){const k=ident(r);if(k){const a=localByKey.get(k)||[];a.push(r);localByKey.set(k,a)}}
+  const brief=r=>({id:String(r.id),publisher:r.publisher||'',series:r.catalogHeader||r.series||'',volume:r.volume||'',stage:r.stage||'',startYear:r.startYear||'',issue:r.issueNr??r.issue??'',title:r.title||''});
+  const pairs=missing.map(r=>({cloud:brief(r),mobileMatches:(localByKey.get(typeof ident==='function'?ident(r):'')||[]).map(brief)}));
+  const summary={local:local.length,cloud:cloud.length,missing:missing.length,extra:extra.length,matchingEditionDifferentId:matched.length,missingIds:missing.map(r=>String(r.id)),possiblePairs:pairs,onlyMobile:extra.map(brief)};
   status.textContent='Locales: '+summary.local+' | Nube: '+summary.cloud+' | Faltan en este dispositivo: '+summary.missing+' | Solo en este dispositivo: '+summary.extra+' | Posibles coincidencias de edición con distinto ID: '+summary.matchingEditionDifferentId+'. No se ha modificado ninguna ficha.';
-  idsEl.textContent=summary.missingIds.join('\\n')||'Ninguna';
+  idsEl.textContent=JSON.stringify({possiblePairs:summary.possiblePairs,onlyMobile:summary.onlyMobile},null,2);
   const report='MI COMICTECA — Comparación V2 (solo lectura)\\n'+JSON.stringify(summary,null,2);
   copy.disabled=false;copy.onclick=async()=>{try{await navigator.clipboard.writeText(report);status.textContent+=' Informe copiado.'}catch(e){const ta=document.createElement('textarea');ta.value=report;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove()}};
   window.MC_SYNC_V2_COMPARISON=summary;
