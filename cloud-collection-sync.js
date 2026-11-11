@@ -71,9 +71,8 @@
      ready=true;lastError='';
      if(downloaded&&typeof render==='function')await render();
      console.info('COMICTECA sync', {downloaded,uploaded,remote:cloud.length});
-     await flush();
    }catch(e){suspended=false;lastError=e.message||String(e);console.warn('COMICTECA sync paused; local data preserved:',e)}
-   finally{running=false}
+   finally{running=false;if(ready&&pending.size)setTimeout(flush,0)}
  }
  async function flush(){
    if(running||!ready||!pending.size)return;
