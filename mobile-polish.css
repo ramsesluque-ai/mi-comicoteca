@@ -39,3 +39,62 @@
   .side .brand img[src*='mi-comicteca-logo.svg']{max-width:100px!important;width:100px!important}
   .mc-mobile-menu-toggle{min-width:96px!important;padding:10px!important}
 }
+
+/* Corrección específica de la ficha: la regla heredada de 255px + otra columna
+   provocaba el recorte visible en iPhone y solapaba los campos de identidad. */
+@media (max-width:680px){
+  #modal .mc-comic-editor .modalbody .formgrid>.span4.toolbar{
+    display:grid!important;
+    width:100%!important;min-width:0!important;max-width:100%!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-rows:auto!important;
+    gap:12px!important;
+    align-items:start!important;
+  }
+  #modal .mc-comic-editor .modalbody .formgrid>.span4.toolbar>.cover.big,
+  #modal .mc-comic-editor .modalbody .formgrid>.span4.toolbar>.coverph.big,
+  #modal .mc-comic-editor .modalbody .formgrid>.span4.toolbar>.mc-cover-slot{
+    grid-column:1!important;grid-row:auto!important;
+    justify-self:center!important;
+    width:min(190px,100%)!important;height:auto!important;
+    min-height:0!important;max-height:280px!important;
+  }
+  #modal .mc-comic-editor .modalbody .formgrid>.span4.toolbar>.ficha-top-actions,
+  #modal .mc-comic-editor .modalbody .formgrid>.span4.toolbar>.mc-identity-panel,
+  #modal .mc-comic-editor .modalbody .formgrid>.span4.toolbar>div[style*="flex:1"],
+  #modal .mc-comic-editor .modalbody .formgrid>.span4.toolbar>.field{
+    grid-column:1/-1!important;grid-row:auto!important;
+    width:100%!important;min-width:0!important;max-width:100%!important;
+  }
+  #modal .mc-comic-editor .modalbody .formgrid>.span4.toolbar>.mc-identity-panel{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    gap:12px!important;
+    margin-top:0!important;
+  }
+  #modal .mc-comic-editor .mc-identity-panel>.field{
+    grid-column:1/-1!important;
+    min-width:0!important;width:100%!important;
+  }
+  #modal .mc-comic-editor .mc-identity-panel>.field label{
+    display:block!important;position:static!important;
+    font-size:13px!important;line-height:1.4!important;
+    margin-bottom:5px!important;white-space:normal!important;
+  }
+  #modal .mc-comic-editor .mc-identity-panel>.field input,
+  #modal .mc-comic-editor .mc-identity-panel>.field select{
+    display:block!important;width:100%!important;min-width:0!important;
+    min-height:44px!important;font-size:16px!important;
+  }
+  #modal .mc-comic-editor .ficha-top-actions{
+    min-width:0!important;max-width:100%!important;
+    width:100%!important;align-items:stretch!important;
+  }
+  #modal .mc-comic-editor .ficha-code-row{display:grid!important;grid-template-columns:minmax(0,1fr)!important}
+  #modal .mc-comic-editor .ficha-code-row input{max-width:100%!important;width:100%!important;min-width:0!important}
+  #modal .mc-comic-editor .ficha-code-row .btn{width:100%!important;min-height:42px!important}
+  #modal .mc-comic-editor .ficha-top-actions>.btn{width:100%!important;min-height:44px!important;white-space:normal!important}
+  #modal .mc-comic-editor .modalfoot{display:flex!important;gap:8px!important;overflow-x:auto!important;flex-wrap:nowrap!important;-webkit-overflow-scrolling:touch}
+  #modal .mc-comic-editor .modalfoot .btn{flex:0 0 auto!important;min-height:44px!important;font-size:12px!important;padding:9px 12px!important}
+  #modal .mc-comic-editor .modalfoot .mc-ficha-nav{flex:0 0 auto!important;flex-wrap:nowrap!important}
+}
