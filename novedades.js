@@ -65,7 +65,16 @@
      '<div class="card mc-novedad-empty">No hay novedades verificadas para los filtros seleccionados. Puedes consultar las editoriales desde sus enlaces oficiales.</div>';
    activateCoverLookup();
  }
- async function lookupCover(r){
+ function mcNovedadesImageLoads(url){return new Promise(resolve=>{
+ if(!url)return resolve(false);
+ const img=new Image();let done=false;
+ const finish=ok=>{if(done)return;done=true;clearTimeout(timer);img.onload=null;img.onerror=null;resolve(ok)};
+ const timer=setTimeout(()=>finish(false),6500);
+ img.onload=()=>finish(img.naturalWidth>=100&&img.naturalHeight>=100);
+ img.onerror=()=>finish(false);
+ img.referrerPolicy='no-referrer';img.src=url;
+})}
+async function lookupCover(r){
    if(coverInFlight.has(r.id))return;
    coverInFlight.add(r.id);
    try{
@@ -79,6 +88,7 @@
        const code=String(r.isbn).replace(/[^0-9X]/gi,'');
        try{const response=await fetch('https://openlibrary.org/api/books?bibkeys=ISBN:'+encodeURIComponent(code)+'&format=json&jscmd=data');if(response.ok){const data=await response.json();image=urlSafe(data['ISBN:'+code]?.cover?.medium||data['ISBN:'+code]?.cover?.large)}}catch{}
      }
+     if(image&&!await mcNovedadesImageLoads(image))image='';
      coverCache.set(r.id,image||'');
      const slot=document.querySelector('[data-novedad-cover="'+r.id+'"]');
      if(slot){
