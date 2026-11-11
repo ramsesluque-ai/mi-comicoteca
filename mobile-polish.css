@@ -1,0 +1,41 @@
+/* MI COMICTECA — ajustes móviles progresivos, sin alterar el escritorio.
+   Mantener esta hoja al final de los estilos para evitar regresiones por cascada. */
+@media (max-width:680px){
+  html,body{max-width:100%;overflow-x:clip}
+  .app,.main,#view{min-width:0;max-width:100%}
+  .main{padding:14px 10px max(80px,env(safe-area-inset-bottom))!important}
+  .top{gap:10px;margin-bottom:12px}
+  .top h1{font-size:clamp(22px,6vw,28px)!important;line-height:1.15;overflow-wrap:anywhere}
+  .sub{font-size:13px;line-height:1.4}
+  .top .actions,.actions{width:100%;gap:8px}
+  .top .actions>.btn{flex:1 1 auto;min-height:42px}
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px}
+  .grid>.card{min-width:0;padding:12px}
+  .kpi .v{font-size:clamp(20px,6vw,28px);overflow-wrap:anywhere}
+  .panel{max-width:100%;min-width:0}
+  .panel-head{padding:12px;flex-wrap:wrap}
+  .filters{grid-template-columns:minmax(0,1fr)!important;padding:10px;gap:8px}
+  .formgrid{grid-template-columns:minmax(0,1fr)!important}
+  .formgrid>.span2,.formgrid>.span3,.formgrid>.span4{grid-column:1/-1!important}
+  input,select,textarea{font-size:16px}
+  .btn,.modalfoot button{min-height:42px}
+  .table-wrap{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .table-wrap table{min-width:max-content}
+  .modal{padding:0!important;align-items:stretch!important}
+  .modalbox{width:100%!important;max-width:100%!important;height:100dvh!important;max-height:100dvh!important;border-radius:0!important;display:flex;flex-direction:column;overflow:hidden!important}
+  .modalhead{flex:0 0 auto;position:relative;flex-wrap:wrap;padding:12px}
+  .modalbody{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px}
+  .modalfoot{flex:0 0 auto;position:relative;padding:10px max(10px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));justify-content:stretch}
+  .modalfoot>.btn,.modalfoot>button{flex:1 1 auto;white-space:normal}
+  .mc-novedades-panel{min-width:0}
+  .mc-novedad-actions .btn{min-height:42px!important;font-size:12px!important;white-space:normal!important}
+  .mc-novedades-grid{grid-template-columns:minmax(0,1fr)!important}
+  .side .nav{max-height:calc(100dvh - 66px)!important}
+  .side .nav button{min-height:48px!important}
+  .pbi-panel{min-width:0;max-width:100%}
+}
+@media (max-width:360px){
+  .grid{grid-template-columns:minmax(0,1fr)!important}
+  .side .brand img[src*='mi-comicteca-logo.svg']{max-width:100px!important;width:100px!important}
+  .mc-mobile-menu-toggle{min-width:96px!important;padding:10px!important}
+}
