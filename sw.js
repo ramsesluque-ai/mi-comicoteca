@@ -19,8 +19,7 @@ self.addEventListener('install',event=>{
     const versions={};
     for(const path of ['./dashboard-pbi.js','./dashboard-pbi.css']){
       const name=path.slice(2);
-      const escaped=name.replace(/[.*+?^$\{\}()|[\]\\]/g,'\\const critical=new Set(['./novedades.js','./novedades-editoriales.json','./index.html','./dashboard-pbi.js','./dashboard-pbi.css','./mi-comicteca-logo.svg']);');
-      const match=shellHtml.match(new RegExp('(?:src|href)=["\\\']('+escaped+'\\?v=[^"\\\']+)["\\\']'));
+      const match=shellHtml.match(new RegExp('(?:src|href)=["\\\']('+name.replace('.', '\\.')+'\\?v=[^"\\\']+)["\\\']'));
       if(!match)throw new Error('Missing versioned dashboard reference: '+name);
       versions[path]='./'+match[1];
     }
