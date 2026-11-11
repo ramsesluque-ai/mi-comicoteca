@@ -45,3 +45,13 @@
 .mc-contrib-alternatives{display:flex;flex-direction:column;gap:9px;padding:14px 16px;border:1px solid #315575;border-radius:12px;background:#10283e}
 .mc-contrib-alternatives p{margin:0 0 3px}
 .mc-contrib-alternatives a{display:block;width:fit-content;max-width:100%;color:#80cfff;text-decoration:underline;text-underline-offset:3px;font-size:14px}
+
+/* Captura individual de portadas seleccionadas, 2026-11-11 */
+.mc-contrib-direct{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end;padding:14px;border:1px solid #315575;border-radius:12px;background:#0b2339}
+.mc-contrib-direct label{display:flex;flex-direction:column;gap:7px;font-weight:700;font-size:13px;min-width:0}
+.mc-contrib-direct input{width:100%;box-sizing:border-box;min-height:42px;border-radius:9px;border:1px solid #355874;background:#061a2d;color:#fff;padding:10px}
+.mc-contrib-direct p,.mc-contrib-direct img{grid-column:1/-1;margin:0}
+.mc-contrib-result{align-items:flex-start}
+.mc-contrib-result span .btn{font-size:12px;min-height:36px;white-space:normal}
+.mc-contrib-result span a{font-size:12px;color:#78cbff}
+@media(max-width:640px){.mc-contrib-direct{grid-template-columns:1fr}}
