@@ -73,15 +73,15 @@ window.mcProposeMasterCover=function(encoded){
   const safe=s=>String(s||'').replace(/[&<>"']/g,z=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[z]));
   const results=[],seen=new Set();
   window.mcCoverLookupResults=results;
+  const add=(url,label,source,link)=>{if(!url||seen.has(url))return;seen.add(url);results.push({url,label,source,link})};
+  function addCoverCandidate(url,label,source,link){add(url,label,source,link)}
+
   // Reuse the ficha search engine (including the Maestro's verified overlays and bridge).
   try{if(typeof window.mcSESearch==='function'){
     const candidates=await window.mcSESearch({publisher:x.publisher||'',catalogHeader:x.catalogHeader||x.series||'',series:x.catalogHeader||x.series||'',volume:x.volume||'',stage:x.stage||'',startYear:x.startYear||'',issueNr:x.issueNr||x.issue||'',isbn:isbn||'',sourceId:x.sourceId||''});
     for(const item of candidates||[]){const d=item.data||{};if(d.coverUrl) addCoverCandidate(d.coverUrl,d.title||x.title||title,item.source||'Maestro / búsqueda de ficha',d.sourceUrl||'')}
   }}catch(e){console.warn('Búsqueda de candidatas del Maestro:',e)}
  
-  const add=(url,label,source,link)=>{if(!url||seen.has(url))return;seen.add(url);results.push({url,label,source,link})};
-  function addCoverCandidate(url,label,source,link){add(url,label,source,link)}
-
   const code=isbn.replace(/[^0-9X]/gi,'');
   try{
    if(code){
