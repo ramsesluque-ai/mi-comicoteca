@@ -3,6 +3,9 @@
    Never clears local IndexedDB or sends an empty collection as a deletion. */
 (function(){
  const SESSION='mc_supabase_session_v1', STORES=['comics','purchases'];
+ const deletedKey=uid=>'mc_cloud_deleted_'+uid;
+ const deletedSet=uid=>{try{return new Set(JSON.parse(localStorage.getItem(deletedKey(uid))||'[]'))}catch{return new Set()}};
+ const rememberDeleted=(uid,key)=>{const s=deletedSet(uid);s.add(key);localStorage.setItem(deletedKey(uid),JSON.stringify([...s]))};
  let ready=false, running=false, suspended=false, pending=new Map(), timer=null, lastError='';
  const cfg=()=>window.MI_COMICOTECA_CLOUD||{};
  const session=()=>{try{return JSON.parse(sessionStorage.getItem(SESSION)||'null')}catch{return null}};
@@ -36,6 +39,18 @@
    const body=asRemote(store,r,uid);
    // Unique (user_id,local_id) prevents duplicate migration across devices.
    await request('user_comics?on_conflict=user_id,local_id',{method:'POST',headers:{Prefer:'resolution=ignore-duplicates,return=minimal'},body:JSON.stringify(body)});
+ }
+ async function markDeleted(store,id){
+   const s=await credentials();if(!s)return;
+   const key=localId(store,id);
+   rememberDeleted(s.user.id,key);
+   const rows=await request('user_comics?select=id,metadata&user_id=eq.'+encodeURIComponent(s.user.id)+'&local_id=eq.'+encodeURIComponent(key)+'&limit=1');
+   if(rows.length){
+     const metadata={...(rows[0].metadata||{}),deleted:true,deleted_at:new Date().toISOString()};
+     await request('user_comics?id=eq.'+encodeURIComponent(rows[0].id)+'&user_id=eq.'+encodeURIComponent(s.user.id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({metadata,updated_at:new Date().toISOString()})});
+   }else{
+     await request('user_comics?on_conflict=user_id,local_id',{method:'POST',headers:{Prefer:'resolution=ignore-duplicates,return=minimal'},body:JSON.stringify({user_id:s.user.id,local_id:key,status:'pending',custom_title:'',metadata:{comicteca_sync_v:1,kind:store,deleted:true,deleted_at:new Date().toISOString()}})});
+   }
  }
  async function updateOne(store,r){
    const s=await credentials();if(!s)return;
@@ -76,7 +91,9 @@
    if(running||!db)return;running=true;
    try{
      const s=await credentials();if(!s)return;
-     const cloud=await remoteRows(),remote=new Map(cloud.filter(x=>x.local_id&&x.metadata?.record).map(x=>[x.local_id,x]));
+     const cloud=await remoteRows(),remote=new Map(cloud.filter(x=>x.local_id).map(x=>[x.local_id,x]));
+     const deleted=deletedSet(s.user.id);
+     for(const item of cloud)if(item.metadata?.deleted&&item.local_id){deleted.add(item.local_id);rememberDeleted(s.user.id,item.local_id)}
      const local={};for(const store of STORES)local[store]=await allStore(store);
      await offerLegacyImport(s.user.id,local);
      const fingerprints=JSON.parse(localStorage.getItem('mc_cloud_fingerprints_'+s.user.id)||'{}');
@@ -85,7 +102,7 @@
      let downloaded=0,uploaded=0;
      for(const item of cloud){
        const kind=item.metadata?.kind,record=item.metadata?.record;
-       if(!STORES.includes(kind)||!record?.id||item.user_id!==s.user.id)continue;
+       if(!STORES.includes(kind)||!record?.id||item.user_id!==s.user.id||deleted.has(item.local_id))continue;
        const previous=await getStore(kind,record.id),key=localId(kind,record.id),remoteHash=fingerprint(record);
        if(!previous){await putStore(kind,record);downloaded++}
        else if(fingerprints[key]&&fingerprint(previous)===fingerprints[key]&&remoteHash!==fingerprints[key]){await putStore(kind,record);downloaded++}
@@ -93,7 +110,7 @@
      }
      suspended=false;
      for(const store of STORES)for(const record of local[store]){
-       if(!record?.id)continue;
+       if(!record?.id||deleted.has(localId(store,record.id)))continue;
        if(!remote.has(localId(store,record.id))){await insertMissing(store,record,s.user.id);fingerprints[localId(store,record.id)]=fingerprint(record);uploaded++}
      }
      localStorage.setItem('mc_cloud_fingerprints_'+s.user.id,JSON.stringify(fingerprints));
@@ -113,6 +130,14 @@
    pending.set(localId(store,record.id),{store,record});
    clearTimeout(timer);timer=setTimeout(()=>{if(ready)flush();else synchronize()},1300);
  }
+ const originalDel=window.delStore;
+ if(typeof originalDel==='function')window.delStore=async function(store,id){
+   if(!STORES.includes(store))return originalDel(store,id);
+   const result=await originalDel(store,id);
+   pending.delete(localId(store,id));
+   try{await markDeleted(store,id)}catch(e){lastError='Eliminación pendiente de sincronizar: '+(e.message||e);console.warn('COMICTECA delete sync',e)}
+   return result;
+ };
  const originalPut=window.putStore;
  if(typeof originalPut==='function')window.putStore=async function(store,record){const result=await originalPut(store,record);queue(store,record);return result};
  const originalBulk=window.bulkPut;
