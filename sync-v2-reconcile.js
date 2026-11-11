@@ -40,5 +40,29 @@
    }
    return {downloads,updates,conflicts};
  }
- root.MCReconcileV2={identity,merge,reconcile};
+ // Three-way, per-field plan: no blind last-writer-wins for concurrent edits.
+ // base is the last acknowledged snapshot for this record; absent base is unsafe.
+ function threeWay(base,local,remote){
+   if(!base||!local||!remote||String(base.id)!==String(local.id)||String(base.id)!==String(remote.id))
+     return {status:'conflict',reason:'missing-or-mismatched-baseline'};
+   if(local.deleted||remote.deleted){
+     if(local.deleted&&remote.deleted)return {status:'unchanged',record:{...remote,deleted:true}};
+     const deleted=local.deleted?local:remote,other=local.deleted?remote:local;
+     const changed=Object.keys(other).some(k=>k!=='deleted'&&JSON.stringify(other[k])!==JSON.stringify(base[k]));
+     return changed?{status:'conflict',reason:'delete-versus-edit'}:{status:'merged',record:{...deleted,deleted:true}};
+   }
+   const keys=new Set([...Object.keys(base),...Object.keys(local),...Object.keys(remote)]);
+   const record={...base},conflicts=[];
+   for(const key of keys){
+     if(key==='id'){record.id=base.id;continue}
+     const a=JSON.stringify(base[key]),l=JSON.stringify(local[key]),r=JSON.stringify(remote[key]);
+     if(l===r){if(l===undefined)delete record[key];else record[key]=local[key]}
+     else if(l===a){if(r===undefined)delete record[key];else record[key]=remote[key]}
+     else if(r===a){if(l===undefined)delete record[key];else record[key]=local[key]}
+     else conflicts.push(key);
+   }
+   if(conflicts.length)return {status:'conflict',reason:'concurrent-field-edits',fields:conflicts};
+   return {status:'merged',record};
+ }
+ root.MCReconcileV2={identity,merge,reconcile,threeWay};
 })(typeof window!=='undefined'?window:globalThis);
