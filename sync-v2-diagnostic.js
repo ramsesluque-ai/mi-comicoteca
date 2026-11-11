@@ -5,12 +5,12 @@
  const p=new URLSearchParams(location.search);
  if(p.get('syncv2')!=='diagnostico')return;
  const session=JSON.parse(sessionStorage.getItem('mc_supabase_session_v1')||'null');
- if(session?.user?.id!=='0bcbe06d-263d-4ac1-a516-355d27d417f1'){console.warn('Diagnóstico V2: cuenta no autorizada');return}
+ if(session?.user?.id!=='0bcbe06d-263d-4ac1-a516-355d27d417f1'){console.warn('Diagnóstico V2: cuenta no autorizada');alert('Diagnóstico V2: inicia sesión con la cuenta propietaria.');return}
  const cfg=window.MI_COMICOTECA_CLOUD;
- if(!cfg?.url||!session.access_token||!window.MCReconcileV2){console.warn('Diagnóstico V2: sesión o motor no disponible');return}
+ if(!cfg?.url||!session.access_token||!window.MCReconcileV2){console.warn('Diagnóstico V2: sesión o motor no disponible');alert('Diagnóstico V2: falta la sesión o el motor.');return}
  const result={local:0,cloud:0,conflicts:0,downloads:0,updates:0,errors:[]};
  try{
-  if(typeof db==='undefined'||!db)await new Promise(resolve=>window.addEventListener('load',resolve,{once:true}));
+  if(typeof db==='undefined'||!db){for(let i=0;i<30&&!db;i++)await new Promise(resolve=>setTimeout(resolve,200));if(!db)throw Error('La base local no está disponible') }
   const local=await allStore('comics');result.local=local.length;
   const remote=[];
   for(let offset=0;;offset+=500){
@@ -30,5 +30,5 @@
   el.style.cssText='position:fixed;bottom:12px;right:12px;z-index:999999;background:#10253b;color:white;padding:14px;border-radius:10px;font:14px system-ui;max-width:340px;box-shadow:0 2px 12px #0006';
   el.textContent='Diagnóstico V2 (solo lectura): '+result.local+' locales, '+result.cloud+' nube, '+result.conflicts+' conflictos, '+result.downloads+' descargas propuestas, '+result.updates+' actualizaciones propuestas. No se ha modificado ninguna ficha.';
   document.body.appendChild(el);
- }catch(e){result.errors.push(String(e));console.error('Diagnóstico V2',e)}
+ }catch(e){result.errors.push(String(e));console.error('Diagnóstico V2',e);alert('Diagnóstico V2: '+String(e).slice(0,180))}
 })();
