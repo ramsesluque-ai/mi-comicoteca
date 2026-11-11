@@ -1,5 +1,8 @@
 'use strict';
 (function(){
+// Production safety: legacy GitHub backup must never run on the commercial site.
+// It was built for a single owner and is not account-isolated.
+if(location.hostname==='micomicteca.es'||location.hostname==='www.micomicteca.es')return;
 if(new URLSearchParams(location.search).get('modo') === 'prueba-importacion') return;
 // Legacy GitHub owner backup is not a multi-user sync service. Disable it on
 // the commercial Cloudflare origin to prevent cross-account restore or writes.
