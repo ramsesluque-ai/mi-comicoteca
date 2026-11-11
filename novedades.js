@@ -9,6 +9,8 @@
  // Novedades renderer throws ReferenceError before any cards can appear.
  const coverCache=new Map();
  const coverInFlight=new Set();
+ const coverFailedAt=new Map();
+ const COVER_RETRY_MS=5*60*1000;
  let coverObserver=null;
  const sanitize=x=>typeof esc==='function'?esc(x):String(x??'').replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
  const monthKey=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
@@ -90,6 +92,7 @@ async function lookupCover(r){
      }
      if(image&&!await mcNovedadesImageLoads(image))image='';
      coverCache.set(r.id,image||'');
+     if(image)coverFailedAt.delete(r.id);else coverFailedAt.set(r.id,Date.now());
      const slot=document.querySelector('[data-novedad-cover="'+r.id+'"]');
      if(slot){
        if(image){slot.classList.add('mc-novedad-cover-image');slot.innerHTML='<img loading="lazy" referrerpolicy="no-referrer" src="'+sanitize(image)+'" alt="Portada de '+sanitize(r.title)+'" onerror="this.closest(\'.mc-novedad-cover\').innerHTML=\'<small>Portada no disponible</small>\'">'}
@@ -98,6 +101,7 @@ async function lookupCover(r){
    }catch(e){
      console.warn('Portada de novedad no disponible',r.id,e);
      coverCache.set(r.id,'');
+     coverFailedAt.set(r.id,Date.now());
      const slot=document.querySelector('[data-novedad-cover="'+r.id+'"]');
      if(slot)slot.innerHTML='<span aria-hidden="true">▤</span><small>Portada no disponible · <a target="_blank" rel="noopener noreferrer" href="'+sanitize(urlSafe(r.sourceUrl))+'">Ver editorial ↗</a></small>';
    }
@@ -106,10 +110,10 @@ async function lookupCover(r){
  function activateCoverLookup(){
    const nodes=[...document.querySelectorAll('[data-novedad-cover]')];
    if(!nodes.length)return;
-   const trigger=node=>{const r=records.find(x=>x.id===node.dataset.novedadCover);if(r&&!coverCache.has(r.id))void lookupCover(r)};
+   const trigger=node=>{const r=records.find(x=>x.id===node.dataset.novedadCover);if(r&&(!coverCache.has(r.id)||(!coverCache.get(r.id)&&Date.now()-(coverFailedAt.get(r.id)||0)>=COVER_RETRY_MS)))void lookupCover(r)};
    if(typeof IntersectionObserver==='undefined'){nodes.slice(0,12).forEach(trigger);return}
    coverObserver=new IntersectionObserver(entries=>{for(const entry of entries){if(entry.isIntersecting){coverObserver?.unobserve(entry.target);trigger(entry.target)}}},{rootMargin:'240px'});
-   nodes.forEach(node=>{const id=node.dataset.novedadCover;if(coverCache.has(id)&&!coverCache.get(id)){const r=records.find(x=>x.id===id);node.innerHTML='<span aria-hidden="true">▤</span><small>Portada no disponible · <a target="_blank" rel="noopener noreferrer" href="'+sanitize(urlSafe(r?.sourceUrl))+'">Ver editorial ↗</a></small>'}else coverObserver.observe(node)});
+   nodes.forEach(node=>{const id=node.dataset.novedadCover;if(coverCache.has(id)&&!coverCache.get(id)&&Date.now()-(coverFailedAt.get(id)||0)<COVER_RETRY_MS){const r=records.find(x=>x.id===id);node.innerHTML='<span aria-hidden="true">▤</span><small>Portada no disponible · <a target="_blank" rel="noopener noreferrer" href="'+sanitize(urlSafe(r?.sourceUrl))+'">Ver editorial ↗</a></small>'}else coverObserver.observe(node)});
  }
  async function view(){
    if(!loaded)await load();
