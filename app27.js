@@ -121,17 +121,18 @@
     const overlay=await overlayTebeosfera(x,rows,true);if(overlay.length)return overlay;
     const cached=await cachedBridge(x,rows);if(cached.length)return cached.slice(0,10);
     const isbn=await openISBN(x,rows);if(isbn.length)return isbn.slice(0,10);
-    return[];
+    return (base||[]).length?base:rows;
   };
 
   window.mcSearchFichaAll=async function(){
     const x=mcFormComic();
-    if(!issue(x.issueNr??x.issue??'')&&!code(x.isbn||''))return toast('Informa al menos el número de la serie o un ISBN/EAN');
+    if(!issue(x.issueNr??x.issue??'')&&!code(x.isbn||'')&&!String(x.title||x.catalogHeader||x.series||'').trim())return toast('Indica título, cabecera o ISBN');
     MCSearch.ficha=[];MCSearch.selectedFicha=0;MCSearch.lastDataOnly=0;
     mcShowSearch('Buscar datos y portada',`<div class="muted">Buscando información y portada del cómic…</div>`);
     try{
       let base=await BASE_SEARCH(x),list=(base||[]).filter(hasCover),rows=[];
       if(!list.length)rows=await dataOnly(x);
+      if(!rows.length&&base?.length)rows=base;
       if(rows.length)MCSearch.lastDataOnly=rows.length;
       if(!list.length)list=await overlayTebeosfera(x,rows,true);
       if(!list.length)list=await cachedBridge(x,rows);
@@ -140,12 +141,13 @@
         list=await triggerBridge(x,rows);
       }
       if(!list.length)list=await openISBN(x,rows);
+      if(!list.length)list=rows.length?rows:base;
       MCSearch.ficha=list||[];
       if(!MCSearch.ficha.length){
-        const ext=localStorage.getItem(TOKEN_KEY)?'Tebeosfera y las fuentes de respaldo no han devuelto todavía una coincidencia segura.':'No hay todavía una portada verificada para esta identidad en el Maestro. El enriquecimiento Tebeosfera sigue actualizando el overlay; este dispositivo no necesita token para usar las portadas ya incorporadas.';
+        const ext='No se ha localizado una ficha de esta edición en las fuentes consultadas. Puedes guardar los datos disponibles sin portada y revisar la imagen por separado.';
         return mcShowSearch('Resultados: datos y portada',mcSEEmpty(x)+`<div class="notice" style="margin-top:12px"><span class="muted">${esc(ext)}</span></div><div class="result-actions"><button class="btn" onclick="mcCancelUnified()">Cancelar</button></div>`);
       }
-      mcShowSearch('Resultados: datos y portada',mcSERenderCards(MCSearch.ficha,0,'mcSESelectFicha')+`<div class="result-actions"><button class="btn" onclick="mcCancelUnified()">Cancelar</button><button class="btn primary" onclick="mcAcceptUnified()">Aceptar</button></div>`);
+      mcShowSearch('Resultados: datos y portada','<div class="notice">Selecciona la edición correcta. Si no hay imagen, se conservarán los datos bibliográficos y podrás añadir la portada después.</div>'+mcSERenderCards(MCSearch.ficha,0,'mcSESelectFicha')+`<div class="result-actions"><button class="btn" onclick="mcCancelUnified()">Cancelar</button><button class="btn primary" onclick="mcAcceptUnified()">Aceptar</button></div>`);
     }catch(e){console.error(e);mcShowSearch('Resultados',`<div class="notice"><b>No se pudo completar la búsqueda.</b><br>${esc(e.message||e)}</div><div class="result-actions"><button class="btn" onclick="mcCancelUnified()">Cancelar</button></div>`)}
   };
   window.mcSearchFichaData=window.mcSearchFichaAll;window.mcSearchFichaCover=window.mcSearchFichaAll;window.mcCompleteByCode=async function(){await window.mcSearchFichaAll()};
