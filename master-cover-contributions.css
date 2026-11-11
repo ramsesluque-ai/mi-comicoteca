@@ -22,3 +22,22 @@
 .mc-contrib-actions .btn.primary:disabled{opacity:.65}
 .mc-contrib-status{font-size:13px;color:#8cddf7;flex:1;min-width:200px}
 @media(max-width:640px){.mc-contrib-modal .modalbody{padding:15px}.mc-contrib-formgrid{grid-template-columns:1fr}.mc-contrib-title{font-size:18px}}
+
+/* Compact, two-step individual cover lookup and optional rights review */
+.mc-contrib-modal{max-width:820px;width:min(94vw,820px);background:#0a1d30;border-color:#294b66}
+.mc-contrib-modal .modalbody{display:flex;flex-direction:column;gap:16px;max-height:min(72vh,720px)}
+.mc-contrib-search{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:16px;border:1px solid #315575;border-radius:14px;background:#102a43}
+.mc-contrib-search p{margin:6px 0 0}
+.mc-contrib-search .btn{white-space:normal;min-width:190px;background:#1672c4;border-color:#258ddf;color:#fff;font-weight:750}
+.mc-contrib-results:empty{display:none}
+.mc-contrib-resultgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.mc-contrib-result{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid #315575;border-radius:12px;text-decoration:none;color:#eef7ff;background:#0c2940;min-width:0}
+.mc-contrib-result img{width:65px;height:96px;object-fit:contain;flex-shrink:0}
+.mc-contrib-result span{display:flex;flex-direction:column;gap:5px;min-width:0;overflow-wrap:anywhere}
+.mc-contrib-result small{font-size:11px;color:#b9d0e3}
+.mc-contrib-upload{border:1px solid #315575;border-radius:14px;padding:14px 16px;background:#0b2236}
+.mc-contrib-upload summary{font-weight:750;cursor:pointer;color:#cfe7fb}
+.mc-contrib-upload[open] summary{margin-bottom:16px}
+.mc-contrib-formgrid{margin:14px 0}
+.mc-contrib-formgrid label{display:flex;flex-direction:column;gap:8px;font-size:13px;font-weight:650}
+@media(max-width:640px){.mc-contrib-search{flex-direction:column;align-items:stretch}.mc-contrib-search .btn{min-width:0}.mc-contrib-resultgrid{grid-template-columns:1fr}}
