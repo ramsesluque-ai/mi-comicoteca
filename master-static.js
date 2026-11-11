@@ -34,22 +34,35 @@ renderMaster=async function(){const body=$('#masterbody');if(!body)return;const 
 function mcMasterChoosePublisher(pub){filters.publisher=pub;filters.q='';page=1;const s=$('#mpub');if(s)s.value=pub;const q=$('#mq');if(q)q.value='';renderMaster()}
 
 function mcMasterIssueIdentity(r){
- const issue=String(r.issueNr||r.issue||'').trim().toLocaleLowerCase('es');
- const isbn=String(r.isbn||'').replace(/[^0-9X]/gi,'').toUpperCase();
- const date=String(r.publicationDate||'').trim();
- return [issue,isbn,date].join('|');
+ // La fecha de publicación no identifica un número: distintas fuentes pueden
+ // dar fechas diferentes para la misma edición. El ISBN solo diferencia variantes
+ // cuando existen ISBN distintos y acreditados para el mismo número.
+ const issue=String(r.issueNr??r.issue??'').trim().toLocaleLowerCase('es').replace(/[º°]/g,'').replace(/^0+(?=\\d)/,'');
+ return issue||('sin-numero:'+String(r.id||''));
 }
 function mcMasterDistinctIssues(rows){
  const groups=new Map();
  for(const r of rows){
-   const key=mcMasterIssueIdentity(r);
-   if(!groups.has(key)){groups.set(key,r);continue}
-   const previous=groups.get(key);
-   const score=x=>(x.coverUrl?4:0)+(x.isbn?2:0)+(x.title?1:0)+(x.sourceUrl?1:0);
-   if(score(r)>score(previous))groups.set(key,r);
+   const issue=mcMasterIssueIdentity(r),isbn=String(r.isbn||'').replace(/[^0-9X]/gi,'').toUpperCase();
+   if(!groups.has(issue))groups.set(issue,[]);
+   groups.get(issue).push({...r,_mcIsbn:isbn});
  }
- return [...groups.values()].sort(mcMasterIssueSort);
+ const out=[];
+ const score=x=>(x.coverUrl?8:0)+(x.isbn?4:0)+(x.sourceUrl?2:0)+(x.title?1:0)+(x.publicationDate?1:0);
+ for(const records of groups.values()){
+   const known=new Map();
+   for(const r of records){if(r._mcIsbn){const old=known.get(r._mcIsbn);if(!old||score(r)>score(old))known.set(r._mcIsbn,r)}}
+   if(known.size>1){
+     // ISBN distintos acreditan variantes de edición: conservarlas por separado.
+     out.push(...known.values());
+   }else{
+     // Sin ISBN distinto no crear fichas repetidas por diferencias de fecha.
+     out.push(records.reduce((best,r)=>!best||score(r)>score(best)?r:best,null));
+   }
+ }
+ return out.sort(mcMasterIssueSort);
 }
+
 openMasterCollection=async function(encoded){const k=decodeURIComponent(encoded),cached=MCMasterUI.visibleGroups?.get(k),pub=cached?.publisher||filters.publisher||MCMasterUI.loadedPublisher,rows=cached?.rows?.length?cached.rows:await mcMasterLoadPublisher(pub),m=(cached?.rows?.length?cached.rows:rows.filter(x=>mcMasterGroupKey(x)===k)).slice().sort(mcMasterIssueSort),c=await allStore('comics'),keys=new Set(c.map(x=>[mcMasterGroupKey(x),mcMasterIssueIdentity(x)].join('|'))),displayIssues=mcMasterDistinctIssues(m),sample=m[0];if(!sample)return toast('No se encontró la colección en el Maestro');MCMasterUI.collectionKey=k;MCMasterUI.activeIssueRows=m;MCMasterUI.loadedPublisher=pub;$('#modal').innerHTML=`<div class="modalbox"><div class="modalhead"><div><b>${esc([sample.publisher,mcMasterGroupLabel(sample)].filter(Boolean).join(' · '))}</b><div class="muted small">${displayIssues.length.toLocaleString('es-ES')} números distintos · ${m.length.toLocaleString('es-ES')} registros bibliográficos</div></div><button class="btn" onclick="closeModal()">Cerrar</button></div><div class="modalbody"><div class="issue-grid master-issues">${displayIssues.map(x=>{const exists=keys.has([k,mcMasterIssueIdentity(x)].join('|'));return`<article class="issue-card master-issue">${img(x,'cover issuecover')}<div class="issue-body"><div class="issue-no">${esc(issueNumberLabel(x))}</div><div class="issue-title">${esc(x.title||x.catalogHeader||'Sin título específico')}</div>${x.publicationDate?`<div class="muted small">${esc(x.publicationDate)}</div>`:''}${x.isbn?`<div class="muted small">ISBN ${esc(x.isbn)}</div>`:''}<div class="issue-actions">${exists?'<span class="pill in">Ya añadido</span>':`<button class="btn sm primary" onclick="addFromMaster('${esc(x.id)}','In Collection')">A colección</button><button class="btn sm" onclick="addFromMaster('${esc(x.id)}','On Wish List')">Wishlist</button>`}<button class="btn sm" onclick="mcProposeMasterCover('${encodeURIComponent(x.id)}')">Proponer portada</button></div></div></article>`}).join('')}</div></div></div>`;$('#modal').classList.remove('hidden')}
 
 addFromMaster=async function(id,status){let x=(MCMasterUI.activeIssueRows||[]).find(r=>String(r.id)===String(id))||(MCMasterUI.rows||[]).find(r=>String(r.id)===String(id));if(!x){const pub=filters.publisher||MCMasterUI.loadedPublisher;if(pub){const rows=await mcMasterLoadPublisher(pub);x=rows.find(r=>String(r.id)===String(id));}}if(!x)return toast('No se encontró el ejemplar en el Maestro');const c=cleanComic({...x,id:uuid('c'),status});await putStore('comics',c);if(c.coverUrl&&window.CoverVault?.attach){try{await CoverVault.attach(c,c.coverUrl)}catch(e){console.warn('No se pudo fijar la portada en bóveda',e)}}toast(status==='In Collection'?'Añadido a colección':'Añadido a wishlist');await openMasterCollection(encodeURIComponent(MCMasterUI.collectionKey))};
