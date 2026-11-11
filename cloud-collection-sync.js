@@ -136,7 +136,17 @@
        if(sameIssue&&localIssueIds.has(sameIssue)&&!local[kind].some(x=>x.id===record.id))continue;
        const previous=await getStore(kind,record.id),key=localId(kind,record.id),remoteHash=fingerprint(record);
        if(!previous){await putStore(kind,record);downloaded++}
-       else if(fingerprints[key]&&fingerprint(previous)===fingerprints[key]&&remoteHash!==fingerprints[key]){await putStore(kind,record);downloaded++}
+       else if(fingerprints[key]&&fingerprint(previous)===fingerprints[key]&&remoteHash!==fingerprints[key]){
+         // Never replace a populated local field with an empty remote value.
+         // This path remains inactive while incident synchronization is paused.
+         const merged={...previous,...record};
+         for(const field of ['title','universe','coverKey','coverUrl','coverSourceUrl','coverUrls','catalogHeader','publisher','series','volume','stage','startYear','issueNr','authors','synopsis']){
+           const incoming=record[field],existing=previous[field];
+           const blank=incoming==null||incoming===''||(Array.isArray(incoming)&&!incoming.length)||(typeof incoming==='object'&&!Array.isArray(incoming)&&!Object.keys(incoming).length);
+           if(blank&&existing!=null&&existing!=='')merged[field]=existing;
+         }
+         await putStore(kind,merged);downloaded++;
+       }
        if(!previous||fingerprint(previous)===remoteHash||fingerprints[key]&&fingerprint(previous)===fingerprints[key])fingerprints[key]=remoteHash;
      }
      suspended=false;
