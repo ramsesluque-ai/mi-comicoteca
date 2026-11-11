@@ -170,7 +170,20 @@ async function lookupCover(r){
          }
        }catch(e){console.warn('Novedades metadata',e)}
      }
-     return originalPut(store,row);
+     const saved=await originalPut(store,row);
+     // The personal catalogue must own its cover, not depend on a remote URL.
+     // Attach only after the comic has a persistent id. A failed download is
+     // reported explicitly; never pretend that an external URL is a saved cover.
+     if(store==='comics'&&row?.id&&row?.editorialSource?.id&&row.coverUrl&&!row.coverKey&&
+        !window.mcNovedadesCoverAttachInProgress&&window.CoverVault?.attach){
+       window.mcNovedadesCoverAttachInProgress=true;
+       try{await window.CoverVault.attach(row,row.coverUrl)}
+       catch(e){
+         console.warn('No se pudo guardar una copia personal de la portada:',e);
+         if(typeof toast==='function')toast('Ficha guardada, pero la portada sigue siendo un enlace externo. Prueba a guardarla desde la ficha.');
+       }finally{window.mcNovedadesCoverAttachInProgress=false}
+     }
+     return saved;
    };
  }
 
