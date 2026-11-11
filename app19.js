@@ -1,6 +1,6 @@
 'use strict';
 /* v25: solo mostrar resultados completos (portada + datos) y resolver portada por ISBN exacto antes de rendirse. */
-const MC_BUILD='v25';
+const MC_BUILD='v26';
 
 function mcNormIsbn(v){return String(v||'').replace(/[^0-9Xx]/g,'').toUpperCase()}
 function mcPublisherCompatible(a,b){
@@ -10,14 +10,13 @@ function mcPublisherCompatible(a,b){
   return false;
 }
 function mcCandidateCompleteFor(x,c){
-  const d=c?.data||{},wanted=String(x.issueNr??x.issue??'').trim();
-  if(!d.coverUrl)return false;
-  if(wanted&&(!d.issueNr||typeof mcIssueExact!=='function'||!mcIssueExact(wanted,d.issueNr)))return false;
+  const d=c?.data||{},wanted=String(x.issueNr??x.issue??'').trim(),unnumbered=/^(único|unico|one-shot|especial|s\\/?n)$/i.test(wanted);
+  if(wanted&&!unnumbered&&d.issueNr&&typeof mcIssueExact==='function'&&!mcIssueExact(wanted,d.issueNr))return false;
   const qs=x.catalogHeader||x.series||'',ds=d.series||qs;
   if(qs&&ds&&typeof mcSeriesAffinity==='function'&&mcSeriesAffinity(qs,ds)<0.76)return false;
   if(!mcPublisherCompatible(x.publisher,d.publisher))return false;
   const info=[d.title,d.publisher,d.isbn,d.publicationDate,d.pages,d.writer,d.artist].filter(v=>String(v||'').trim()).length;
-  return info>=2;
+  return info>=1 || Boolean(d.series||d.title);
 }
 async function mcGoogleByIsbn(isbn,x,wanted){
   const code=mcNormIsbn(isbn);if(!code)return null;
@@ -59,16 +58,30 @@ async function mcCollectCompleteCandidates(x){
   const wanted=String(x.issueNr??x.issue??'').trim(),code=mcNormIsbn(x.isbn||''),pool=[],seen=new Set();
   const add=async c=>{if(!c)return;c=await mcEnrichFullCandidate(c,x);const d=c.data||{},k=[mcNormIsbn(d.isbn),mcLooseSeriesName(d.series||''),String(d.issueNr||''),norm(d.title||'')].join('|');if(seen.has(k))return;seen.add(k);pool.push(c)};
   if(code)await add(await mcGoogleByIsbn(code,x,wanted));
-  if(wanted&&typeof mcGcdCandidatesForComic==='function')for(const c of await mcGcdCandidatesForComic(x))await add(c);
+  if(wanted&&!/^(único|unico|one-shot|especial|s\\/?n)$/i.test(wanted)&&typeof mcGcdCandidatesForComic==='function')for(const c of await mcGcdCandidatesForComic(x))await add(c);
   if(typeof mcMasterCandidatesForComic==='function')for(const c of await mcMasterCandidatesForComic(x))await add(c);
   if(typeof mcGoogleBooksCandidatesForComic==='function')for(const c of await mcGoogleBooksCandidatesForComic(x))await add(c);
+  // Title-only discovery supports one-shots and editions without ISBN/issue number.
+  // These are candidates for manual review, not automatically confirmed matches.
+  const title=String(x.title||x.catalogHeader||x.series||'').trim();
+  if(title&&pool.length<12){
+    try{
+      const r=await fetch('https://openlibrary.org/search.json?title='+encodeURIComponent(title)+'&limit=15',{cache:'no-store'});
+      if(r.ok){const j=await r.json();const words=norm(title).split(/\\s+/).filter(w=>w.length>3);
+        for(const d of j.docs||[]){
+          if(words.length&&!words.some(w=>norm(d.title||'').includes(w)))continue;
+          await add({source:'Open Library · título (comprobar edición)',data:{title:d.title||'',publisher:(d.publisher||[])[0]||'',publicationDate:String(d.first_publish_year||''),isbn:(d.isbn||[])[0]||'',coverUrl:d.cover_i?'https://covers.openlibrary.org/b/id/'+d.cover_i+'-L.jpg':'',series:x.catalogHeader||x.series||'',writer:(d.author_name||[]).join(', ')},_score:50});
+        }
+      }
+    }catch(e){console.warn('COMICTECA title lookup',e)}
+  }
   const valid=pool.filter(c=>mcCandidateCompleteFor(x,c));
   valid.sort((a,b)=>mcCandidateRichScore(b,x)-mcCandidateRichScore(a,x));
   return valid.slice(0,12);
 }
 function mcNoCompleteResult(x,quick=false){
-  const q=[x.catalogHeader||x.series,x.publisher,x.issueNr&&('nº '+x.issueNr)].filter(Boolean).join(' '),teb='https://www.google.com/search?q='+encodeURIComponent('site:tebeosfera.com '+q),imgq='https://www.google.com/search?tbm=isch&q='+encodeURIComponent(q+' portada');
-  return `<div class="notice"><b>No se mostrará ningún resultado incompleto.</b><br>La búsqueda no ha conseguido todavía una coincidencia con <b>portada + datos bibliográficos + número exacto</b>.</div><div class="result-actions" style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px"><a class="btn" target="_blank" rel="noopener" href="${esc(teb)}">Buscar en Tebeosfera</a><a class="btn" target="_blank" rel="noopener" href="${esc(imgq)}">Buscar portada</a><button class="btn" type="button" onclick="${quick?'mcCancelSeriesQuick()':'mcCancelUnified()'}">Cancelar</button></div>`;
+  const q=[x.title||x.catalogHeader||x.series,x.publisher,x.issueNr&&!/^(único|unico)$/i.test(x.issueNr)&&('nº '+x.issueNr)].filter(Boolean).join(' '),teb='https://www.google.com/search?q='+encodeURIComponent('site:tebeosfera.com '+q),imgq='https://www.google.com/search?tbm=isch&q='+encodeURIComponent(q+' portada');
+  return `<div class="notice"><b>No hay una coincidencia bibliográfica suficientemente fiable.</b><br>La búsqueda no ha conseguido todavía una coincidencia con <b>título y edición verificados; puedes guardar la ficha sin portada</b>.</div><div class="result-actions" style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px"><a class="btn" target="_blank" rel="noopener" href="${esc(teb)}">Buscar en Tebeosfera</a><a class="btn" target="_blank" rel="noopener" href="${esc(imgq)}">Buscar portada</a><button class="btn" type="button" onclick="${quick?'mcCancelSeriesQuick()':'mcCancelUnified()'}">Cancelar</button></div>`;
 }
 
 mcSearchFichaAll=async function(){
