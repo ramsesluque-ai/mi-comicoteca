@@ -142,7 +142,7 @@
  }
  const originalDel=window.delStore;
  if(typeof originalDel==='function')window.delStore=async function(store,id){
-   if(!STORES.includes(store))return originalDel(store,id);
+   if(!STORES.includes(store)||suspended)return originalDel(store,id);
    const result=await originalDel(store,id);
    pending.delete(localId(store,id));
    try{await markDeleted(store,id)}catch(e){lastError='Eliminación pendiente de sincronizar: '+(e.message||e);console.warn('COMICTECA delete sync',e)}
