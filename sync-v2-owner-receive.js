@@ -20,7 +20,7 @@
    const local=await allStore('comics'),ids=new Set(local.map(x=>String(x.id))),identity=window.MCReconcileV2?.identity;if(typeof identity!=='function')throw Error('Motor de identidad V2 no cargado');
    const editions=new Set(local.map(identity).filter(Boolean));
    for(let offset=0;;offset+=250){
-    const url=cfg.url+'/rest/v1/user_comics?select=metadata,user_id&user_id=eq.'+OWNER+'&limit=250&offset='+offset+'&order=created_at.asc';
+    const url=cfg.url+'/rest/v1/user_comics?select=metadata,user_id&user_id=eq.'+OWNER+'&limit=250&offset='+offset+'&order=local_id.asc';
     const resp=await fetch(url,{headers:{apikey:cfg.publishableKey,Authorization:'Bearer '+s.access_token},cache:'no-store'});
     if(!resp.ok)throw Error('HTTP '+resp.status);
     const rows=await resp.json();
