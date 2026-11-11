@@ -48,8 +48,11 @@
    if(local.deleted||remote.deleted){
      if(local.deleted&&remote.deleted)return {status:'unchanged',record:{...remote,deleted:true}};
      const deleted=local.deleted?local:remote,other=local.deleted?remote:local;
-     const changed=Object.keys(other).some(k=>k!=='deleted'&&JSON.stringify(other[k])!==JSON.stringify(base[k]));
-     return changed?{status:'conflict',reason:'delete-versus-edit'}:{status:'merged',record:{...deleted,deleted:true}};
+     const changed=new Set([...Object.keys(base),...Object.keys(other)]);
+     changed.delete('deleted');
+     changed.delete('deletedAt');
+     const edited=[...changed].some(k=>JSON.stringify(other[k])!==JSON.stringify(base[k]));
+     return edited?{status:'conflict',reason:'delete-versus-edit'}:{status:'merged',record:{...deleted,deleted:true}};
    }
    const keys=new Set([...Object.keys(base),...Object.keys(local),...Object.keys(remote)]);
    const record={...base},conflicts=[];
