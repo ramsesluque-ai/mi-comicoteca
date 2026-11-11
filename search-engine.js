@@ -45,19 +45,9 @@ async function mcSESearch(x){
   const wanted=mcSEIssue(x.issueNr??x.issue??''),code=mcSECode(x.isbn||'');if(!wanted&&!code&&!String(x.title||x.catalogHeader||x.series||'').trim())return[];
   const [local,master]=await Promise.all([mcSELocalOverlay(x),mcSEStaticMaster(x)]),all=[...local,...master],seen=new Set(),complete=[],dataOnly=[];
   for(const c of all.sort((a,b)=>mcSESort(x,a,b))){const k=mcSECandidateKey(c);if(seen.has(k))continue;seen.add(k);if(mcSEValid(x,c,false))dataOnly.push(c);if(mcSEValid(x,c,true))complete.push(c)}
-  if(!complete.length){
-  const title=String(x.title||x.catalogHeader||x.series||'').trim();
-  if(title)try{
-    const response=await fetch('https://openlibrary.org/search.json?title='+encodeURIComponent(title)+'&limit=12',{cache:'no-store'});
-    if(response.ok){const body=await response.json(),tokens=mcSETokens(title);
-      for(const item of body.docs||[]){
-        if(tokens.length&&!tokens.some(t=>mcSENorm(item.title||'').includes(t)))continue;
-        const d={title:item.title||'',series:x.catalogHeader||x.series||'',publisher:(item.publisher||[])[0]||'',publicationDate:String(item.first_publish_year||''),isbn:(item.isbn||[])[0]||'',writer:(item.author_name||[]).join(', '),coverUrl:item.cover_i?'https://covers.openlibrary.org/b/id/'+item.cover_i+'-L.jpg':''};
-        dataOnly.push(mcSECandidate('Open Library · comprobar edición',d,120,[d.coverUrl]));
-      }
-    }
-  }catch(e){console.warn('Title lookup',e)}
-}
+  // No buscar por personaje/título genérico: Open Library agrupa ediciones
+  // de distintas editoriales y años. Sin ISBN o edición exacta no hay portada válida.
+
 MCSearch.lastDataOnly=dataOnly.length;return (complete.length?complete:dataOnly).slice(0,10)
 }
 
