@@ -112,7 +112,7 @@
  if(typeof window.putStore==='function'){
    const originalPut=window.putStore;
    window.putStore=async function(store,row){
-     if(store==='comics'&&row&&document.getElementById('modal')?.dataset.novedadSource){
+     if(store==='comics'&&row&&current==='novedades'&&document.getElementById('modal')?.classList.contains('hidden')===false&&document.getElementById('modal')?.dataset.novedadSource){
        try{
          const source=JSON.parse(document.getElementById('modal').dataset.novedadSource);
          if(!row.editorialSource||row.editorialSource.id===source.id){
