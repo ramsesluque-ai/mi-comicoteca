@@ -18,9 +18,10 @@
    if(loading)return;
    loading=true;error='';
    try{
-     const response=await fetch('./novedades-editoriales.json?v=3',{cache:'no-store'});
-     if(!response.ok)throw new Error('No se pudo obtener el catálogo de novedades ('+response.status+')');
-     const body=await response.json();
+     const sources=[new URL('novedades-editoriales.json?v=20261111',document.currentScript?.src||location.href).href, 'https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/commercial-published/novedades-editoriales.json'];
+     let body=null,lastFailure='';
+     for(const source of sources){try{const response=await fetch(source,{cache:'no-store'});if(!response.ok)throw new Error('HTTP '+response.status);const candidate=await response.json();if(!Array.isArray(candidate.items)||!Array.isArray(candidate.publishers))throw new Error('Formato no válido');body=candidate;break}catch(e){lastFailure=e.message||String(e)}}
+     if(!body)throw new Error('No se pudo obtener el catálogo de novedades: '+lastFailure);
      if(!Array.isArray(body.items)||!Array.isArray(body.publishers))throw new Error('Formato de novedades no válido');
      const months=allowedMonths();
      publisherDirectory=body.publishers.filter(x=>x&&x.publisher&&urlSafe(x.site));
