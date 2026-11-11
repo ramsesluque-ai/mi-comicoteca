@@ -128,15 +128,27 @@ window.mcProposeMasterCover=function(encoded){
 
  if(!file||!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5242880||!file.size){status.textContent='Selecciona una imagen válida de hasta 5 MB.';return}
  // Rights declaration is optional for the user; retain a neutral internal status for moderation.
- button.disabled=true;status.textContent='Guardando propuesta privada…';
+ button.disabled=true;status.textContent='Guardando portada…';
  try{
  const c=cfg(),user=await checked(c.url+'/auth/v1/user',{headers:authHeaders()}),ext=file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg';
  const path=user.id+'/'+crypto.randomUUID()+'.'+ext;
+ const directPublish=user.id==='0bcbe06d-263d-4ac1-a516-355d27d417f1';
  const upload=await fetch(c.url+'/storage/v1/object/master-contributions/'+path,{method:'POST',headers:{...authHeaders(),'Content-Type':file.type,'x-upsert':'false'},body:file});
  if(!upload.ok){const e=await upload.json().catch(()=>({}));throw Error(e.message||e.error||'Error de subida')}
+ if(directPublish){
+   status.textContent='Publicando portada en el Maestro compartido…';
+   const response=await fetch(c.url+'/functions/v1/publish-master-cover',{method:'POST',headers:{...authHeaders(true)},body:JSON.stringify({private_path:path,identity_key,isbn:isbn||null})});
+   const result=await response.json().catch(()=>({}));
+   if(!response.ok||!result.ok)throw Error(result.error||'No se pudo publicar la portada');
+   approved[identity_key]=result.cover_url;lastRead=Date.now();
+   const row=(typeof MCMasterUI!=='undefined'?MCMasterUI.activeIssueRows:[]).find(y=>String(y.id)===String(x.id));
+   if(row)row.coverUrl=result.cover_url;
+   status.textContent='Portada publicada. Ya está disponible en el Maestro compartido.';
+   button.textContent='Publicada';return;
+ }
  try{await checked(c.url+'/rest/v1/'+PROPOSALS,{method:'POST',headers:{...authHeaders(true),Prefer:'return=representation'},body:JSON.stringify({user_id:user.id,isbn:isbn||null,identity_key,bibliographic_identity:{publisher:x.publisher||'',series:x.catalogHeader||x.series||'',volume:x.volume||'',stage:x.stage||'',startYear:x.startYear||'',issueNr:x.issueNr||x.issue||'',publicationDate:x.publicationDate||'',master_id:x.id||''},title:x.title||x.catalogHeader||x.series||'',original_filename:file.name,private_path:path,rights_basis:rights||'licensed',rights_note:note||'Permiso declarado por el responsable de COMICTECA; alcance pendiente de documentar por editorial.'})})}
  catch(e){await fetch(c.url+'/storage/v1/object/master-contributions/'+path,{method:'DELETE',headers:authHeaders()}).catch(()=>{});throw e}
- status.textContent='Propuesta enviada. Queda pendiente de revisión. No está publicada para otros usuarios.';button.textContent='Enviada';
+ status.textContent='Portada recibida para revisión. La publicación directa está reservada al administrador.';button.textContent='Enviada';
  }catch(e){status.textContent='No se pudo enviar: '+e.message;button.disabled=false}
  };
 };
