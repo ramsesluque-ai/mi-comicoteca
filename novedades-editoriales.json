@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-10",
+  "updatedAt": "2026-11-11",
   "policy": "Selección documentada con enlaces a editoriales. Portadas solo con derechos documentados mediante coverRights {approved:true,basis,evidenceUrl} y coverUrl HTTPS; no se alojan copias de terceros por defecto.",
   "publishers": [
     {
@@ -107,12 +107,20 @@
       "series": "La ocupación de los terrenos",
       "issueNr": "",
       "authors": "Guy Delisle",
-      "format": "",
-      "pages": null,
+      "format": "Cartoné · 17 × 24 cm",
+      "pages": 80,
       "price": null,
-      "sourceUrl": "https://www.astiberri.com/posts/novedades-astiberri-noviembre26",
+      "sourceUrl": "https://www.astiberri.com/products/la-ocupacion-de-los-terrenos",
       "coverUrl": null,
-      "status": "anunciado"
+      "status": "anunciado",
+      "isbn": "9791387927585",
+      "ean": "9791387927585",
+      "color": "Bicolor",
+      "edition": "1",
+      "collection": "Sillón Orejero",
+      "writer": "Guy Delisle",
+      "originalAuthor": "Jean Echenoz",
+      "translator": "Carlos Mayor"
     },
     {
       "id": "n26-005",
