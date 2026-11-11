@@ -2,7 +2,7 @@
 /* COMICTECA cross-device sync v1: additive first migration, per-account RLS.
    Never clears local IndexedDB or sends an empty collection as a deletion. */
 (function(){
- const SESSION='mc_supabase_session_v1', STORES=['comics','purchases','master'];
+ const SESSION='mc_supabase_session_v1', STORES=['comics','purchases'];
  let ready=false, running=false, suspended=false, pending=new Map(), timer=null, lastError='';
  const cfg=()=>window.MI_COMICOTECA_CLOUD||{};
  const session=()=>{try{return JSON.parse(sessionStorage.getItem(SESSION)||'null')}catch{return null}};
@@ -50,18 +50,24 @@
      const s=await credentials();if(!s)return;
      const cloud=await remoteRows(),remote=new Map(cloud.filter(x=>x.local_id&&x.metadata?.record).map(x=>[x.local_id,x]));
      const local={};for(const store of STORES)local[store]=await allStore(store);
+     const fingerprints=JSON.parse(localStorage.getItem('mc_cloud_fingerprints_'+s.user.id)||'{}');
+     const fingerprint=r=>{const str=JSON.stringify(r),n=str.length;let h=2166136261;for(let i=0;i<n;i++)h=Math.imul(h^str.charCodeAt(i),16777619);return (h>>>0).toString(16)+':'+n};
      suspended=true;
      let downloaded=0,uploaded=0;
      for(const item of cloud){
        const kind=item.metadata?.kind,record=item.metadata?.record;
        if(!STORES.includes(kind)||!record?.id||item.user_id!==s.user.id)continue;
-       if(!(await getStore(kind,record.id))){await putStore(kind,record);downloaded++}
+       const previous=await getStore(kind,record.id),key=localId(kind,record.id),remoteHash=fingerprint(record);
+       if(!previous){await putStore(kind,record);downloaded++}
+       else if(fingerprints[key]&&fingerprint(previous)===fingerprints[key]&&remoteHash!==fingerprints[key]){await putStore(kind,record);downloaded++}
+       if(!previous||fingerprint(previous)===remoteHash||fingerprints[key]&&fingerprint(previous)===fingerprints[key])fingerprints[key]=remoteHash;
      }
      suspended=false;
      for(const store of STORES)for(const record of local[store]){
        if(!record?.id)continue;
-       if(!remote.has(localId(store,record.id))){await insertMissing(store,record,s.user.id);uploaded++}
+       if(!remote.has(localId(store,record.id))){await insertMissing(store,record,s.user.id);fingerprints[localId(store,record.id)]=fingerprint(record);uploaded++}
      }
+     localStorage.setItem('mc_cloud_fingerprints_'+s.user.id,JSON.stringify(fingerprints));
      ready=true;lastError='';
      if(downloaded&&typeof render==='function')await render();
      console.info('COMICTECA sync', {downloaded,uploaded,remote:cloud.length});
