@@ -126,7 +126,8 @@ window.mcProposeMasterCover=function(encoded){
  }
 
  if(!file||!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5242880||!file.size){status.textContent='Selecciona una imagen válida de hasta 5 MB.';return}
- // Rights declaration is optional for the user; retain a neutral internal status for moderation.
+ if(!rights||note.length<20){status.textContent='Indica los derechos de uso y una justificación verificable (mínimo 20 caracteres).';return}
+ // No inventar permisos ni atribuir licencias no declaradas.
  button.disabled=true;status.textContent='Guardando portada…';
  try{
  const c=cfg(),user=await checked(c.url+'/auth/v1/user',{headers:authHeaders()}),ext=file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg';
