@@ -18,7 +18,7 @@
    if(loading)return;
    loading=true;error='';
    try{
-     const sources=[new URL('novedades-editoriales.json?v=20261111',document.currentScript?.src||location.href).href, 'https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/commercial-published/novedades-editoriales.json'];
+     const sources=[new URL('novedades-editoriales.json?v=20261111-isbn',document.currentScript?.src||location.href).href, 'https://raw.githubusercontent.com/ramsesluque-ai/mi-comicoteca/commercial-published/novedades-editoriales.json'];
      let body=null,lastFailure='';
      for(const source of sources){try{const response=await fetch(source,{cache:'no-store'});if(!response.ok)throw new Error('HTTP '+response.status);const candidate=await response.json();if(!Array.isArray(candidate.items)||!Array.isArray(candidate.publishers))throw new Error('Formato no válido');body=candidate;break}catch(e){lastFailure=e.message||String(e)}}
      if(!body)throw new Error('No se pudo obtener el catálogo de novedades: '+lastFailure);
@@ -42,7 +42,7 @@
    const href=urlSafe(r.sourceUrl),cover=authorizedCover(r),status=classify(r),issue=r.issueNr?(' · Nº '+sanitize(r.issueNr)):'',price=Number(r.price)>0?Number(r.price).toLocaleString('es-ES',{style:'currency',currency:'EUR'}):'';
    const details=[r.authors&&'Autores: '+r.authors,r.format&&'Formato: '+r.format,r.pages&&r.pages+' páginas',price&&'PVP: '+price].filter(Boolean);
    return '<article class="mc-novedad">'+
-     (cover?'<div class="mc-novedad-cover mc-novedad-cover-image"><img loading="lazy" referrerpolicy="no-referrer" src="'+sanitize(cover)+'" alt="Portada de '+sanitize(r.title)+'" onerror="this.parentNode.classList.add(\'mc-cover-missing\');this.remove()"></div>':'<div class="mc-novedad-cover" aria-label="Portada no autorizada para mostrar en la plataforma"><span aria-hidden="true">▤</span><small>Ver portada en la editorial</small></div>')+
+     (cover?'<div class="mc-novedad-cover mc-novedad-cover-image"><img loading="lazy" referrerpolicy="no-referrer" src="'+sanitize(cover)+'" alt="Portada de '+sanitize(r.title)+'" onerror="this.parentNode.classList.add(\'mc-cover-missing\');this.remove()"></div>':'<a class="mc-novedad-cover" href="'+sanitize(href)+'" target="_blank" rel="noopener noreferrer" aria-label="Consultar portada en la web de la editorial"><span aria-hidden="true">▤</span><small>Ver portada en la editorial ↗</small></a>')+
      '<div class="mc-novedad-content">'+
        '<div class="mc-novedad-top"><span class="mc-novedad-publisher">'+sanitize(r.publisher)+'</span><span class="mc-novedad-state">'+sanitize(status)+'</span></div>'+
        '<h3>'+sanitize(r.title)+issue+'</h3><p class="mc-novedad-date">◷ '+sanitize(dateLabel(r))+'</p>'+
