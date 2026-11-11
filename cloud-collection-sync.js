@@ -44,12 +44,41 @@
    if(existing.length)await request('user_comics?id=eq.'+existing[0].id+'&user_id=eq.'+s.user.id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:body.status,custom_title:body.custom_title,metadata:body.metadata,updated_at:new Date().toISOString()})});
    else await insertMissing(store,r,s.user.id);
  }
+ async function offerLegacyImport(uid,local){
+   if(local.comics.length||local.purchases.length)return false;
+   const flag='mc_legacy_import_checked_'+uid;
+   if(sessionStorage.getItem(flag))return false;
+   sessionStorage.setItem(flag,'1');
+   const legacy=['comicteca-guest-v1','comicteca-importacion-prueba-v2'];
+   for(const name of legacy){
+     if(name.includes('prueba'))continue; // test data must never enter production
+     const exists=await new Promise(resolve=>{const req=indexedDB.open(name);let created=false;req.onupgradeneeded=()=>{created=true;req.transaction.abort()};req.onsuccess=()=>{req.result.close();resolve(!created)};req.onerror=()=>resolve(false)});
+     if(!exists)continue;
+     const old=await new Promise(resolve=>{const req=indexedDB.open(name);req.onsuccess=()=>resolve(req.result);req.onerror=()=>resolve(null)});
+     if(!old)continue;
+     try{
+       const rows={};
+       for(const store of STORES){
+         if(!old.objectStoreNames.contains(store)){rows[store]=[];continue}
+         rows[store]=await new Promise(resolve=>{const req=old.transaction(store,'readonly').objectStore(store).getAll();req.onsuccess=()=>resolve(req.result||[]);req.onerror=()=>resolve([])});
+       }
+       const total=rows.comics.length+rows.purchases.length;
+       if(!total)continue;
+       if(!confirm('Se han encontrado '+rows.comics.length+' cómics y '+rows.purchases.length+' compras guardados en este navegador antes de iniciar sesión. ¿Quieres copiarlos a tu cuenta y sincronizarlos? No se borrarán los originales.'))return false;
+       suspended=true;
+       try{for(const store of STORES){if(rows[store].length)await bulkPut(store,rows[store]);local[store]=await allStore(store)}}finally{suspended=false}
+       return true;
+     }finally{old.close()}
+   }
+   return false;
+ }
  async function synchronize(){
    if(running||!db)return;running=true;
    try{
      const s=await credentials();if(!s)return;
      const cloud=await remoteRows(),remote=new Map(cloud.filter(x=>x.local_id&&x.metadata?.record).map(x=>[x.local_id,x]));
      const local={};for(const store of STORES)local[store]=await allStore(store);
+     await offerLegacyImport(s.user.id,local);
      const fingerprints=JSON.parse(localStorage.getItem('mc_cloud_fingerprints_'+s.user.id)||'{}');
      const fingerprint=r=>{const str=JSON.stringify(r),n=str.length;let h=2166136261;for(let i=0;i<n;i++)h=Math.imul(h^str.charCodeAt(i),16777619);return (h>>>0).toString(16)+':'+n};
      suspended=true;
