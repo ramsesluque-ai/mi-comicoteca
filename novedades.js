@@ -89,7 +89,7 @@
    const trigger=node=>{const r=records.find(x=>x.id===node.dataset.novedadCover);if(r&&!coverCache.has(r.id))void lookupCover(r)};
    if(typeof IntersectionObserver==='undefined'){nodes.slice(0,12).forEach(trigger);return}
    coverObserver=new IntersectionObserver(entries=>{for(const entry of entries){if(entry.isIntersecting){coverObserver?.unobserve(entry.target);trigger(entry.target)}}},{rootMargin:'240px'});
-   nodes.forEach(node=>coverObserver.observe(node));
+   nodes.forEach(node=>{const id=node.dataset.novedadCover;if(coverCache.has(id)&&!coverCache.get(id)){const r=records.find(x=>x.id===id);node.innerHTML='<span aria-hidden="true">▤</span><small>Portada no disponible · <a target="_blank" rel="noopener noreferrer" href="'+sanitize(urlSafe(r?.sourceUrl))+'">Ver editorial ↗</a></small>'}else coverObserver.observe(node)});
  }
  async function view(){
    if(!loaded)await load();
