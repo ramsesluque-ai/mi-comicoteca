@@ -98,9 +98,21 @@
      }
    }
    if(decisions.conflicts.some(x=>x.reason==='missing-record-id'))return decisions;
+   // A bibliographic issue appearing under multiple IDs is ambiguous. Never upload
+   // or download either copy automatically, even when their IDs are individually valid.
+   const identityIds=new Map();
+   for(const rows of [baseRows,localRows,remoteRows])for(const row of rows){
+     const key=identity(row);
+     if(!key)continue;
+     if(!identityIds.has(key))identityIds.set(key,new Set());
+     identityIds.get(key).add(String(row.id));
+   }
+   const identityCollisions=new Set();
+   for(const ids of identityIds.values())if(ids.size>1)for(const id of ids)identityCollisions.add(id);
    const keys=new Set([...base.keys(),...local.keys(),...remote.keys()]);
    for(const id of keys){
      if(duplicates.has(id)){decisions.conflicts.push({id,reason:'duplicate-id-in-input'});continue}
+     if(identityCollisions.has(id)){decisions.conflicts.push({id,reason:'duplicate-bibliographic-identity-different-ids'});continue}
      const b=base.get(id),l=local.get(id),r=remote.get(id);
      // A stable ID must not silently switch to a different bibliographic issue.
      // Only compare complete identities; partial metadata is not evidence of a collision.
