@@ -5,6 +5,7 @@ on:
     paths:
       - 'sync-v2-reconcile.js'
       - 'sync-v2-diagnostic.js'
+      - 'sync-v2-owner-restore.js'
       - 'tests/sync-v2-diagnostic.test.cjs'
       - 'tests/sync-v2-reconcile.test.cjs'
       - '.github/workflows/sync-v2-regression.yml'
@@ -24,6 +25,7 @@ jobs:
         run: |
           node --check sync-v2-reconcile.js
           node --check sync-v2-diagnostic.js
+          node --check sync-v2-owner-restore.js
           node --check tests/sync-v2-diagnostic.test.cjs
           node --check tests/sync-v2-reconcile.test.cjs
       - name: Run pure reconciliation regression tests (no cloud writes)
