@@ -142,6 +142,13 @@
      else if(outcome.status==='unchanged'||(JSON.stringify(outcome.record)===JSON.stringify(l)&&JSON.stringify(l)===JSON.stringify(r)))decisions.unchanged.push(id);
      else decisions.merged.push({id,record:outcome.record,needsLocal:JSON.stringify(outcome.record)!==JSON.stringify(l),needsRemote:JSON.stringify(outcome.record)!==JSON.stringify(r)});
    }
+   // Fail closed for a batch containing any ambiguity: do not apply a partial
+   // upload/download/merge while unresolved conflicts remain in the same snapshot.
+   if(decisions.conflicts.length){
+     decisions.download=[];
+     decisions.upload=[];
+     decisions.merged=[];
+   }
    return decisions;
  }
  root.MCReconcileV2={identity,merge,reconcile,threeWay,planWithBaseline};
