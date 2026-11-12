@@ -73,8 +73,18 @@
    const local=new Map(localRows.map(r=>[String(r.id),r]));
    const remote=new Map(remoteRows.map(r=>[String(r.id),r]));
    const decisions={download:[],upload:[],merged:[],conflicts:[],unchanged:[]};
+  const duplicates=new Set();
+  for(const rows of [baseRows,localRows,remoteRows]){
+    const seen=new Set();
+    for(const r of rows){
+      const id=String(r.id);
+      if(seen.has(id))duplicates.add(id);
+      seen.add(id);
+    }
+  }
    const keys=new Set([...base.keys(),...local.keys(),...remote.keys()]);
    for(const id of keys){
+     if(duplicates.has(id)){decisions.conflicts.push({id,reason:'duplicate-id-in-input'});continue}
      const b=base.get(id),l=local.get(id),r=remote.get(id);
      // Missing rows may be pagination gaps, never treat as tombstones.
      if(!l&&!r){decisions.conflicts.push({id,reason:'missing-both-without-tombstone'});continue}
