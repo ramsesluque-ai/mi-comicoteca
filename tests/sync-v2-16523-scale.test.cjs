@@ -41,4 +41,26 @@ assert.equal(p.upload.length+p.download.length+p.merged.length,0);
 p=planWithBaseline(base,[...base,base[50]],base);
 assert.ok(p.conflicts.some(c=>c.id===base[50].id&&c.reason==='duplicate-id-in-input'));
 assert.equal(p.upload.length+p.download.length+p.merged.length,0);
+// Explicit deletion of a single acknowledged record must not affect the other 16,522.
+const deletedLocal=base.map(r=>({...r}));
+deletedLocal[500]={...deletedLocal[500],deleted:true,deletedAt:'2026-11-12T17:00:00Z'};
+p=planWithBaseline(base,deletedLocal,base);
+assert.equal(p.conflicts.length,0);
+assert.equal(p.merged.length,1);
+assert.equal(p.merged[0].id,base[500].id);
+assert.equal(p.merged[0].record.deleted,true);
+assert.equal(p.unchanged.length,N-1);
+// A simultaneous edit to that same issue blocks every write in the batch.
+const editedRemote=base.map(r=>({...r}));
+editedRemote[500]={...editedRemote[500],title:'Concurrent cloud edit'};
+p=planWithBaseline(base,deletedLocal,editedRemote);
+assert.ok(p.conflicts.some(c=>c.id===base[500].id&&c.reason==='delete-versus-edit'));
+assert.equal(p.upload.length+p.download.length+p.merged.length,0);
+// An explicit tombstone acknowledged on both devices is idempotent.
+const acknowledgedDelete=base.map((r,i)=>i===500?deletedLocal[i]:r);
+p=planWithBaseline(acknowledgedDelete,acknowledgedDelete,acknowledgedDelete);
+assert.equal(p.conflicts.length,0);
+assert.equal(p.unchanged.length,N);
+assert.equal(p.upload.length+p.download.length+p.merged.length,0);
+console.log('PASS: 16,523-record tombstone propagation, delete/edit conflict and deletion idempotence');
 console.log('PASS: 16,523 synthetic IDs, merge, idempotence, missing page and duplicate protection');
