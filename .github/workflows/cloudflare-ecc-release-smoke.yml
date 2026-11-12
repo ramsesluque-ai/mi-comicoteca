@@ -1,0 +1,53 @@
+name: COMICTECA Cloudflare ECC Maestro release verification
+on:
+  push:
+    branches: [commercial-published]
+    paths:
+      - 'index.html'
+      - 'search-engine.js'
+      - 'master-static.js'
+      - 'master-data/publishers/ecc-001.json'
+      - '.github/workflows/cloudflare-ecc-release-smoke.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: comicteca-cloudflare-ecc-release
+  cancel-in-progress: true
+jobs:
+  cloudflare-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Confirm current Maestro UI and reviewed ECC catalog are deployed on Cloudflare Workers
+        env:
+          BASE_URL: https://mi-comicoteca.ramsesluque.workers.dev
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 15); do
+            echo "Cloudflare production check attempt ${attempt}/15"
+            rm -f /tmp/mc-index.html /tmp/mc-ecc.json
+            curl -fsSL --max-time 20 -H 'Cache-Control: no-cache' "${BASE_URL}/?release_probe=${GITHUB_SHA}" -o /tmp/mc-index.html || true
+            if grep -Fq 'master-static.js?v=20261112-ecc-refresh1' /tmp/mc-index.html 2>/dev/null; then
+              if curl -fsSL --max-time 30 -H 'Cache-Control: no-cache' "${BASE_URL}/master-data/publishers/ecc-001.json?v=20261112-ecc-refresh1&release_probe=${GITHUB_SHA}" -o /tmp/mc-ecc.json; then
+                if node - <<'NODE'
+          const fs=require('node:fs'),assert=require('node:assert/strict');
+          const rows=JSON.parse(fs.readFileSync('/tmp/mc-ecc.json','utf8'));
+          assert(rows.length>=2500);
+          const scooby=rows.filter(x=>x.catalogHeader==='¡Scooby-Doo! y Sus Amigos');
+          assert.equal(scooby.length,10);
+          assert(scooby.every(x=>x.title&&x.title.includes('N.º')&&x.publicationDate!=='-1'));
+          assert(!rows.some(x=>x.publicationDate==='-1'));
+          console.log('CLOUDFLARE_ECC_MASTER_RELEASE_VERIFIED',rows.length,scooby.length);
+          NODE
+                then
+                  echo 'Cloudflare Worker is serving updated Maestro UI and ECC JSON.'
+                  exit 0
+                fi
+              fi
+            fi
+            sleep 20
+          done
+          echo 'Cloudflare still not serving updated ECC Maestro assets.' >&2
+          exit 1
