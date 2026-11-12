@@ -47,4 +47,16 @@ assert.equal(result.status,'conflict');assert.equal(result.reason,'tombstone-res
 result=threeWay(tombstone,tombstone,{...tombstone,deleted:false});
 assert.equal(result.reason,'tombstone-resurrection');
 assert.equal(planWithBaseline([tombstone],[{...tombstone,deleted:false}],[tombstone]).conflicts[0].reason,'tombstone-resurrection');
+// Malformed remote/local/base rows must fail closed rather than throwing or generating writes.
+for (const bad of [null, undefined, {}, {id:null}, {id:''}, {id:'  '}]) {
+  for (const slot of [0,1,2]) {
+    const sets=[[base],[base],[base]];
+    sets[slot]=[bad];
+    const guarded=planWithBaseline(...sets);
+    assert.equal(guarded.conflicts[0].reason,'missing-record-id');
+    assert.equal(guarded.upload.length,0);
+    assert.equal(guarded.download.length,0);
+    assert.equal(guarded.merged.length,0);
+  }
+}
 console.log('PASS: sync V2 assertions including duplicate-ID guard; no network, cloud or IndexedDB writes');
