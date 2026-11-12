@@ -1,0 +1,26 @@
+name: Sync V2 pure reconciliation regression
+on:
+  push:
+    branches: [commercial-published]
+    paths:
+      - 'sync-v2-reconcile.js'
+      - 'tests/sync-v2-reconcile.test.cjs'
+      - '.github/workflows/sync-v2-regression.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  reconciliation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate JavaScript syntax
+        run: |
+          node --check sync-v2-reconcile.js
+          node --check tests/sync-v2-reconcile.test.cjs
+      - name: Run pure reconciliation regression tests (no cloud writes)
+        run: node tests/sync-v2-reconcile.test.cjs
