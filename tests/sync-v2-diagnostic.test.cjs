@@ -14,11 +14,11 @@ assert.doesNotMatch(source,/method\s*:\s*['"](?:POST|PUT|PATCH|DELETE)/i);
 console.log('PASS: read-only diagnostic keyset pagination guard');
 
 const receive=fs.readFileSync(require('node:path').join(__dirname,'../sync-v2-owner-receive.js'),'utf8');
-assert.match(receive,/order=local_id\\.asc/);
-assert.match(receive,/local_id=gt\\./);
-assert.match(receive,/encodeURIComponent\\(lastKey\\)/);
-assert.match(receive,/seenRemoteIds\\.has\\(row\\.local_id\\)/);
-assert.match(receive,/row\\.local_id<=lastKey/);
-assert.match(receive,/row\\.local_id!=='comics:'\\+String\\(r\\.id\\)/);
+assert.match(receive,/order=local_id\.asc/);
+assert.match(receive,/local_id=gt\./);
+assert.match(receive,/encodeURIComponent\(lastKey\)/);
+assert.match(receive,/seenRemoteIds\.has\(row\.local_id\)/);
+assert.match(receive,/row\.local_id<=lastKey/);
+assert.match(receive,/row\.local_id!=='comics:'\+String\(r\.id\)/);
 assert.doesNotMatch(receive,/&offset=/);
 console.log('PASS: owner receive stable keyset and remote identity guards');
