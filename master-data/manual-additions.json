@@ -28,7 +28,12 @@
       "artist": "Brian Level",
       "originalTitle": "Batman vs. Bigby: A Wolfman in Gotham Book Four",
       "sourceUrl": "https://www.ecccomics.com/ComunicadosNovedades/Comunicado_de_novedades_Abril_2022_04_MAR.pdf",
-      "price": "2,25 EUR"
+      "price": "2,25 EUR",
+      "translator": "Guillermo Ruiz Carreras",
+      "synopsis": "Batman y Lobo Feroz sellan una tregua tras una noche de violencia y descubren que su enemigo común está relacionado con la conexión mágica entre Gotham City y Villa Fábula.",
+      "edition": "1.ª edición española",
+      "country": "España",
+      "originalPublisher": "DC Comics"
     },
     {
       "id": "mc-ecc-batman-feroz-2022-5",
@@ -57,7 +62,12 @@
       "artist": "Brian Level",
       "originalTitle": "Batman vs. Bigby: A Wolfman in Gotham Book Five",
       "sourceUrl": "https://www.fnac.es/a9187265/Bill-Willingham-Batman-Vs-Feroz-Un-lobo-en-Gotham-num-5-de-6",
-      "price": "2,25 EUR"
+      "price": "2,25 EUR",
+      "translator": "Guillermo Ruiz Carreras",
+      "synopsis": "Batman y Lobo Feroz investigan el plan del Ratón de Biblioteca, que amenaza Gotham City y Villa Fábula.",
+      "edition": "1.ª edición española",
+      "country": "España",
+      "originalPublisher": "DC Comics"
     },
     {
       "id": "mc-ecc-batman-feroz-2022-6",
@@ -86,7 +96,12 @@
       "artist": "Brian Level",
       "originalTitle": "Batman vs. Bigby: A Wolfman in Gotham Book Six",
       "sourceUrl": "https://www.ecccomics.com/ComunicadosNovedades/Comunicado_de_novedades_junio_2022_06_JUN.pdf",
-      "price": "2,25 EUR"
+      "price": "2,25 EUR",
+      "translator": "Guillermo Ruiz Carreras",
+      "synopsis": "Batman y Lobo Feroz buscan al Ratón de Biblioteca por Gotham y se enfrentan a un enemigo transformado y a un aliado procedente de Villa Fábula.",
+      "edition": "1.ª edición española",
+      "country": "España",
+      "originalPublisher": "DC Comics"
     }
   ]
 }
