@@ -82,3 +82,22 @@ assert.equal(collision.merged.length,0);
 const partial=planWithBaseline([base],[{...base,issueNr:null}],[base]);
 assert.equal(partial.conflicts.length,0);
 console.log('PASS: sync V2 assertions including duplicate-ID guard; no network, cloud or IndexedDB writes');
+
+// Idempotence: applying an acknowledged merge twice must produce no additional writes.
+const localEdit={...base,title:'Local title'};
+const remoteEdit={...base,coverUrl:'https://example.org/revised.jpg'};
+const first=planWithBaseline([base],[localEdit],[remoteEdit]);
+assert.equal(first.conflicts.length,0);
+assert.equal(first.merged.length,1);
+const acknowledged=first.merged[0].record;
+const second=planWithBaseline([acknowledged],[acknowledged],[acknowledged]);
+assert.equal(second.conflicts.length,0);
+assert.equal(second.unchanged.length,1);
+assert.equal(second.upload.length+second.download.length+second.merged.length,0);
+// Field removal is an edit, not an absent record or a reason to delete a comic.
+const removed={...base};delete removed.synopsis;
+const withSynopsis={...base,synopsis:'Original summary'};
+const removedField=threeWay(withSynopsis,{...withSynopsis,synopsis:undefined},{...withSynopsis,coverUrl:'https://example.org/updated.jpg'});
+assert.equal(removedField.status,'merged');
+assert.equal(Object.hasOwn(removedField.record,'synopsis'),false);
+assert.equal(removedField.record.coverUrl,'https://example.org/updated.jpg');
