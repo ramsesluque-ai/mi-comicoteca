@@ -62,7 +62,7 @@
      const sha=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
      const name='mi-comicoteca-respaldo-'+new Date().toISOString().replace(/[:.]/g,'-');
      function download(data,filename,type){const blob=new Blob([data],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)}
-     download(payload,name+'.json','application/json');download(sha+'  '+name+'.json\\n',name+'.sha256','text/plain');
+     download(payload,name+'.json','application/json');download(sha+'  '+name+'.json\n',name+'.sha256','text/plain');
      diagnostic.textContent='Respaldo preparado: '+comics.length.toLocaleString('es-ES')+' fichas, '+bytes.length.toLocaleString('es-ES')+' bytes, SHA-256 '+sha+'. Conserva ambos archivos; no se han modificado datos.';
      backup.textContent='Descargar respaldo de nuevo';
    }catch(e){diagnostic.textContent='No se pudo preparar respaldo: '+String(e.message||e)+'. Ningún dato modificado.';backup.textContent='Reintentar respaldo'}finally{backup.disabled=false}};
