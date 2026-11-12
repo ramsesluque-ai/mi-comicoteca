@@ -56,7 +56,7 @@ renderMaster=async function(){
    return checks.every(([field,prop])=>!state[prop]||normalize(r[field])===state[prop]);
  });
 
- const sharedCovers=typeof window.mcSharedCovers==='function'?await window.mcSharedCovers():{};
+ const sharedCovers=typeof window.mcSharedCovers==='function'?await window.mcSharedCovers(true):{};
  if(token!==state.serial)return;
  const coverFor=r=>{const key=typeof window.mcMasterCoverKey==='function'?window.mcMasterCoverKey(r):'';return key&&sharedCovers[key]?{...r,coverUrl:sharedCovers[key]}:r};
  const groups=new Map();
