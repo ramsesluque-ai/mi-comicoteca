@@ -3,6 +3,11 @@
 const MCMasterUI={rows:[],publisher:'',collectionKey:'',loadedPublisher:'',activeIssueRows:[],visibleGroups:new Map()};
 
 let mcNovedadesArchivePromise=null;
+let mcManualAdditionsPromise=null;
+async function mcManualAdditions(){
+ if(!mcManualAdditionsPromise)mcManualAdditionsPromise=fetch('master-data/manual-additions.json?v=20261112',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('No se pudo cargar ampliaciones del Maestro');return r.json()}).then(j=>Array.isArray(j.items)?j.items:[]).catch(e=>{console.warn(e);return[]});
+ return mcManualAdditionsPromise;
+}
 async function mcNovedadesArchive(){
  if(!mcNovedadesArchivePromise)mcNovedadesArchivePromise=fetch('master-data/novedades-archive.json?v=20261111',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('No se pudo cargar archivo de novedades');return r.json()}).then(j=>(j.items||[]).map(r=>({...r,id:'nov-'+r.id,catalogHeader:r.series||r.title,series:r.series||r.title,issueNr:r.issueNr||'Único',startYear:r.startYear||String(r.publicationDate||r.releaseMonth||'').slice(0,4),coverUrl:r.coverUrl||''}))).catch(e=>{console.warn(e);return[]});
  return mcNovedadesArchivePromise;
@@ -20,9 +25,10 @@ function mcMasterCode(r){return mcSECode(r?.isbn||r?.barcode||'')}
 async function mcMasterEnrichRows(rows){const over=await mcSEOverrides();const shared=await window.mcSharedCovers?.()||{};return rows.map(r=>{const o=over[mcMasterCode(r)]||{},common=shared[window.mcMasterCoverKey?.(r)||'']||'';return{...r,title:o.title||r.title||'',publisher:o.publisher||r.publisher||'',catalogHeader:o.series||r.catalogHeader||r.series||'',series:o.series||r.series||r.catalogHeader||'',issueNr:o.issueNr||r.issueNr||r.issue||'',issue:o.issueNr||r.issue||r.issueNr||'',publicationDate:o.publicationDate||r.publicationDate||'',pages:o.pages||r.pages||'',isbn:o.isbn||r.isbn||'',coverUrl:common||o.coverUrl||r.coverUrl||'',sourceUrl:o.sourceUrl||r.sourceUrl||''}})}
 async function mcMasterLoadPublisher(pub){if(MCMasterUI.loadedPublisher===pub&&MCMasterUI.rows.length)return MCMasterUI.rows;const idx=await mcMasterIndexWithArchive(),meta=(idx.publishers||[]).find(p=>p.publisher===pub)||mcSEPublisherMeta(idx,pub)[0];if(!meta){MCMasterUI.rows=[];MCMasterUI.loadedPublisher='';return[]}const rows=await mcSEChunks(meta.chunks||[]);
  const archive=(await mcNovedadesArchive()).filter(r=>r.publisher===pub);
+ const manual=(await mcManualAdditions()).filter(r=>r.publisher===pub);
  const key=r=>String(r.isbn||'').replace(/[^0-9X]/gi,'')||[mcSENorm(r.publisher),mcSENorm(r.catalogHeader||r.series),mcSENorm(r.volume||''),mcSENorm(r.stage||''),String(r.startYear||''),mcSENorm(r.issueNr||r.issue||'Único')].join('|');
  const existing=new Set(rows.map(key));
- for(const r of archive){const k=key(r);if(!existing.has(k)){rows.push(r);existing.add(k)}}
+ for(const r of [...archive,...manual]){const k=key(r);if(!existing.has(k)){rows.push(r);existing.add(k)}}
  MCMasterUI.rows=await mcMasterEnrichRows(rows);MCMasterUI.loadedPublisher=meta.publisher;return MCMasterUI.rows}
 function mcMasterGroupKey(r){return [mcSENorm(r.publisher),mcSENorm(r.catalogHeader||r.series),String(r.volume||''),mcSENorm(r.stage||''),String(r.startYear||'')].join('|')}
 function mcMasterGroupLabel(r){return [r.catalogHeader||r.series,r.volume&&('Vol. '+r.volume),r.stage,r.startYear].filter(Boolean).join(' · ')}
