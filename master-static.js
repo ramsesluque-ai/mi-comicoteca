@@ -22,7 +22,21 @@ async function mcMasterIndexWithArchive(){
  return idx;
 }
 function mcMasterCode(r){return mcSECode(r?.isbn||r?.barcode||'')}
-async function mcMasterEnrichRows(rows){const over=await mcSEOverrides();const shared=await window.mcSharedCovers?.()||{};return rows.map(r=>{const o=over[mcMasterCode(r)]||{},common=shared[window.mcMasterCoverKey?.(r)||'']||'';return{...r,title:o.title||r.title||'',publisher:o.publisher||r.publisher||'',catalogHeader:o.series||r.catalogHeader||r.series||'',series:o.series||r.series||r.catalogHeader||'',issueNr:o.issueNr||r.issueNr||r.issue||'',issue:o.issueNr||r.issue||r.issueNr||'',publicationDate:(v=>v==='-1'||v==='-1-00'||v==='0000-00-00'?'':v)(String(o.publicationDate||r.publicationDate||'').trim()),pages:o.pages||r.pages||'',isbn:o.isbn||r.isbn||'',coverUrl:common||o.coverUrl||r.coverUrl||'',sourceUrl:o.sourceUrl||r.sourceUrl||''}})}
+// Verified bibliographic corrections keyed by the original GCD record ID, not by ISBN.
+// Dates below identify publication month only; no invented day or ISBN.
+const MC_VERIFIED_MASTER_RECORDS={
+ 'gcd_1171852':{title:'100 Balas · Tomo 1',publicationDate:'2013-12',pages:'240'},
+ 'gcd_1171853':{title:'100 Balas · Tomo 2',publicationDate:'2014-02',pages:'240'},
+ 'gcd_1171854':{title:'100 Balas · Tomo 3',publicationDate:'2014-04',pages:'240'},
+ 'gcd_1171855':{title:'100 Balas · Tomo 4',publicationDate:'2014-06',pages:'240'},
+ 'gcd_1171856':{title:'100 Balas · Tomo 5',publicationDate:'2014-08',pages:'240'},
+ 'gcd_1171857':{title:'100 Balas · Tomo 6',publicationDate:'2014-10',pages:'240'},
+ 'gcd_1171858':{title:'100 Balas · Tomo 7',publicationDate:'2014-12',pages:'240'},
+ 'gcd_1171859':{title:'100 Balas · Tomo 8',publicationDate:'2015-02',pages:'240'},
+ 'gcd_1171860':{title:'100 Balas · Tomo 9',publicationDate:'2015-04',pages:'240'},
+ 'gcd_1171861':{title:'100 Balas · Tomo 10',publicationDate:'2015-06',pages:'248'}
+};
+async function mcMasterEnrichRows(rows){const over=await mcSEOverrides();const shared=await window.mcSharedCovers?.()||{};return rows.map(r=>{const o={...(MC_VERIFIED_MASTER_RECORDS[String(r.id)]||{}),...(over[mcMasterCode(r)]||{})},common=shared[window.mcMasterCoverKey?.(r)||'']||'';return{...r,title:o.title||r.title||'',publisher:o.publisher||r.publisher||'',catalogHeader:o.series||r.catalogHeader||r.series||'',series:o.series||r.series||r.catalogHeader||'',issueNr:o.issueNr||r.issueNr||r.issue||'',issue:o.issueNr||r.issue||r.issueNr||'',publicationDate:(v=>v==='-1'||v==='-1-00'||v==='0000-00-00'?'':v)(String(o.publicationDate||r.publicationDate||'').trim()),pages:o.pages||r.pages||'',isbn:o.isbn||r.isbn||'',coverUrl:common||o.coverUrl||r.coverUrl||'',sourceUrl:o.sourceUrl||r.sourceUrl||''}})}
 async function mcMasterLoadPublisher(pub){if(MCMasterUI.loadedPublisher===pub&&MCMasterUI.rows.length)return MCMasterUI.rows;const idx=await mcMasterIndexWithArchive(),meta=(idx.publishers||[]).find(p=>p.publisher===pub)||mcSEPublisherMeta(idx,pub)[0];if(!meta){MCMasterUI.rows=[];MCMasterUI.loadedPublisher='';return[]}const rows=await mcSEChunks(meta.chunks||[]);
  const archive=(await mcNovedadesArchive()).filter(r=>r.publisher===pub);
  const manual=(await mcManualAdditions()).filter(r=>r.publisher===pub);
