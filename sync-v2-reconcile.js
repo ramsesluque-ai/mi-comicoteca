@@ -102,6 +102,13 @@
    for(const id of keys){
      if(duplicates.has(id)){decisions.conflicts.push({id,reason:'duplicate-id-in-input'});continue}
      const b=base.get(id),l=local.get(id),r=remote.get(id);
+     // A stable ID must not silently switch to a different bibliographic issue.
+     // Only compare complete identities; partial metadata is not evidence of a collision.
+     const known=[b,l,r].filter(Boolean).map(identity).filter(Boolean);
+     if(known.length>1&&new Set(known).size>1){
+       decisions.conflicts.push({id,reason:'stable-id-bibliographic-identity-mismatch'});
+       continue;
+     }
      // Missing rows may be pagination gaps, never treat as tombstones.
      if(!l&&!r){decisions.conflicts.push({id,reason:'missing-both-without-tombstone'});continue}
      if(!b){
