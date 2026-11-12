@@ -50,6 +50,19 @@
          '. No se ha sobrescrito, descargado, subido ni borrado ningún cómic. La sincronización real sigue bloqueada hasta validar el respaldo, la reconciliación y las pruebas en dos sesiones.';
      }
    }catch(e){if(panel.isConnected)diagnostic.textContent='Diagnóstico local no disponible: '+String(e.message||e)+'. Ningún dato modificado.'}})();
+   // Portadas pertenecen a CacheStorage + Storage, no al JSON bibliográfico.
+   // Compare only, never assume a matching filename proves image integrity.
+   const covers=document.createElement('p');
+   covers.setAttribute('role','status');
+   covers.textContent='Inventario de portadas: pendiente de comprobar.';
+   (async()=>{try{
+     const raw=sessionStorage.getItem('mc_supabase_session_v1')||localStorage.getItem('mc_supabase_session_v1');
+     const session=raw?JSON.parse(raw):null,cfg=window.MI_COMICOTECA_CLOUD||{};
+     if(!session?.access_token||!session?.user?.id)return;
+     if(!window.MCSyncV2CoverInventory?.compare)throw Error('Módulo de portadas no disponible');
+     const summary=await MCSyncV2CoverInventory.compare({session,cfg});
+     if(panel.isConnected)covers.textContent='Portadas privadas (solo lectura): '+summary.local+' archivos locales; '+summary.remote+' en Supabase; '+summary.matched+' coinciden por nombre; '+summary.onlyLocal+' solo locales; '+summary.onlyRemote+' solo en nube. Falta verificar SHA-256 binario. Ninguna imagen modificada.';
+   }catch(e){if(panel.isConnected)covers.textContent='Portadas: no se pudo completar la comprobación ('+String(e.message||e)+'). Sin escrituras.'}})();
    const backup=document.createElement('button');backup.type='button';backup.textContent='Descargar respaldo local (JSON + SHA-256)';backup.style.cssText='padding:9px 12px;margin:10px 8px 0 0;border-radius:8px;cursor:pointer;background:#16678a;color:white;border:1px solid #73b9d1';
    backup.onclick=async()=>{backup.disabled=true;backup.textContent='Preparando respaldo…';try{
      if(typeof allStore!=='function')throw Error('Almacén local no disponible');
@@ -88,7 +101,7 @@
    }catch(e){diagnostic.textContent='Respaldo NO verificado: '+String(e.message||e)+'. No se ha modificado ningún dato.'}finally{verifyBtn.disabled=false}};
    verifyBox.append(verifyTitle,jsonInput,shaInput,verifyBtn);
    const close=document.createElement('button');close.type='button';close.textContent='Entendido';close.style.cssText='padding:9px 16px;border-radius:8px;cursor:pointer';close.onclick=()=>panel.remove();
-   panel.append(title,p,diagnostic,backup,verifyBox,close);document.body.append(panel);close.focus();
+   panel.append(title,p,diagnostic,covers,backup,verifyBox,close);document.body.append(panel);close.focus();
  }
  function mount(){
    const anchor=findNewComic();

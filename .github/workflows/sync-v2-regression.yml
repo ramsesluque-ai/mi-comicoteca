@@ -5,6 +5,7 @@ on:
     paths:
       - 'sync-v2-reconcile.js'
       - 'sync-v2-manual-plan.js'
+      - 'sync-v2-cover-inventory.js'
       - 'manual-sync-v2-button.js'
       - 'index.html'
       - 'sync-v2-diagnostic.js'
@@ -12,6 +13,7 @@ on:
       - 'tests/sync-v2-diagnostic.test.cjs'
       - 'tests/sync-v2-reconcile.test.cjs'
       - 'tests/sync-v2-manual-plan.test.cjs'
+      - 'tests/sync-v2-cover-inventory.test.cjs'
       - 'tests/sync-v2-16523-scale.test.cjs'
       - '.github/workflows/sync-v2-regression.yml'
   workflow_dispatch:
@@ -30,6 +32,8 @@ jobs:
         run: |
           node --check sync-v2-reconcile.js
           node --check sync-v2-manual-plan.js
+          node --check sync-v2-cover-inventory.js
+          node --check tests/sync-v2-cover-inventory.test.cjs
           node --check manual-sync-v2-button.js
           node --check tests/sync-v2-manual-plan.test.cjs
           node --check sync-v2-diagnostic.js
@@ -41,5 +45,6 @@ jobs:
         run: |
           node tests/sync-v2-reconcile.test.cjs
           node tests/sync-v2-manual-plan.test.cjs
+          node tests/sync-v2-cover-inventory.test.cjs
           node tests/sync-v2-16523-scale.test.cjs
           node tests/sync-v2-diagnostic.test.cjs
