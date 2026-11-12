@@ -115,3 +115,12 @@ for (const [baseline,local,remote] of [
   assert.equal(planned.merged.length,0);
 }
 console.log('PASS: cross-ID bibliographic duplicate protection');
+
+// A conflicted batch must never produce a partial write plan for unrelated rows.
+const cleanExtra={...base,id:'safe-extra',series:'Otra serie'};
+const mixed=planWithBaseline([base],[{...base,title:'Cambio local'},cleanExtra],[{...base,title:'Cambio remoto'}]);
+assert.equal(mixed.conflicts[0].reason,'concurrent-field-edits');
+assert.equal(mixed.upload.length,0);
+assert.equal(mixed.download.length,0);
+assert.equal(mixed.merged.length,0);
+console.log('PASS: mixed-conflict batch blocks all automatic writes');
