@@ -58,9 +58,14 @@ renderMaster=async function(){
 
  const sharedCovers=typeof window.mcSharedCovers==='function'?await window.mcSharedCovers(true):{};
  if(token!==state.serial)return;
+ // Apply the same approved-cover and bibliographic override enrichment used by the issue modal.
+ // Previously the series list only read the shared-cover map, so covers coming from
+ // master overrides appeared inside a collection but not on its series card.
+ const enriched=typeof mcMasterEnrichRows==='function'?await mcMasterEnrichRows(filtered):filtered;
+ if(token!==state.serial)return;
  const coverFor=r=>{const key=typeof window.mcMasterCoverKey==='function'?window.mcMasterCoverKey(r):'';return key&&sharedCovers[key]?{...r,coverUrl:sharedCovers[key]}:r};
  const groups=new Map();
- for(const original of filtered){const r=coverFor(original);const key=mcMasterGroupKey(r);if(!groups.has(key))groups.set(key,{sample:r,cover:null,count:0});const g=groups.get(key);g.count++;if(!g.cover&&r.coverUrl)g.cover=r}
+ for(const original of enriched){const r=coverFor(original);const key=mcMasterGroupKey(r);if(!groups.has(key))groups.set(key,{sample:r,cover:null,count:0});const g=groups.get(key);g.count++;if(!g.cover&&r.coverUrl)g.cover=r}
  // Curated reading/edition grouping: reuse the four original ECC bibliographic records.
  // This is an additional navigation group, not a new edition or duplicated Maestro record.
  const morrisonKey='mc-curated:ecc:batman-robin-morrison-2012';
