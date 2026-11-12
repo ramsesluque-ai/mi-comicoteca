@@ -69,6 +69,12 @@ window.mcProposeMasterCover=function(encoded){
   if(notice)notice.textContent='Adjunta una imagen JPG, PNG o WebP desde tu ordenador (máximo 5 MB) y pulsa Añadir portada. La publicación requiere que tengas autorización para compartirla.';
   modal.querySelector('.mc-contrib-upload').open=true;
  }
+ const styleId='mc-master-upload-polish';
+ if(!document.getElementById(styleId)){
+  const style=document.createElement('style');style.id=styleId;
+  style.textContent=`.mc-contrib-modal{width:min(760px,96vw);max-height:90vh;overflow:auto;border-radius:20px!important;background:var(--panel,#10243a)!important;box-shadow:0 24px 65px #0006!important}.mc-contrib-modal .modalhead{padding:18px 22px!important;border-bottom:1px solid #ffffff20}.mc-contrib-modal .modalbody{padding:20px 22px!important}.mc-contrib-record{display:grid;gap:6px;padding:16px 18px;border-radius:14px;background:#ffffff0b;border:1px solid #ffffff1a;margin-bottom:16px}.mc-contrib-search{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px;border-radius:14px;background:#ffffff09;margin:12px 0}.mc-contrib-upload{margin-top:18px;border:1px solid #ffffff26;border-radius:14px;padding:14px 16px;background:#ffffff08}.mc-contrib-upload summary{cursor:pointer;font-weight:700;padding:5px 0}.mc-contrib-formgrid{display:grid;grid-template-columns:1fr;gap:14px;margin:16px 0}.mc-contrib-formgrid label{display:grid;gap:8px;font-size:13px;font-weight:600}.mc-contrib-formgrid label[hidden]{display:none!important}.mc-contrib-formgrid input[type=file]{width:100%;box-sizing:border-box;padding:16px;border:1px dashed #4f9ed6;border-radius:12px;background:#ffffff0a;color:inherit}.mc-contrib-actions{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding-top:12px}.mc-contrib-status{flex:1;min-width:220px;overflow-wrap:anywhere;font-size:13px;line-height:1.5}.mc-contrib-modal .btn.primary{border-radius:10px;padding:10px 16px}.mc-contrib-direct{display:grid;gap:10px;padding:12px 0}.mc-contrib-direct input{width:100%;box-sizing:border-box}@media(max-width:600px){.mc-contrib-search{flex-direction:column;align-items:stretch}.mc-contrib-actions{align-items:stretch}.mc-contrib-actions button{width:100%}.mc-contrib-modal .modalbody{padding:14px!important}}`;
+  document.head.appendChild(style);
+ }
  const panel=modal.querySelector('.modalbox');panel?.classList.add('mc-contrib-modal');
  modal.querySelector('.modalhead b')?.classList.add('mc-contrib-title');
  modal.querySelectorAll('.modalbody label').forEach(label=>label.classList.add('mc-contrib-field','mc-wide'));
@@ -149,7 +155,7 @@ window.mcProposeMasterCover=function(encoded){
    status.textContent='Publicando portada en el Maestro compartido…';
    const response=await fetch(c.url+'/functions/v1/publish-master-cover',{method:'POST',headers:{...authHeaders(true)},body:JSON.stringify({private_path:path,identity_key,isbn:isbn||null})});
    const result=await response.json().catch(()=>({}));
-   if(!response.ok||!result.ok)throw Error(result.error||'No se pudo publicar la portada');
+   if(!response.ok||!result.ok)throw Error([result.error||'No se pudo publicar la portada',result.code,result.detail].filter(Boolean).join(' · '));
    approved[identity_key]=result.cover_url;lastRead=Date.now();
    const row=(typeof MCMasterUI!=='undefined'?MCMasterUI.activeIssueRows:[]).find(y=>String(y.id)===String(x.id));
    if(row)row.coverUrl=result.cover_url;
