@@ -20,6 +20,7 @@
    const local=await allStore('comics'),ids=new Set(local.map(x=>String(x.id))),identity=window.MCReconcileV2?.identity;if(typeof identity!=='function')throw Error('Motor de identidad V2 no cargado');
    const editions=new Set(local.map(identity).filter(Boolean));
    const seenRemoteIds=new Set();
+   const staged=[];
    let lastKey=null;
    for(let page=0;page<10000;page++){
     // Stable keyset scan: offset pagination can omit or repeat rows after inserts.
@@ -38,12 +39,16 @@
      if(row.user_id!==OWNER||m?.kind!=='comics'||m?.source!=='owner-local-initial'||m.deleted||!r?.id)continue;
      const key=identity(r);
      if(ids.has(String(r.id))||(key&&editions.has(key))){skipped++;continue}
-     await putStore('comics',r);ids.add(String(r.id));if(key)editions.add(key);added++;
+     staged.push(r);ids.add(String(r.id));if(key)editions.add(key);
     }
-    status.textContent='Recibidas '+added+' fichas nuevas; '+skipped+' ya existentes. No cierres la pestaña.';
+    status.textContent='Validadas '+staged.length+' fichas pendientes; '+skipped+' ya existentes. Todavía no se ha escrito nada.';
     if(rows.length<250)break;
     if(page===9999)throw Error('Límite de páginas: recepción incompleta');
    }
+   // Never mutate IndexedDB until every remote page and identity has passed validation.
+   // A later malformed page must not leave a partially imported catalogue.
+   status.textContent='Validación remota completa. Guardando '+staged.length+' fichas nuevas…';
+   for(const record of staged){await putStore('comics',record);added++;}
    status.textContent='Recepción completada: '+added+' añadidas, '+skipped+' omitidas por existir. Ninguna ficha existente sobrescrita. Recarga la página para visualizar.';
   }catch(e){status.textContent='Recepción interrumpida: '+String(e)+'. Añadidas '+added+'. Puedes reintentar sin duplicar.';button.disabled=false}
  };
