@@ -60,6 +60,15 @@ window.mcProposeMasterCover=function(encoded){
   if(!item)return;
   try{await chooseRemoteCover(item.url,item.source)}catch(e){document.getElementById('mcContribRemoteStatus').textContent=e.message}
  });
+ if(session()?.user?.id==='0bcbe06d-263d-4ac1-a516-355d27d417f1'){
+  const rightsField=document.getElementById('mcContribRights')?.closest('label');
+  const noteField=document.getElementById('mcContribNote')?.closest('label');
+  if(rightsField)rightsField.hidden=true;
+  if(noteField)noteField.hidden=true;
+  const notice=modal.querySelector('.mc-contrib-notice');
+  if(notice)notice.textContent='Adjunta una imagen JPG, PNG o WebP desde tu ordenador (máximo 5 MB) y pulsa Añadir portada. La publicación requiere que tengas autorización para compartirla.';
+  modal.querySelector('.mc-contrib-upload').open=true;
+ }
  const panel=modal.querySelector('.modalbox');panel?.classList.add('mc-contrib-modal');
  modal.querySelector('.modalhead b')?.classList.add('mc-contrib-title');
  modal.querySelectorAll('.modalbody label').forEach(label=>label.classList.add('mc-contrib-field','mc-wide'));
@@ -111,6 +120,7 @@ window.mcProposeMasterCover=function(encoded){
  const status=document.getElementById('mcContribStatus'),button=document.getElementById('mcContribSend');
  let file=document.getElementById('mcContribFile').files[0];
  const rights=document.getElementById('mcContribRights').value,note=document.getElementById('mcContribNote').value.trim();
+ const ownerSession=session()?.user?.id==='0bcbe06d-263d-4ac1-a516-355d27d417f1';
  if(!file&&remoteChoice){
    status.textContent='Capturando portada seleccionada…';
    try{
@@ -126,7 +136,7 @@ window.mcProposeMasterCover=function(encoded){
  }
 
  if(!file||!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5242880||!file.size){status.textContent='Selecciona una imagen válida de hasta 5 MB.';return}
- if(!rights||note.length<20){status.textContent='Indica los derechos de uso y una justificación verificable (mínimo 20 caracteres).';return}
+ if(!ownerSession&&(!rights||note.length<20)){status.textContent='Indica los derechos de uso y una justificación verificable (mínimo 20 caracteres).';return}
  // No inventar permisos ni atribuir licencias no declaradas.
  button.disabled=true;status.textContent='Guardando portada…';
  try{
