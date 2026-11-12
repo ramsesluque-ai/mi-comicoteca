@@ -8,6 +8,7 @@ on:
       - 'sync-v2-owner-restore.js'
       - 'tests/sync-v2-diagnostic.test.cjs'
       - 'tests/sync-v2-reconcile.test.cjs'
+      - 'tests/sync-v2-16523-scale.test.cjs'
       - '.github/workflows/sync-v2-regression.yml'
   workflow_dispatch:
 permissions:
@@ -28,7 +29,9 @@ jobs:
           node --check sync-v2-owner-restore.js
           node --check tests/sync-v2-diagnostic.test.cjs
           node --check tests/sync-v2-reconcile.test.cjs
+          node --check tests/sync-v2-16523-scale.test.cjs
       - name: Run pure reconciliation regression tests (no cloud writes)
         run: |
           node tests/sync-v2-reconcile.test.cjs
+          node tests/sync-v2-16523-scale.test.cjs
           node tests/sync-v2-diagnostic.test.cjs
