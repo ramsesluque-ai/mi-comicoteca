@@ -17,14 +17,27 @@
  document.body.appendChild(box);const status=box.querySelector('#v2restoreStatus'),backup=box.querySelector('#v2restoreBackup'),apply=box.querySelector('#v2restoreApply');
  try{
   const local=await allStore('comics'),cloud=[];
-  for(let offset=0;;offset+=250){
-   const url=cfg.url+'/rest/v1/user_comics?select=metadata,user_id&user_id=eq.'+OWNER+'&limit=250&offset='+offset+'&order=local_id.asc';
+  // Keyset pagination on the unique remote key; offset can skip records
+  // when another client inserts rows during a long download.
+  let lastKey=null;
+  const seenRemoteKeys=new Set();
+  for(let page=0;page<10000;page++){
+   const after=lastKey===null?'':'&local_id=gt.'+encodeURIComponent(lastKey);
+   const url=cfg.url+'/rest/v1/user_comics?select=metadata,user_id,local_id&user_id=eq.'+OWNER+'&limit=250&order=local_id.asc'+after;
    const response=await fetch(url,{headers:{apikey:cfg.publishableKey,Authorization:'Bearer '+s.access_token},cache:'no-store'});
    if(!response.ok)throw Error('Supabase HTTP '+response.status);
    const rows=await response.json();
-   for(const x of rows){const m=x.metadata,r=m?.record;if(x.user_id===OWNER&&m?.kind==='comics'&&m?.source==='owner-local-initial'&&!m.deleted&&r?.id)cloud.push(r)}
+   for(const x of rows){
+    if(x.user_id!==OWNER)throw Error('Fila remota de otro usuario: restauración bloqueada');
+    if(typeof x.local_id!=='string'||!x.local_id.trim()||(lastKey!==null&&x.local_id<=lastKey)||seenRemoteKeys.has(x.local_id))throw Error('Clave remota ausente, duplicada o fuera de orden');
+    seenRemoteKeys.add(x.local_id);lastKey=x.local_id;
+    const m=x.metadata,r=m?.record;
+    if(m?.kind==='comics'&&r?.id&&x.local_id!=='comics:'+String(r.id))throw Error('Identidad remota inconsistente: '+x.local_id);
+    if(m?.kind==='comics'&&m?.source==='owner-local-initial'&&!m.deleted&&r?.id)cloud.push(r);
+   }
    status.textContent='Verificando nube: '+cloud.length+' fichas…';
    if(rows.length<250)break;
+   if(page===9999)throw Error('Límite de páginas: descarga incompleta');
   }
   const cloudIds=new Set(cloud.map(r=>String(r.id)));
   if(cloud.length!==16523||cloudIds.size!==16523)throw Error('La nube no coincide con la copia esperada: '+cloud.length+' fichas, '+cloudIds.size+' IDs únicos. Operación bloqueada.');
