@@ -13,13 +13,26 @@
   if(typeof db==='undefined'||!db){for(let i=0;i<30&&!db;i++)await new Promise(resolve=>setTimeout(resolve,200));if(!db)throw Error('La base local no está disponible') }
   const local=await allStore('comics');result.local=local.length;
   const remote=[];
-  for(let offset=0;;offset+=500){
-   const url=cfg.url+'/rest/v1/user_comics?select=user_id,metadata&user_id=eq.'+encodeURIComponent(session.user.id)+'&limit=500&offset='+offset;
+  const seenKeys=new Set();
+  let lastKey=null;
+  for(let page=0;page<10000;page++){
+   // Keyset pagination: offset pages can skip/repeat rows during concurrent inserts.
+   // local_id is unique per user and must be non-null for a safe complete scan.
+   const after=lastKey===null?'':'&local_id=gt.'+encodeURIComponent(lastKey);
+   const url=cfg.url+'/rest/v1/user_comics?select=user_id,local_id,metadata&user_id=eq.'+encodeURIComponent(session.user.id)+'&order=local_id.asc&limit=500'+after;
    const response=await fetch(url,{headers:{apikey:cfg.publishableKey,Authorization:'Bearer '+session.access_token},cache:'no-store'});
    if(!response.ok)throw Error('Cloud HTTP '+response.status);
    const rows=await response.json();
-   remote.push(...rows.filter(x=>x.user_id===session.user.id&&x.metadata?.kind==='comics'&&!x.metadata?.deleted&&x.metadata?.record).map(x=>x.metadata.record));
+   for(const row of rows){
+    if(row.user_id!==session.user.id)throw Error('Respuesta con usuario distinto');
+    if(typeof row.local_id!=='string'||!row.local_id.trim())throw Error('Fila sin local_id estable: diagnóstico incompleto');
+    if((lastKey!==null&&row.local_id<=lastKey)||seenKeys.has(row.local_id))throw Error('Paginación inestable o local_id duplicado');
+    seenKeys.add(row.local_id);
+    lastKey=row.local_id;
+    if(row.metadata?.kind==='comics'&&!row.metadata?.deleted&&row.metadata?.record)remote.push(row.metadata.record);
+   }
    if(rows.length<500)break;
+   if(page===9999)throw Error('Límite de páginas alcanzado: diagnóstico incompleto');
   }
   result.cloud=remote.length;
   const analysis=MCReconcileV2.reconcile(local,remote);
