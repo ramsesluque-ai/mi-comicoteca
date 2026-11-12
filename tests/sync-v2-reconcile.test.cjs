@@ -101,3 +101,17 @@ const removedField=threeWay(withSynopsis,{...withSynopsis,synopsis:undefined},{.
 assert.equal(removedField.status,'merged');
 assert.equal(Object.hasOwn(removedField.record,'synopsis'),false);
 assert.equal(removedField.record.coverUrl,'https://example.org/updated.jpg');
+
+// Two IDs for the same complete bibliographic issue must not create duplicate comics.
+for (const [baseline,local,remote] of [
+  [[],[base],[{...base,id:'cloud-copy'}]],
+  [[base],[base],[base,{...base,id:'cloud-copy'}]],
+  [[],[base,{...base,id:'local-copy'}],[]]
+]) {
+  const planned=planWithBaseline(baseline,local,remote);
+  assert.ok(planned.conflicts.some(c=>c.reason==='duplicate-bibliographic-identity-different-ids'));
+  assert.equal(planned.upload.length,0);
+  assert.equal(planned.download.length,0);
+  assert.equal(planned.merged.length,0);
+}
+console.log('PASS: cross-ID bibliographic duplicate protection');
