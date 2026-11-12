@@ -41,7 +41,23 @@ const MC_VERIFIED_MASTER_RECORDS={
  'gcd_2398603':{title:'100 Balas · Tomo 4',pages:'420'},
  'gcd_2398604':{title:'100 Balas · Tomo 5',pages:'420'},
  'gcd_2240211':{title:'Adam y Eve · Tomo 1',pages:'298'},
- 'gcd_2240212':{title:'Adam y Eve · Tomo 2',pages:'298'}
+ 'gcd_2240212':{title:'Adam y Eve · Tomo 2',pages:'298'},
+ 'gcd_1171657':{title:'American Vampire · Tomo 1'},
+ 'gcd_2225992':{title:'American Vampire · Tomo 1'},
+ 'gcd_1171658':{title:'American Vampire · Tomo 2'},
+ 'gcd_2225993':{title:'American Vampire · Tomo 2'},
+ 'gcd_1186326':{title:'American Vampire · Tomo 3'},
+ 'gcd_942535':{title:'American Vampire · Tomo 3'},
+ 'gcd_1051563':{title:'American Vampire · Tomo 4'},
+ 'gcd_1186327':{title:'American Vampire · Tomo 4'},
+ 'gcd_1186328':{title:'American Vampire · Tomo 5'},
+ 'gcd_1186441':{title:'American Vampire · Tomo 5'},
+ 'gcd_1186329':{title:'American Vampire · Tomo 6'},
+ 'gcd_1186442':{title:'American Vampire · Tomo 6'},
+ 'gcd_2225994':{title:'American Vampire · Tomo 7'},
+ 'gcd_2255790':{title:'American Vampire · Tomo 7'},
+ 'gcd_2225995':{title:'American Vampire · Tomo 8'},
+ 'gcd_2255791':{title:'American Vampire · Tomo 8'}
 };
 async function mcMasterEnrichRows(rows){const over=await mcSEOverrides();const shared=await window.mcSharedCovers?.()||{};return rows.map(r=>{const o={...(MC_VERIFIED_MASTER_RECORDS[String(r.id)]||{}),...(over[mcMasterCode(r)]||{})},common=shared[window.mcMasterCoverKey?.(r)||'']||'';return{...r,title:o.title||r.title||'',publisher:o.publisher||r.publisher||'',catalogHeader:o.series||r.catalogHeader||r.series||'',series:o.series||r.series||r.catalogHeader||'',issueNr:o.issueNr||r.issueNr||r.issue||'',issue:o.issueNr||r.issue||r.issueNr||'',publicationDate:(v=>v==='-1'||v==='-1-00'||v==='0000-00-00'?'':v)(String(o.publicationDate||r.publicationDate||'').trim()),pages:o.pages||r.pages||'',isbn:o.isbn||r.isbn||'',coverUrl:common||o.coverUrl||r.coverUrl||'',sourceUrl:o.sourceUrl||r.sourceUrl||''}})}
 async function mcMasterLoadPublisher(pub){if(MCMasterUI.loadedPublisher===pub&&MCMasterUI.rows.length)return MCMasterUI.rows;const idx=await mcMasterIndexWithArchive(),meta=(idx.publishers||[]).find(p=>p.publisher===pub)||mcSEPublisherMeta(idx,pub)[0];if(!meta){MCMasterUI.rows=[];MCMasterUI.loadedPublisher='';return[]}const rows=await mcSEChunks(meta.chunks||[]);
