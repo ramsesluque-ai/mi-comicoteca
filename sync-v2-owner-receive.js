@@ -19,13 +19,22 @@
   try{
    const local=await allStore('comics'),ids=new Set(local.map(x=>String(x.id))),identity=window.MCReconcileV2?.identity;if(typeof identity!=='function')throw Error('Motor de identidad V2 no cargado');
    const editions=new Set(local.map(identity).filter(Boolean));
-   for(let offset=0;;offset+=250){
-    const url=cfg.url+'/rest/v1/user_comics?select=metadata,user_id&user_id=eq.'+OWNER+'&limit=250&offset='+offset+'&order=local_id.asc';
+   const seenRemoteIds=new Set();
+   let lastKey=null;
+   for(let page=0;page<10000;page++){
+    // Stable keyset scan: offset pagination can omit or repeat rows after inserts.
+    const after=lastKey===null?'':'&local_id=gt.'+encodeURIComponent(lastKey);
+    const url=cfg.url+'/rest/v1/user_comics?select=metadata,user_id,local_id&user_id=eq.'+OWNER+'&limit=250&order=local_id.asc'+after;
     const resp=await fetch(url,{headers:{apikey:cfg.publishableKey,Authorization:'Bearer '+s.access_token},cache:'no-store'});
     if(!resp.ok)throw Error('HTTP '+resp.status);
     const rows=await resp.json();
     for(const row of rows){
+     if(row.user_id!==OWNER)throw Error('Respuesta de otro usuario');
+     if(typeof row.local_id!=='string'||!row.local_id.trim())throw Error('Fila remota sin clave estable');
+     if((lastKey!==null&&row.local_id<=lastKey)||seenRemoteIds.has(row.local_id))throw Error('Paginación remota inestable o clave duplicada');
+     seenRemoteIds.add(row.local_id);lastKey=row.local_id;
      const m=row.metadata,r=m?.record;
+     if(m?.kind==='comics'&&r?.id&&row.local_id!=='comics:'+String(r.id))throw Error('Identidad remota inconsistente: '+row.local_id);
      if(row.user_id!==OWNER||m?.kind!=='comics'||m?.source!=='owner-local-initial'||m.deleted||!r?.id)continue;
      const key=identity(r);
      if(ids.has(String(r.id))||(key&&editions.has(key))){skipped++;continue}
@@ -33,6 +42,7 @@
     }
     status.textContent='Recibidas '+added+' fichas nuevas; '+skipped+' ya existentes. No cierres la pestaña.';
     if(rows.length<250)break;
+    if(page===9999)throw Error('Límite de páginas: recepción incompleta');
    }
    status.textContent='Recepción completada: '+added+' añadidas, '+skipped+' omitidas por existir. Ninguna ficha existente sobrescrita. Recarga la página para visualizar.';
   }catch(e){status.textContent='Recepción interrumpida: '+String(e)+'. Añadidas '+added+'. Puedes reintentar sin duplicar.';button.disabled=false}
