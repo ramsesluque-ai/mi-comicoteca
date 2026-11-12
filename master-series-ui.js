@@ -56,8 +56,11 @@ renderMaster=async function(){
    return checks.every(([field,prop])=>!state[prop]||normalize(r[field])===state[prop]);
  });
 
+ const sharedCovers=typeof window.mcSharedCovers==='function'?await window.mcSharedCovers():{};
+ if(token!==state.serial)return;
+ const coverFor=r=>{const key=typeof window.mcMasterCoverKey==='function'?window.mcMasterCoverKey(r):'';return key&&sharedCovers[key]?{...r,coverUrl:sharedCovers[key]}:r};
  const groups=new Map();
- for(const r of filtered){const key=mcMasterGroupKey(r);if(!groups.has(key))groups.set(key,{sample:r,cover:null,count:0});const g=groups.get(key);g.count++;if(!g.cover&&r.coverUrl)g.cover=r}
+ for(const original of filtered){const r=coverFor(original);{const key=mcMasterGroupKey(r);if(!groups.has(key))groups.set(key,{sample:r,cover:null,count:0});const g=groups.get(key);g.count++;if(!g.cover&&r.coverUrl)g.cover=r}
  // Personal-only series are shown as reconciliation candidates, never counted as verified Maestro records.
  const personal=await allStore('comics');
  if(token!==state.serial)return;
