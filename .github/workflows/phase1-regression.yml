@@ -6,6 +6,8 @@ on:
       - '*.js'
       - '*.css'
       - 'index.html'
+      - 'master-data/publishers/ecc-001.json'
+      - 'tests/master-ecc-catalog-regression.cjs'
       - '.github/workflows/phase1-regression.yml'
   workflow_dispatch:
 permissions:
@@ -44,3 +46,5 @@ jobs:
           assert(app.includes('function issueNumberLabel('),'Unknown issue numbers need safe display');
           console.log('PHASE1_STATIC_GATE_PASS');
           NODE
+      - name: Validate reviewed ECC Maestro records and cache versions
+        run: node tests/master-ecc-catalog-regression.cjs

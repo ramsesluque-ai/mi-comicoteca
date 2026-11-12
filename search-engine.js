@@ -18,7 +18,9 @@ function mcSEPubCompatible(a,b){const A=mcSENorm(mcSECanonPub(a)),B=mcSENorm(mcS
 function mcSEMergeCovers(...lists){const out=[];for(const l of lists.flat()){const u=String(l||'').trim().replace(/^http:/,'https:');if(/^https?:\/\//i.test(u)&&!out.includes(u))out.push(u)}return out}
 function mcSECandidate(source,data,score=0,covers=[]){const all=mcSEMergeCovers(covers,data?.coverUrls||[],data?.coverUrl||'');return{source,data:{...data,coverUrls:all,coverUrl:all[0]||''},score}}
 function mcSECandidateKey(c){const d=c.data||{};return[mcSECode(d.isbn),mcSENorm(d.publisher),mcSENorm(d.series),mcSEIssue(d.issueNr),mcSENorm(d.title)].join('|')}
-async function mcSEFetchJSON(rel){const r=await fetch(MCMasterData.base+rel,{cache:'force-cache'});if(!r.ok)throw Error('No se pudo leer Maestro España: '+rel+' ('+r.status+')');return r.json()}
+// A new reviewed ECC catalog revision must not be hidden by a force-cached JSON chunk.
+const MC_ECC_CATALOG_REV='20261112-ecc-refresh1';
+async function mcSEFetchJSON(rel){const eccChunk=/^publishers\/ecc-\d+\.json$/.test(rel);const url=MCMasterData.base+rel+(eccChunk?'?v='+MC_ECC_CATALOG_REV:'');const r=await fetch(url,{cache:eccChunk?'no-cache':'force-cache'});if(!r.ok)throw Error('No se pudo leer Maestro España: '+rel+' ('+r.status+')');return r.json()}
 async function mcSEMasterIndex(){return MCMasterData.index||(MCMasterData.index=await mcSEFetchJSON('index.json'))}
 async function mcSEOverrides(){return MCMasterData.overrides||(MCMasterData.overrides=await mcSEFetchJSON('cover-overrides.json').catch(()=>({})))}
 async function mcSEIsbnIndex(){return MCMasterData.isbnIndex||(MCMasterData.isbnIndex=await mcSEFetchJSON('isbn-index.json'))}
