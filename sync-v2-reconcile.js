@@ -82,6 +82,15 @@
       seen.add(id);
     }
   }
+   // Invalid IDs cannot be reconciled safely: never coalesce null/undefined into a shared map key.
+   for(const rows of [baseRows,localRows,remoteRows]){
+     for(const r of rows){
+       if(!r||r.id===null||r.id===undefined||String(r.id).trim()===''){
+         decisions.conflicts.push({reason:'missing-record-id'});
+       }
+     }
+   }
+   if(decisions.conflicts.some(x=>x.reason==='missing-record-id'))return decisions;
    const keys=new Set([...base.keys(),...local.keys(),...remote.keys()]);
    for(const id of keys){
      if(duplicates.has(id)){decisions.conflicts.push({id,reason:'duplicate-id-in-input'});continue}
