@@ -58,7 +58,11 @@ const MC_VERIFIED_MASTER_RECORDS={
  'gcd_2255790':{title:'American Vampire · Tomo 7'},
  'gcd_2225995':{title:'American Vampire · Tomo 8'},
  'gcd_2255791':{title:'American Vampire · Tomo 8'},
- 'gcd_2240232':{title:'Animal Man: El Reino Rojo',issueNr:'Tomo único',publicationDate:'2020'}
+ 'gcd_2240232':{title:'Animal Man: El Reino Rojo',issueNr:'Tomo único',publicationDate:'2020'},
+ 'gcd_1048626':{title:'Antes de Watchmen: Búho Nocturno · N.º 1'},
+ 'gcd_1048627':{title:'Antes de Watchmen: Búho Nocturno · N.º 2'},
+ 'gcd_1099886':{title:'Antes de Watchmen: Búho Nocturno · N.º 3'},
+ 'gcd_1099887':{title:'Antes de Watchmen: Búho Nocturno · N.º 4'}
 };
 async function mcMasterEnrichRows(rows){const over=await mcSEOverrides();const shared=await window.mcSharedCovers?.()||{};return rows.map(r=>{const o={...(MC_VERIFIED_MASTER_RECORDS[String(r.id)]||{}),...(over[mcMasterCode(r)]||{})},common=shared[window.mcMasterCoverKey?.(r)||'']||'';return{...r,title:o.title||r.title||'',publisher:o.publisher||r.publisher||'',catalogHeader:o.series||r.catalogHeader||r.series||'',series:o.series||r.series||r.catalogHeader||'',issueNr:o.issueNr||r.issueNr||r.issue||'',issue:o.issueNr||r.issue||r.issueNr||'',publicationDate:(v=>v==='-1'||v==='-1-00'||v==='0000-00-00'?'':v)(String(o.publicationDate||r.publicationDate||'').trim()),pages:o.pages||r.pages||'',isbn:o.isbn||r.isbn||'',coverUrl:common||o.coverUrl||r.coverUrl||'',sourceUrl:o.sourceUrl||r.sourceUrl||''}})}
 async function mcMasterLoadPublisher(pub){if(MCMasterUI.loadedPublisher===pub&&MCMasterUI.rows.length)return MCMasterUI.rows;const idx=await mcMasterIndexWithArchive(),meta=(idx.publishers||[]).find(p=>p.publisher===pub)||mcSEPublisherMeta(idx,pub)[0];if(!meta){MCMasterUI.rows=[];MCMasterUI.loadedPublisher='';return[]}const rows=await mcSEChunks(meta.chunks||[]);
