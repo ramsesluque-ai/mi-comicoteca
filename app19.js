@@ -10,7 +10,7 @@ function mcPublisherCompatible(a,b){
   return false;
 }
 function mcCandidateCompleteFor(x,c){
-  const d=c?.data||{},wanted=String(x.issueNr??x.issue??'').trim(),unnumbered=/^(único|unico|one-shot|especial|s\\/?n)$/i.test(wanted);
+  const d=c?.data||{},wanted=String(x.issueNr??x.issue??'').trim(),unnumbered=/^(único|unico|one-shot|especial|s\/?n)$/i.test(wanted);
   if(wanted&&!unnumbered&&d.issueNr&&typeof mcIssueExact==='function'&&!mcIssueExact(wanted,d.issueNr))return false;
   const qs=x.catalogHeader||x.series||'',ds=d.series||qs;
   if(qs&&ds&&typeof mcSeriesAffinity==='function'&&mcSeriesAffinity(qs,ds)<0.76)return false;
@@ -58,7 +58,7 @@ async function mcCollectCompleteCandidates(x){
   const wanted=String(x.issueNr??x.issue??'').trim(),code=mcNormIsbn(x.isbn||''),pool=[],seen=new Set();
   const add=async c=>{if(!c)return;c=await mcEnrichFullCandidate(c,x);const d=c.data||{},k=[mcNormIsbn(d.isbn),mcLooseSeriesName(d.series||''),String(d.issueNr||''),norm(d.title||'')].join('|');if(seen.has(k))return;seen.add(k);pool.push(c)};
   if(code)await add(await mcGoogleByIsbn(code,x,wanted));
-  if(wanted&&!/^(único|unico|one-shot|especial|s\\/?n)$/i.test(wanted)&&typeof mcGcdCandidatesForComic==='function')for(const c of await mcGcdCandidatesForComic(x))await add(c);
+  if(wanted&&!/^(único|unico|one-shot|especial|s\/?n)$/i.test(wanted)&&typeof mcGcdCandidatesForComic==='function')for(const c of await mcGcdCandidatesForComic(x))await add(c);
   if(typeof mcMasterCandidatesForComic==='function')for(const c of await mcMasterCandidatesForComic(x))await add(c);
   if(typeof mcGoogleBooksCandidatesForComic==='function')for(const c of await mcGoogleBooksCandidatesForComic(x))await add(c);
   // Title-only discovery supports one-shots and editions without ISBN/issue number.
