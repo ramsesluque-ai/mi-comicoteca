@@ -105,6 +105,12 @@
      // Missing rows may be pagination gaps, never treat as tombstones.
      if(!l&&!r){decisions.conflicts.push({id,reason:'missing-both-without-tombstone'});continue}
      if(!b){
+       // A tombstone without an acknowledged baseline is not a safe new record.
+       // Block it rather than propagating an unverified deletion across devices.
+       if((l&&l.deleted)||(r&&r.deleted)){
+         decisions.conflicts.push({id,reason:'unverified-tombstone-without-baseline'});
+         continue;
+       }
        if(l&&!r)decisions.upload.push(l);
        else if(r&&!l)decisions.download.push(r);
        else if(JSON.stringify(l)===JSON.stringify(r))decisions.unchanged.push(id);
