@@ -67,7 +67,32 @@ const MC_VERIFIED_MASTER_RECORDS={
  'gcd_1250910':{title:'Antes de Watchmen: Dr. Manhattan · N.º 1',pages:'36'},
  'gcd_1250911':{title:'Antes de Watchmen: Dr. Manhattan · N.º 2',pages:'36'},
  'gcd_1250912':{title:'Antes de Watchmen: Dr. Manhattan · N.º 3',pages:'36'},
- 'gcd_1250913':{title:'Antes de Watchmen: Dr. Manhattan · N.º 4',pages:'36'}
+ 'gcd_1250913':{title:'Antes de Watchmen: Dr. Manhattan · N.º 4',pages:'36'},
+ 'gcd_1656717':{title:'Antes de Watchmen: Dr. Manhattan · Vol. 2',issueNr:'Número único',publicationDate:'2016-11',pages:'120',isbn:'9788416945054'},
+ 'gcd_1048622':{title:'Antes de Watchmen: El Comediante · N.º 1'},
+ 'gcd_1048623':{title:'Antes de Watchmen: El Comediante · N.º 2'},
+ 'gcd_1171896':{title:'Antes de Watchmen: El Comediante · N.º 3'},
+ 'gcd_1171897':{title:'Antes de Watchmen: El Comediante · N.º 4'},
+ 'gcd_1171898':{title:'Antes de Watchmen: El Comediante · N.º 5'},
+ 'gcd_1171899':{title:'Antes de Watchmen: El Comediante · N.º 6'},
+ 'gcd_1048633':{title:'Antes de Watchmen: Espectro de Seda · N.º 1'},
+ 'gcd_1048634':{title:'Antes de Watchmen: Espectro de Seda · N.º 2'},
+ 'gcd_1171900':{title:'Antes de Watchmen: Espectro de Seda · N.º 3'},
+ 'gcd_1171901':{title:'Antes de Watchmen: Espectro de Seda · N.º 4'},
+ 'gcd_1036701':{title:'Antes de Watchmen: Minutemen · N.º 1'},
+ 'gcd_1048625':{title:'Antes de Watchmen: Minutemen · N.º 2'},
+ 'gcd_1171902':{title:'Antes de Watchmen: Minutemen · N.º 3'},
+ 'gcd_1171903':{title:'Antes de Watchmen: Minutemen · N.º 4'},
+ 'gcd_1171904':{title:'Antes de Watchmen: Minutemen · N.º 5'},
+ 'gcd_1171905':{title:'Antes de Watchmen: Minutemen · N.º 6'},
+ 'gcd_1171661':{title:'Antes de Watchmen: Moloch · N.º 1',pages:'32'},
+ 'gcd_1171662':{title:'Antes de Watchmen: Moloch · N.º 2',pages:'32'},
+ 'gcd_1048631':{title:'Antes de Watchmen: Ozymandias · N.º 1'},
+ 'gcd_1048632':{title:'Antes de Watchmen: Ozymandias · N.º 2'},
+ 'gcd_1171906':{title:'Antes de Watchmen: Ozymandias · N.º 3'},
+ 'gcd_1171907':{title:'Antes de Watchmen: Ozymandias · N.º 4'},
+ 'gcd_1171908':{title:'Antes de Watchmen: Ozymandias · N.º 5'},
+ 'gcd_1171909':{title:'Antes de Watchmen: Ozymandias · N.º 6'}
 };
 async function mcMasterEnrichRows(rows){const over=await mcSEOverrides();const shared=await window.mcSharedCovers?.()||{};return rows.map(r=>{const o={...(MC_VERIFIED_MASTER_RECORDS[String(r.id)]||{}),...(over[mcMasterCode(r)]||{})},common=shared[window.mcMasterCoverKey?.(r)||'']||'';return{...r,title:o.title||r.title||'',publisher:o.publisher||r.publisher||'',catalogHeader:o.series||r.catalogHeader||r.series||'',series:o.series||r.series||r.catalogHeader||'',issueNr:o.issueNr||r.issueNr||r.issue||'',issue:o.issueNr||r.issue||r.issueNr||'',publicationDate:(v=>v==='-1'||v==='-1-00'||v==='0000-00-00'?'':v)(String(o.publicationDate||r.publicationDate||'').trim()),pages:o.pages||r.pages||'',isbn:o.isbn||r.isbn||'',coverUrl:common||o.coverUrl||r.coverUrl||'',sourceUrl:o.sourceUrl||r.sourceUrl||''}})}
 async function mcMasterLoadPublisher(pub){if(MCMasterUI.loadedPublisher===pub&&MCMasterUI.rows.length)return MCMasterUI.rows;const idx=await mcMasterIndexWithArchive(),meta=(idx.publishers||[]).find(p=>p.publisher===pub)||mcSEPublisherMeta(idx,pub)[0];if(!meta){MCMasterUI.rows=[];MCMasterUI.loadedPublisher='';return[]}const rows=await mcSEChunks(meta.chunks||[]);
