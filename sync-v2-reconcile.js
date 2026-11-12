@@ -45,6 +45,9 @@
  function threeWay(base,local,remote){
    if(!base||!local||!remote||String(base.id)!==String(local.id)||String(base.id)!==String(remote.id))
      return {status:'conflict',reason:'missing-or-mismatched-baseline'};
+   // A previously acknowledged tombstone must never be silently resurrected.
+   if(base.deleted && (!local.deleted || !remote.deleted))
+     return {status:'conflict',reason:'tombstone-resurrection'};
    if(local.deleted||remote.deleted){
      if(local.deleted&&remote.deleted)return {status:'unchanged',record:{...remote,deleted:true}};
      const deleted=local.deleted?local:remote,other=local.deleted?remote:local;
