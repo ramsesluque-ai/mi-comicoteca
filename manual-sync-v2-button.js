@@ -30,25 +30,24 @@
      diagnostic.textContent=(authenticated?'Sesión identificada. ':'Inicia sesión para sincronizar. ')+(Array.isArray(rows)?rows.length.toLocaleString('es-ES')+' fichas locales detectadas. ':'No se pudo verificar la colección local. ')+'No se ha realizado ninguna escritura ni descarga.';
      if(authenticated&&Array.isArray(rows)){
        const cfg=window.MI_COMICOTECA_CLOUD||{};
-       if(!cfg.url||!cfg.publishableKey){diagnostic.textContent+=' Configuración cloud no disponible.';return}
-       let last=null,count=0,pages=0;const seen=new Set();
-       for(;pages<10000;pages++){
-         const after=last===null?'':'&local_id=gt.'+encodeURIComponent(last);
-         const url=cfg.url+'/rest/v1/user_comics?select=user_id,local_id&user_id=eq.'+encodeURIComponent(session.user.id)+'&order=local_id.asc&limit=500'+after;
-         const res=await fetch(url,{method:'GET',headers:{apikey:cfg.publishableKey,Authorization:'Bearer '+session.access_token},cache:'no-store'});
-         if(!res.ok)throw Error('Lectura de nube HTTP '+res.status);
-         const page=await res.json();
-         if(!Array.isArray(page)||page.length>500)throw Error('Página cloud inválida');
-         for(const item of page){
-           if(item.user_id!==session.user.id||typeof item.local_id!=='string'||!item.local_id.trim()||(last!==null&&item.local_id<=last)||seen.has(item.local_id))throw Error('Identidad o paginación cloud inconsistente');
-           last=item.local_id;seen.add(last);count++;
+       if(!cfg.url||!cfg.publishableKey)throw Error('Configuración cloud no disponible');
+       if(!window.MCSyncV2ReadPlan?.compare)throw Error('Motor de comparación V2 no disponible');
+       const result=await window.MCSyncV2ReadPlan.compare({
+         session,cfg,localRows:rows,
+         onProgress:x=>{
+           if(!panel.isConnected)return;
+           diagnostic.textContent='Comparación SOLO LECTURA: '+x.local.toLocaleString('es-ES')+' fichas locales; '+x.scanned.toLocaleString('es-ES')+' filas cloud examinadas en '+x.pages+' páginas. No se han realizado escrituras.';
          }
-         if(!panel.isConnected)return;
-         diagnostic.textContent='Solo lectura: '+rows.length.toLocaleString('es-ES')+' fichas locales; '+count.toLocaleString('es-ES')+' registros cloud examinados en '+(pages+1)+' páginas. Sin escrituras.';
-         if(page.length<500)break;
-       }
-       if(pages===10000)throw Error('Límite de paginación alcanzado');
-       diagnostic.textContent+=' Diagnóstico completado; la sincronización permanece bloqueada hasta validar respaldo, conflictos y pruebas E2E.';
+       });
+       if(!panel.isConnected)return;
+       diagnostic.textContent='Comparación completada y cuenta verificada. Local: '+result.local.toLocaleString('es-ES')+
+         '; nube: '+result.cloud.toLocaleString('es-ES')+
+         '; idénticas: '+result.equal.toLocaleString('es-ES')+
+         '; diferentes (requieren resolver conflictos): '+result.different.toLocaleString('es-ES')+
+         '; solo locales: '+result.onlyLocal.toLocaleString('es-ES')+
+         '; solo en nube: '+result.onlyCloud.toLocaleString('es-ES')+
+         '; eliminaciones explícitas: '+result.tombstones.toLocaleString('es-ES')+
+         '. No se ha sobrescrito, descargado, subido ni borrado ningún cómic. La sincronización real sigue bloqueada hasta validar el respaldo, la reconciliación y las pruebas en dos sesiones.';
      }
    }catch(e){if(panel.isConnected)diagnostic.textContent='Diagnóstico local no disponible: '+String(e.message||e)+'. Ningún dato modificado.'}})();
    const backup=document.createElement('button');backup.type='button';backup.textContent='Descargar respaldo local (JSON + SHA-256)';backup.style.cssText='padding:9px 12px;margin:10px 8px 0 0;border-radius:8px;cursor:pointer;background:#16678a;color:white;border:1px solid #73b9d1';

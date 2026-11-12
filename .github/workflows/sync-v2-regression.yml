@@ -4,10 +4,14 @@ on:
     branches: [commercial-published]
     paths:
       - 'sync-v2-reconcile.js'
+      - 'sync-v2-manual-plan.js'
+      - 'manual-sync-v2-button.js'
+      - 'index.html'
       - 'sync-v2-diagnostic.js'
       - 'sync-v2-owner-restore.js'
       - 'tests/sync-v2-diagnostic.test.cjs'
       - 'tests/sync-v2-reconcile.test.cjs'
+      - 'tests/sync-v2-manual-plan.test.cjs'
       - 'tests/sync-v2-16523-scale.test.cjs'
       - '.github/workflows/sync-v2-regression.yml'
   workflow_dispatch:
@@ -25,6 +29,9 @@ jobs:
       - name: Validate JavaScript syntax
         run: |
           node --check sync-v2-reconcile.js
+          node --check sync-v2-manual-plan.js
+          node --check manual-sync-v2-button.js
+          node --check tests/sync-v2-manual-plan.test.cjs
           node --check sync-v2-diagnostic.js
           node --check sync-v2-owner-restore.js
           node --check tests/sync-v2-diagnostic.test.cjs
@@ -33,5 +40,6 @@ jobs:
       - name: Run pure reconciliation regression tests (no cloud writes)
         run: |
           node tests/sync-v2-reconcile.test.cjs
+          node tests/sync-v2-manual-plan.test.cjs
           node tests/sync-v2-16523-scale.test.cjs
           node tests/sync-v2-diagnostic.test.cjs
