@@ -150,7 +150,7 @@ window.mcProposeMasterCover=function(encoded){
  const path=user.id+'/'+crypto.randomUUID()+'.'+ext;
  const directPublish=user.id==='0bcbe06d-263d-4ac1-a516-355d27d417f1';
  const upload=await fetch(c.url+'/storage/v1/object/master-contributions/'+path,{method:'POST',headers:{...authHeaders(),'Content-Type':file.type,'x-upsert':'false'},body:file});
- if(!upload.ok){const e=await upload.json().catch(()=>({}));throw Error(e.message||e.error||'Error de subida')}
+ if(!upload.ok){const e=await upload.json().catch(()=>({}));throw Error('Almacenamiento privado (HTTP '+upload.status+'): '+[e.code,e.error,e.message].filter(Boolean).join(' · ')+'; vuelve a iniciar sesión si indica falta de autorización.')}
  if(directPublish){
    status.textContent='Publicando portada en el Maestro compartido…';
    const response=await fetch(c.url+'/functions/v1/publish-master-cover',{method:'POST',headers:{...authHeaders(true)},body:JSON.stringify({private_path:path,identity_key,isbn:isbn||null})});
