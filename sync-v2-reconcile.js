@@ -72,6 +72,10 @@
  }
  // Pure planner: no writes, and never infer deletion from absence in a page.
  function planWithBaseline(baseRows,localRows,remoteRows){
+   // Validate before indexing: malformed rows must not throw or collapse into a shared key.
+   const allRows=[baseRows,localRows,remoteRows];
+   if(allRows.some(rows=>!Array.isArray(rows)||rows.some(r=>!r||typeof r!=='object'||r.id===null||r.id===undefined||String(r.id).trim()==='')))
+     return {download:[],upload:[],merged:[],conflicts:[{reason:'missing-record-id'}],unchanged:[]};
    const base=new Map(baseRows.map(r=>[String(r.id),r]));
    const local=new Map(localRows.map(r=>[String(r.id),r]));
    const remote=new Map(remoteRows.map(r=>[String(r.id),r]));
