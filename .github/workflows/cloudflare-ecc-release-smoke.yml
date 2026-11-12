@@ -6,6 +6,8 @@ on:
       - 'index.html'
       - 'search-engine.js'
       - 'master-static.js'
+      - 'manual-sync-v2-button.js'
+      - 'sync-v2-manual-plan.js'
       - 'master-data/publishers/ecc-001.json'
       - '.github/workflows/cloudflare-ecc-release-smoke.yml'
   workflow_dispatch:
@@ -42,8 +44,14 @@ jobs:
           console.log('CLOUDFLARE_ECC_MASTER_RELEASE_VERIFIED',rows.length,scooby.length);
           NODE
                 then
-                  echo 'Cloudflare Worker is serving updated Maestro UI and ECC JSON.'
-                  exit 0
+                  if grep -Fq 'sync-v2-manual-plan.js?v=20261112-compare1' /tmp/mc-index.html && \
+                     grep -Fq 'manual-sync-v2-button.js?v=20261112-compare1' /tmp/mc-index.html && \
+                     curl -fsSL --max-time 20 -H 'Cache-Control: no-cache' "${BASE_URL}/sync-v2-manual-plan.js?v=20261112-compare1&release_probe=${GITHUB_SHA}" -o /tmp/mc-sync-v2-plan.js && \
+                     grep -Fq 'root.MCSyncV2ReadPlan=api' /tmp/mc-sync-v2-plan.js && \
+                     grep -Fq 'stats.safeToWrite=false' /tmp/mc-sync-v2-plan.js; then
+                    echo 'Cloudflare Worker is serving updated ECC Maestro and read-only Sync V2 manual plan.'
+                    exit 0
+                  fi
                 fi
               fi
             fi
