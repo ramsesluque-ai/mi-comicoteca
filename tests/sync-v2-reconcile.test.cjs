@@ -72,4 +72,13 @@ for (const sets of [
   assert.equal(planned.download.length,0);
   assert.equal(planned.merged.length,0);
 }
+// Stable IDs must never silently identify a different bibliographic issue.
+const collision=planWithBaseline([base],[{...base,issueNr:'2'}],[base]);
+assert.equal(collision.conflicts[0].reason,'stable-id-bibliographic-identity-mismatch');
+assert.equal(collision.upload.length,0);
+assert.equal(collision.download.length,0);
+assert.equal(collision.merged.length,0);
+// Unknown identity components should not be treated as proof of a collision.
+const partial=planWithBaseline([base],[{...base,issueNr:null}],[base]);
+assert.equal(partial.conflicts.length,0);
 console.log('PASS: sync V2 assertions including duplicate-ID guard; no network, cloud or IndexedDB writes');
