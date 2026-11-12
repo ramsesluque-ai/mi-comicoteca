@@ -51,8 +51,23 @@
        diagnostic.textContent+=' Diagnóstico completado; la sincronización permanece bloqueada hasta validar respaldo, conflictos y pruebas E2E.';
      }
    }catch(e){if(panel.isConnected)diagnostic.textContent='Diagnóstico local no disponible: '+String(e.message||e)+'. Ningún dato modificado.'}})();
+   const backup=document.createElement('button');backup.type='button';backup.textContent='Descargar respaldo local (JSON + SHA-256)';backup.style.cssText='padding:9px 12px;margin:10px 8px 0 0;border-radius:8px;cursor:pointer;background:#16678a;color:white;border:1px solid #73b9d1';
+   backup.onclick=async()=>{backup.disabled=true;backup.textContent='Preparando respaldo…';try{
+     if(typeof allStore!=='function')throw Error('Almacén local no disponible');
+     const comics=await allStore('comics');if(!Array.isArray(comics))throw Error('Lectura local incompleta');
+     const ids=new Set();for(const c of comics){const id=String(c.id||'');if(!id||ids.has(id))throw Error('ID local ausente o duplicado; respaldo cancelado');ids.add(id)}
+     const payload=JSON.stringify({format:'mi-comicoteca-local-backup-v1',exportedAt:new Date().toISOString(),count:comics.length,comics});
+     if(!window.crypto?.subtle)throw Error('SHA-256 no disponible en este navegador');
+     const bytes=new TextEncoder().encode(payload),digest=await crypto.subtle.digest('SHA-256',bytes);
+     const sha=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
+     const name='mi-comicoteca-respaldo-'+new Date().toISOString().replace(/[:.]/g,'-');
+     function download(data,filename,type){const blob=new Blob([data],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)}
+     download(payload,name+'.json','application/json');download(sha+'  '+name+'.json\\n',name+'.sha256','text/plain');
+     diagnostic.textContent='Respaldo preparado: '+comics.length.toLocaleString('es-ES')+' fichas, '+bytes.length.toLocaleString('es-ES')+' bytes, SHA-256 '+sha+'. Conserva ambos archivos; no se han modificado datos.';
+     backup.textContent='Descargar respaldo de nuevo';
+   }catch(e){diagnostic.textContent='No se pudo preparar respaldo: '+String(e.message||e)+'. Ningún dato modificado.';backup.textContent='Reintentar respaldo'}finally{backup.disabled=false}};
    const close=document.createElement('button');close.type='button';close.textContent='Entendido';close.style.cssText='padding:9px 16px;border-radius:8px;cursor:pointer';close.onclick=()=>panel.remove();
-   panel.append(title,p,diagnostic,close);document.body.append(panel);close.focus();
+   panel.append(title,p,diagnostic,backup,close);document.body.append(panel);close.focus();
  }
  function mount(){
    const anchor=findNewComic();
@@ -61,7 +76,7 @@
    if(!btn){
      btn=document.createElement('button');btn.id=ID;btn.type='button';btn.textContent='↻ '+text;
      btn.title='Sincronización manual V2: pendiente de pruebas de seguridad';
-     btn.style.cssText='display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;min-height:38px;padding:8px 12px;margin-left:8px;border-radius:9px;border:1px solid #4eacc7;background:#123e56;color:#fff;font:600 13px system-ui;cursor:pointer';
+     btn.style.cssText='display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;min-height:38px;padding:8px 12px;margin-left:8px;max-width:100%;flex-shrink:0;border-radius:9px;border:1px solid #4eacc7;background:#123e56;color:#fff;font:600 13px system-ui;cursor:pointer';
      btn.addEventListener('click',showStatus);
    }
    if(anchor.nextElementSibling!==btn)anchor.insertAdjacentElement('afterend',btn);
