@@ -39,7 +39,9 @@ const MC_VERIFIED_MASTER_RECORDS={
  'gcd_2398601':{title:'100 Balas · Tomo 2',pages:'420'},
  'gcd_2398602':{title:'100 Balas · Tomo 3',pages:'420'},
  'gcd_2398603':{title:'100 Balas · Tomo 4',pages:'420'},
- 'gcd_2398604':{title:'100 Balas · Tomo 5',pages:'420'}
+ 'gcd_2398604':{title:'100 Balas · Tomo 5',pages:'420'},
+ 'gcd_2240211':{title:'Adam y Eve · Tomo 1',pages:'298'},
+ 'gcd_2240212':{title:'Adam y Eve · Tomo 2',pages:'298'}
 };
 async function mcMasterEnrichRows(rows){const over=await mcSEOverrides();const shared=await window.mcSharedCovers?.()||{};return rows.map(r=>{const o={...(MC_VERIFIED_MASTER_RECORDS[String(r.id)]||{}),...(over[mcMasterCode(r)]||{})},common=shared[window.mcMasterCoverKey?.(r)||'']||'';return{...r,title:o.title||r.title||'',publisher:o.publisher||r.publisher||'',catalogHeader:o.series||r.catalogHeader||r.series||'',series:o.series||r.series||r.catalogHeader||'',issueNr:o.issueNr||r.issueNr||r.issue||'',issue:o.issueNr||r.issue||r.issueNr||'',publicationDate:(v=>v==='-1'||v==='-1-00'||v==='0000-00-00'?'':v)(String(o.publicationDate||r.publicationDate||'').trim()),pages:o.pages||r.pages||'',isbn:o.isbn||r.isbn||'',coverUrl:common||o.coverUrl||r.coverUrl||'',sourceUrl:o.sourceUrl||r.sourceUrl||''}})}
 async function mcMasterLoadPublisher(pub){if(MCMasterUI.loadedPublisher===pub&&MCMasterUI.rows.length)return MCMasterUI.rows;const idx=await mcMasterIndexWithArchive(),meta=(idx.publishers||[]).find(p=>p.publisher===pub)||mcSEPublisherMeta(idx,pub)[0];if(!meta){MCMasterUI.rows=[];MCMasterUI.loadedPublisher='';return[]}const rows=await mcSEChunks(meta.chunks||[]);
