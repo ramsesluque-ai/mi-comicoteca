@@ -28,6 +28,28 @@
      const rows=typeof allStore==='function'?await allStore('comics'):null;
      if(!panel.isConnected)return;
      diagnostic.textContent=(authenticated?'Sesión identificada. ':'Inicia sesión para sincronizar. ')+(Array.isArray(rows)?rows.length.toLocaleString('es-ES')+' fichas locales detectadas. ':'No se pudo verificar la colección local. ')+'No se ha realizado ninguna escritura ni descarga.';
+     if(authenticated&&Array.isArray(rows)){
+       const cfg=window.MI_COMICOTECA_CLOUD||{};
+       if(!cfg.url||!cfg.publishableKey){diagnostic.textContent+=' Configuración cloud no disponible.';return}
+       let last=null,count=0,pages=0;const seen=new Set();
+       for(;pages<10000;pages++){
+         const after=last===null?'':'&local_id=gt.'+encodeURIComponent(last);
+         const url=cfg.url+'/rest/v1/user_comics?select=user_id,local_id&user_id=eq.'+encodeURIComponent(session.user.id)+'&order=local_id.asc&limit=500'+after;
+         const res=await fetch(url,{method:'GET',headers:{apikey:cfg.publishableKey,Authorization:'Bearer '+session.access_token},cache:'no-store'});
+         if(!res.ok)throw Error('Lectura de nube HTTP '+res.status);
+         const page=await res.json();
+         if(!Array.isArray(page)||page.length>500)throw Error('Página cloud inválida');
+         for(const item of page){
+           if(item.user_id!==session.user.id||typeof item.local_id!=='string'||!item.local_id.trim()||(last!==null&&item.local_id<=last)||seen.has(item.local_id))throw Error('Identidad o paginación cloud inconsistente');
+           last=item.local_id;seen.add(last);count++;
+         }
+         if(!panel.isConnected)return;
+         diagnostic.textContent='Solo lectura: '+rows.length.toLocaleString('es-ES')+' fichas locales; '+count.toLocaleString('es-ES')+' registros cloud examinados en '+(pages+1)+' páginas. Sin escrituras.';
+         if(page.length<500)break;
+       }
+       if(pages===10000)throw Error('Límite de paginación alcanzado');
+       diagnostic.textContent+=' Diagnóstico completado; la sincronización permanece bloqueada hasta validar respaldo, conflictos y pruebas E2E.';
+     }
    }catch(e){if(panel.isConnected)diagnostic.textContent='Diagnóstico local no disponible: '+String(e.message||e)+'. Ningún dato modificado.'}})();
    const close=document.createElement('button');close.type='button';close.textContent='Entendido';close.style.cssText='padding:9px 16px;border-radius:8px;cursor:pointer';close.onclick=()=>panel.remove();
    panel.append(title,p,diagnostic,close);document.body.append(panel);close.focus();
