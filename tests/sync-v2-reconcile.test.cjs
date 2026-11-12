@@ -59,4 +59,17 @@ for (const bad of [null, undefined, {}, {id:null}, {id:''}, {id:'  '}]) {
     assert.equal(guarded.merged.length,0);
   }
 }
+
+// A deletion marker without a confirmed common baseline must never be propagated.
+for (const sets of [
+  [[],[{...base,id:'orphan',deleted:true}],[]],
+  [[],[],[{...base,id:'orphan',deleted:true}]],
+  [[],[{...base,id:'orphan',deleted:true}],[{...base,id:'orphan',deleted:true}]]
+]) {
+  const planned=planWithBaseline(...sets);
+  assert.equal(planned.conflicts[0].reason,'unverified-tombstone-without-baseline');
+  assert.equal(planned.upload.length,0);
+  assert.equal(planned.download.length,0);
+  assert.equal(planned.merged.length,0);
+}
 console.log('PASS: sync V2 assertions including duplicate-ID guard; no network, cloud or IndexedDB writes');
