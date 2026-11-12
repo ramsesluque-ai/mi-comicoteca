@@ -20,8 +20,17 @@
    panel.style.cssText='position:fixed;z-index:2147483640;top:50%;left:50%;transform:translate(-50%,-50%);width:min(440px,calc(100vw - 32px));padding:22px;background:#10253b;color:#fff;border:1px solid #63819b;border-radius:14px;box-shadow:0 8px 50px #000b;font:15px/1.5 system-ui';
    const title=document.createElement('strong');title.textContent='Sincronización manual — pendiente de validación';
    const p=document.createElement('p');p.textContent='La sincronización bidireccional todavía no ha superado las pruebas entre dos dispositivos y de aislamiento por usuario. Por seguridad, no se enviará, modificará ni borrará ningún cómic. Tus datos locales permanecen intactos.';
+   const diagnostic=document.createElement('p');diagnostic.setAttribute('role','status');diagnostic.textContent='Comprobando disponibilidad local (solo lectura)…';
+   (async()=>{try{
+     const raw=sessionStorage.getItem('mc_supabase_session_v1')||localStorage.getItem('mc_supabase_session_v1');
+     const session=raw?JSON.parse(raw):null;
+     const authenticated=Boolean(session?.user?.id&&session?.access_token);
+     const rows=typeof allStore==='function'?await allStore('comics'):null;
+     if(!panel.isConnected)return;
+     diagnostic.textContent=(authenticated?'Sesión identificada. ':'Inicia sesión para sincronizar. ')+(Array.isArray(rows)?rows.length.toLocaleString('es-ES')+' fichas locales detectadas. ':'No se pudo verificar la colección local. ')+'No se ha realizado ninguna escritura ni descarga.';
+   }catch(e){if(panel.isConnected)diagnostic.textContent='Diagnóstico local no disponible: '+String(e.message||e)+'. Ningún dato modificado.'}})();
    const close=document.createElement('button');close.type='button';close.textContent='Entendido';close.style.cssText='padding:9px 16px;border-radius:8px;cursor:pointer';close.onclick=()=>panel.remove();
-   panel.append(title,p,close);document.body.append(panel);close.focus();
+   panel.append(title,p,diagnostic,close);document.body.append(panel);close.focus();
  }
  function mount(){
    const anchor=findNewComic();
