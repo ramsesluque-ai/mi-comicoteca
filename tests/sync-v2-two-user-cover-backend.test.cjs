@@ -18,11 +18,11 @@ const fakeFetch=async(url,options)=>{
  if(failNext){failNext=false;return {ok:false,status:503}}
  if(options.method==='GET'){
   if(!objects.has(id))return {ok:false,status:404};
-  return {ok:true,status:200,blob:async()=>new Blob([objects.get(id)])};
+  return {ok:true,status:200,blob:async()=>new Blob([objects.get(id).bytes],{type:objects.get(id).type})};
  }
  if(options.method==='POST'){
   if(objects.has(id))return {ok:false,status:409};
-  objects.set(id,Buffer.from(await options.body.arrayBuffer()));
+  objects.set(id,{bytes:Buffer.from(await options.body.arrayBuffer()),type:options.body.type});
   return {ok:true,status:200};
  }
  throw Error('Unexpected method');
