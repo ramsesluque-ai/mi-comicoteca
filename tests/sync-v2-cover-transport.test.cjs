@@ -117,5 +117,23 @@ function fake(){
  assert.equal(f.calls.filter(x=>x.method==='POST').length,before);
  const badRead=async()=>({ok:true,status:200,blob:async()=>new Blob(['HTML'],{type:'text/html'})});
  await assert.rejects(()=>transport.read({...args,key:'bad-remote',fetchImpl:badRead}),/Portada inválida/);
- console.log('Private cover transport: 19 isolated safety scenarios passed');
+ // A denied authenticated read must never be interpreted as a missing object.
+ const denied=async()=>({ok:false,status:403});
+ await assert.rejects(()=>transport.read({...args,key:'denied',fetchImpl:denied}),/403/);
+ const unauthorized=async()=>({ok:false,status:401});
+ await assert.rejects(()=>transport.copyIfAbsent({...args,key:'unauthorized',fetchImpl:unauthorized}),/401/);
+ // User namespace must be derived from the authenticated session, never a supplied key.
+ const secondUid='abcdefab-1234-1234-1234-abcdefabcdef';
+ const secondSession={user:{id:secondUid},access_token:'second-user-token'};
+ const isolated=fake();
+ const isolatedFetch=async(url,opts)=>{
+   assert(url.includes('/user-covers/'+secondUid+'/'));
+   assert(!url.includes('/user-covers/'+uid+'/'));
+   assert.equal(opts.headers.Authorization,'Bearer second-user-token');
+   if(opts.method==='GET')return {ok:false,status:404};
+   return {ok:true,status:200};
+ };
+ assert.equal(await transport.read({...args,session:secondSession,key:'safe-key',fetchImpl:isolatedFetch}),null);
+ await assert.rejects(()=>transport.read({...args,key:'other-user/cover',fetchImpl:isolatedFetch}),/inválido/);
+ console.log('Private cover transport: 23 isolated safety scenarios passed');
 })().catch(e=>{console.error(e);process.exitCode=1});
