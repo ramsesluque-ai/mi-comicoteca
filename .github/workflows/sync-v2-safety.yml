@@ -5,6 +5,7 @@ on:
     paths:
       - 'sync-v2-reconcile.js'
       - 'sync-v2-baseline-plan.js'
+      - 'sync-v2-checkpoint.js'
       - 'sync-v2-read-plan.js'
       - 'sync-v2-cover-integrity.js'
       - 'sync-v2-cover-transport.js'
@@ -30,6 +31,7 @@ jobs:
         run: |
           node --check sync-v2-reconcile.js
           node --check sync-v2-baseline-plan.js
+          node --check sync-v2-checkpoint.js
           node --check sync-v2-cover-inventory.js
           node --check sync-v2-cover-integrity.js
           node --check sync-v2-cover-transport.js
@@ -42,6 +44,7 @@ jobs:
           node tests/sync-v2-production-guard.test.cjs
           node tests/sync-v2-two-device-isolated.test.js
           node tests/sync-v2-baseline-plan.test.cjs
+          node tests/sync-v2-checkpoint.test.cjs
           node tests/sync-v2-cover-inventory.test.cjs
           node tests/sync-v2-cover-bytes.test.cjs
           node tests/sync-v2-cover-integrity.test.cjs
