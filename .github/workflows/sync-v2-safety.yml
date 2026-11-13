@@ -24,11 +24,15 @@ jobs:
       - name: Validate JS syntax
         run: |
           node --check sync-v2-reconcile.js
-          node --check sync-v2-read-plan.js
+          node --check sync-v2-cover-inventory.js
+          node --check sync-v2-manual-plan.js
           node --check manual-sync-v2-button.js
           node --check cloud-migration.js
       - name: Run isolated two-device regression (no Supabase credentials)
-        run: node tests/sync-v2-two-device-isolated.test.js
+        run: |
+          node tests/sync-v2-two-device-isolated.test.js
+          node tests/sync-v2-cover-inventory.test.cjs
+          node tests/sync-v2-manual-plan.test.cjs
       - name: Confirm V1 is not loaded by production HTML
         run: |
           if grep -Eiq '<script[^>]+src=["\x27][^"\x27]*cloud-collection-sync\.js' index.html; then
