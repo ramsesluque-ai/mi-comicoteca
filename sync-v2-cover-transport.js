@@ -24,6 +24,18 @@
    await integrity.sha256(blob);
    return blob;
  }
+ async function readVerified({expectedSha256,...options}){
+   // Never install a downloaded cover in CoverVault until its expected digest matches.
+   if(typeof expectedSha256!=='string'||!/^[a-f0-9]{64}$/i.test(expectedSha256))
+     throw Error('SHA-256 esperado obligatorio para restaurar portada');
+   const blob=await read(options);
+   if(!blob)return {status:'missing',blob:null};
+   const integrity=options.integrity||root.MCSyncV2CoverIntegrity;
+   if(!integrity?.verifyExpected)throw Error('Verificador de huella esperado no disponible');
+   const result=await integrity.verifyExpected(blob,expectedSha256);
+   if(!result.equal)throw Error('SHA-256 de portada remota no coincide; no instalar');
+   return {status:'verified',blob,sha256:result.actualSha256};
+ }
  async function copyIfAbsent({session,cfg,key,blob,fetchImpl=root.fetch,integrity=root.MCSyncV2CoverIntegrity}){
    const uid=validate({session,cfg,key,integrity});
    const expected=await integrity.sha256(blob);
@@ -42,7 +54,7 @@
    if(!comparison.equal)throw Error('SHA-256 distinto tras subida; requiere intervención');
    return {status:res.ok?'uploaded-and-verified':'concurrent-identical',sha256:expected};
  }
- const api={read,copyIfAbsent};
+ const api={read,readVerified,copyIfAbsent};
  root.MCSyncV2CoverTransport=api;
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
