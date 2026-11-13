@@ -17,7 +17,7 @@ function caches(){
    if(!namespaces.has(name))namespaces.set(name,new Map());
    const store=namespaces.get(name);
    return {
-     match:async key=>store.get(key)||undefined,
+     match:async key=>store.get(key)?.clone(),
      put:async(key,value)=>{actions.push({method:'put',name,key});store.set(key,value.clone())}
    };
  }};
