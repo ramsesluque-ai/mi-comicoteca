@@ -8,6 +8,7 @@ on:
       - 'sync-v2-read-plan.js'
       - 'sync-v2-cover-integrity.js'
       - 'sync-v2-cover-transport.js'
+      - 'sync-v2-cover-cache-bridge.js'
       - 'manual-sync-v2-button.js'
       - 'cloud-migration.js'
       - 'tests/sync-v2-*.test.js'
@@ -32,6 +33,7 @@ jobs:
           node --check sync-v2-cover-inventory.js
           node --check sync-v2-cover-integrity.js
           node --check sync-v2-cover-transport.js
+          node --check sync-v2-cover-cache-bridge.js
           node --check sync-v2-manual-plan.js
           node --check manual-sync-v2-button.js
           node --check cloud-migration.js
@@ -44,6 +46,7 @@ jobs:
           node tests/sync-v2-cover-integrity.test.cjs
           node tests/sync-v2-cover-transport.test.cjs
           node tests/sync-v2-cover-isolation.test.cjs
+          node tests/sync-v2-cover-cache-bridge.test.cjs
           node tests/sync-v2-two-user-cover-backend.test.cjs
           node tests/sync-v2-16523-scale.test.cjs
           node tests/sync-v2-manual-plan.test.cjs
