@@ -82,4 +82,20 @@ check('adding a cover while another device edits notes remains mergeable',()=>{
   assert.equal(p.merged[0].record.coverKey,'new-cover');
   assert.equal(p.merged[0].record.notes,'after');
 });
+check('owner diagnostic: 16505 shared and 18 remote-only never authorize live writes',()=>{
+  const shared=Array.from({length:16505},(_,i)=>row('stable-'+i,'Comic '+i));
+  const remote=[...shared,...Array.from({length:18},(_,i)=>row('remote-extra-'+i,'Extra '+i))];
+  const plan=planWithBaseline(shared,shared,remote);
+  assert.equal(plan.unchanged.length,16505);
+  assert.equal(plan.download.length,18);
+  assert.equal(plan.upload.length,0);
+  assert.equal(plan.conflicts.length,0);
+  // A plan is not execution; production writes remain gated elsewhere.
+});
+check('owner diagnostic: no baseline forbids guessing whether missing items were deleted',()=>{
+  const cloud=[row('remote-extra-0','Extra 0')];
+  const plan=planWithBaseline([],[],cloud);
+  assert.equal(plan.upload.length,0);
+  assert.equal(plan.download.length,1);
+});
 console.log('Isolated reconciliation tests passed; NOT a Supabase RLS or browser E2E test.');
