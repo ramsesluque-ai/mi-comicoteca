@@ -4,6 +4,7 @@ on:
     branches: [commercial-published]
     paths:
       - 'sync-v2-reconcile.js'
+      - 'sync-v2-baseline-plan.js'
       - 'sync-v2-read-plan.js'
       - 'sync-v2-cover-integrity.js'
       - 'sync-v2-cover-transport.js'
@@ -27,6 +28,7 @@ jobs:
       - name: Validate JS syntax
         run: |
           node --check sync-v2-reconcile.js
+          node --check sync-v2-baseline-plan.js
           node --check sync-v2-cover-inventory.js
           node --check sync-v2-cover-integrity.js
           node --check sync-v2-cover-transport.js
@@ -36,6 +38,7 @@ jobs:
       - name: Run isolated two-device regression (no Supabase credentials)
         run: |
           node tests/sync-v2-two-device-isolated.test.js
+          node tests/sync-v2-baseline-plan.test.cjs
           node tests/sync-v2-cover-inventory.test.cjs
           node tests/sync-v2-cover-integrity.test.cjs
           node tests/sync-v2-cover-transport.test.cjs
