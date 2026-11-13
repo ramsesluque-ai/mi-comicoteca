@@ -67,5 +67,26 @@ const args=(uid,key,blob)=>({session:session(uid),cfg,key,blob,fetchImpl:fakeFet
  await assert.rejects(transport.readVerified({...args(uidA,'cover-1'),expectedSha256:'invalid'}),/SHA-256 esperado/);
  await assert.rejects(transport.copyIfAbsent({...args(uidA,'cover-1',cover),session:{user:{id:uidA},access_token:''}}),/Sesión/);
  await assert.rejects(transport.copyIfAbsent(args(uidA,'../escape',cover)),/inválido/);
+ // Simulate a timeout/503 AFTER the server persisted the object: a retry must
+ // verify identical bytes, not overwrite or create a second object.
+ const uncertainKey='uncertain-post';
+ let uncertainOnce=true;
+ const uncertainFetch=async(url,options)=>{
+   if(uncertainOnce&&options.method==='POST'&&url.endsWith('/'+uncertainKey)){
+     uncertainOnce=false;
+     objects.set(uidA+'/'+uncertainKey,{bytes:Buffer.from(await options.body.arrayBuffer()),type:options.body.type});
+     return {ok:false,status:503};
+   }
+   return fakeFetch(url,options);
+ };
+ await assert.rejects(transport.copyIfAbsent({...args(uidA,uncertainKey,cover),fetchImpl:uncertainFetch}),/503/);
+ const countBeforeRetry=objects.size;
+ assert.equal((await transport.copyIfAbsent({...args(uidA,uncertainKey,cover),fetchImpl:uncertainFetch})).status,'already-identical');
+ assert.equal(objects.size,countBeforeRetry);
+ await assert.rejects(transport.copyIfAbsent({...args(uidA,uncertainKey,changed),fetchImpl:uncertainFetch}),/Conflicto/);
+ // A remote 403 is a hard error, never interpreted as a missing cover.
+ const forbiddenFetch=async()=>({ok:false,status:403});
+ await assert.rejects(transport.copyIfAbsent({...args(uidA,'forbidden',cover),fetchImpl:forbiddenFetch}),/403/);
+ assert.equal(objects.has(uidA+'/forbidden'),false);
  console.log('PASS isolated two-user cover binary transport, GET, SHA-256, conflict, retry and namespace isolation; NOT real RLS/E2E');
 })().catch(e=>{console.error(e);process.exitCode=1});
