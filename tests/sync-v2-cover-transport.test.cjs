@@ -44,5 +44,13 @@ function fake(){
   return race.fetchImpl(url,opts);
  };
  assert.equal((await transport.copyIfAbsent({...args,fetchImpl:fetchRace})).status,'concurrent-identical');
- console.log('Private cover transport: 7 isolated safety scenarios passed');
+ // Downloads must be verified against the manifest hash before any CoverVault write.
+ const digest=await integrity.sha256(args.blob);
+ const verified=await transport.readVerified({...args,expectedSha256:digest});
+ assert.equal(verified.status,'verified');
+ assert.equal(await verified.blob.text(),'cover-A');
+ await assert.rejects(()=>transport.readVerified({...args,expectedSha256:'0'.repeat(64)}),/no coincide/);
+ await assert.rejects(()=>transport.readVerified({...args,expectedSha256:'invalid'}),/obligatorio/);
+ assert.equal((await transport.readVerified({...other,expectedSha256:digest})).status,'missing');
+ console.log('Private cover transport: 11 isolated safety scenarios passed');
 })().catch(e=>{console.error(e);process.exitCode=1});
