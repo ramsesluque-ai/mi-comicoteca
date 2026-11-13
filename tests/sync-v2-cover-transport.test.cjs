@@ -1,7 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict');
-const crypto=require('node:crypto').webcrypto;
-global.crypto=crypto;
+// Node 22+ exposes globalThis.crypto as a read-only accessor.
 const integrity=require('../sync-v2-cover-integrity.js');
 const transport=require('../sync-v2-cover-transport.js');
 const uid='12345678-1234-1234-1234-123456789abc';
