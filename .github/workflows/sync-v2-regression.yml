@@ -48,6 +48,7 @@ jobs:
           node tests/sync-v2-reconcile.test.cjs
           node tests/sync-v2-manual-plan.test.cjs
           node tests/sync-v2-cover-inventory.test.cjs
+          node tests/sync-v2-cover-bytes.test.cjs
           node tests/sync-v2-16523-scale.test.cjs
           node tests/sync-v2-diagnostic.test.cjs
           node tests/sync-v2-two-user-cover-backend.test.cjs
