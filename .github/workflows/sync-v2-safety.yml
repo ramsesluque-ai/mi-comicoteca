@@ -43,6 +43,7 @@ jobs:
           node tests/sync-v2-two-device-isolated.test.js
           node tests/sync-v2-baseline-plan.test.cjs
           node tests/sync-v2-cover-inventory.test.cjs
+          node tests/sync-v2-cover-bytes.test.cjs
           node tests/sync-v2-cover-integrity.test.cjs
           node tests/sync-v2-cover-transport.test.cjs
           node tests/sync-v2-cover-isolation.test.cjs
