@@ -45,6 +45,27 @@ const args=(uid,key,blob)=>({session:session(uid),cfg,key,blob,fetchImpl:fakeFet
  await assert.rejects(transport.copyIfAbsent(args(uidA,'retry-cover',cover)),/503|recuperar/);
  assert.equal(objects.has(uidA+'/retry-cover'),false);
  assert.equal((await transport.copyIfAbsent(args(uidA,'retry-cover',cover))).status,'uploaded-and-verified');
+ // A second user's valid token cannot fetch the first user's namespace by changing the key.
+ assert.equal((await transport.readVerified({...args(uidB,'cover-1'),expectedSha256:await sha(changed)})).status,'verified');
+ // Corruption after a successful upload must be detected by the mandatory GET + digest.
+ const tamperKey='tampered-cover';
+ const originalSet=objects.set.bind(objects);
+ objects.set=(key,value)=>originalSet(key,key===uidA+'/'+tamperKey?{bytes:Buffer.from('tampered remote bytes'),type:'image/webp'}:value);
+ await assert.rejects(transport.copyIfAbsent(args(uidA,tamperKey,cover)),/SHA-256 distinto/);
+ objects.set=originalSet;
+ // A 409 race is only accepted when the remote object is byte-identical.
+ const raceKey='race-conflict';
+ const previousFetch=fakeFetch;
+ const raceFetch=async(url,options)=>{
+   if(options.method==='POST'&&url.endsWith('/'+raceKey)){
+     objects.set(uidA+'/'+raceKey,{bytes:Buffer.from('different raced bytes'),type:'image/webp'});
+     return {ok:false,status:409};
+   }
+   return previousFetch(url,options);
+ };
+ await assert.rejects(transport.copyIfAbsent({...args(uidA,raceKey,cover),fetchImpl:raceFetch}),/SHA-256 distinto/);
+ await assert.rejects(transport.readVerified({...args(uidA,'cover-1'),expectedSha256:'invalid'}),/SHA-256 esperado/);
+ await assert.rejects(transport.copyIfAbsent({...args(uidA,'cover-1',cover),session:{user:{id:uidA},access_token:''}}),/Sesión/);
  await assert.rejects(transport.copyIfAbsent(args(uidA,'../escape',cover)),/inválido/);
  console.log('PASS isolated two-user cover binary transport, GET, SHA-256, conflict, retry and namespace isolation; NOT real RLS/E2E');
 })().catch(e=>{console.error(e);process.exitCode=1});
