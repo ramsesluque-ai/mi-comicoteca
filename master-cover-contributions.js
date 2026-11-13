@@ -7,7 +7,7 @@ const SESSION='mc_supabase_session_v1', APPROVED='master_cover_approved', PROPOS
 const cfg=()=>window.MI_COMICOTECA_CLOUD||{};
 const session=()=>{try{return JSON.parse(sessionStorage.getItem(SESSION)||localStorage.getItem(SESSION)||'null')}catch{return null}};
 function authHeaders(json=false){const s=session(),c=cfg();if(!s?.access_token)throw Error('Inicia sesión para proponer una portada.');return {apikey:c.publishableKey,Authorization:'Bearer '+s.access_token,...(json?{'Content-Type':'application/json'}:{})}}
-async function checked(url,opt){const r=await fetch(url,opt),j=await r.json().catch(()=>({}));if(!r.ok)throw Error(j.message||j.error||('HTTP '+r.status));return j}
+async function checked(url,opt){const r=await fetch(url,opt),j=await r.json().catch(()=>({}));if(!r.ok){if((r.status===401||r.status===403)&&url.includes('/auth/v1/user'))throw Error('Tu sesión ha caducado. Cierra sesión y vuelve a entrar antes de añadir la portada; la imagen no se ha enviado.');throw Error(j.message||j.error||('HTTP '+r.status))}return j}
 let approved={};let lastRead=0;
 const clean=s=>String(s||'').normalize('NFKC').trim().replace(/\s+/g,' ').toLocaleLowerCase('es');
 window.mcMasterCoverKey=function(r){
