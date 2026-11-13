@@ -50,7 +50,19 @@
      if(!comparison.equal)throw Error('Conflicto de portada remota: contenido diferente; no se sobrescribe');
      return {status:'already-identical',sha256:expected};
    }
-   const res=await fetchImpl(cfg.url+path(uid,key),{method:'POST',headers:{apikey:cfg.publishableKey,Authorization:'Bearer '+session.access_token,'Content-Type':blob.type||'image/webp','x-upsert':'false'},body:blob});
+   let res;
+   try{
+     res=await fetchImpl(cfg.url+path(uid,key),{method:'POST',headers:{apikey:cfg.publishableKey,Authorization:'Bearer '+session.access_token,'Content-Type':blob.type||'image/webp','x-upsert':'false'},body:blob});
+   }catch(error){
+     // Network failures can happen after the server commits. Re-read instead of retrying POST.
+     let uncertain;
+     try{uncertain=await read({session,cfg,key,fetchImpl,integrity})}
+     catch(_readError){throw Error('Subida incierta: GET de verificación falló; no reintentar automáticamente')}
+     if(!uncertain)throw Error('Subida incierta: portada ausente tras GET; reintento manual seguro');
+     const check=await integrity.verifyPair(blob,uncertain);
+     if(!check.equal)throw Error('Conflicto tras error de red: SHA-256 distinto; no sobrescribir');
+     return {status:'uploaded-network-error-verified',sha256:expected};
+   }
    // Concurrent creation can yield 400/409; re-read and verify, never blindly accept.
    if(!res.ok&&res.status!==400&&res.status!==409){
      // A timeout/5xx may occur AFTER Storage persisted the object. Never blindly retry POST.
