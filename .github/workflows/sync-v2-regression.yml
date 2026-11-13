@@ -4,6 +4,8 @@ on:
     branches: [commercial-published]
     paths:
       - 'sync-v2-reconcile.js'
+      - 'sync-v2-cover-transport.js'
+      - 'tests/sync-v2-two-user-cover-backend.test.cjs'
       - 'sync-v2-manual-plan.js'
       - 'sync-v2-cover-inventory.js'
       - 'manual-sync-v2-button.js'
@@ -48,3 +50,4 @@ jobs:
           node tests/sync-v2-cover-inventory.test.cjs
           node tests/sync-v2-16523-scale.test.cjs
           node tests/sync-v2-diagnostic.test.cjs
+          node tests/sync-v2-two-user-cover-backend.test.cjs
