@@ -51,5 +51,13 @@ function fake(){
  await assert.rejects(()=>transport.readVerified({...args,expectedSha256:'0'.repeat(64)}),/no coincide/);
  await assert.rejects(()=>transport.readVerified({...args,expectedSha256:'invalid'}),/obligatorio/);
  assert.equal((await transport.readVerified({...other,expectedSha256:digest})).status,'missing');
- console.log('Private cover transport: 11 isolated safety scenarios passed');
+ // Reject non-images, zero-byte and oversized files before any remote write.
+ const before=f.calls.filter(x=>x.method==='POST').length;
+ for(const invalid of [new Blob([],{type:'image/png'}),new Blob(['not an image'],{type:'text/html'}),new Blob([new Uint8Array(5*1024*1024+1)],{type:'image/png'})]){
+   await assert.rejects(()=>transport.copyIfAbsent({...args,key:'invalid',blob:invalid}),/Portada inválida/);
+ }
+ assert.equal(f.calls.filter(x=>x.method==='POST').length,before);
+ const badRead=async()=>({ok:true,status:200,blob:async()=>new Blob(['HTML'],{type:'text/html'})});
+ await assert.rejects(()=>transport.read({...args,key:'bad-remote',fetchImpl:badRead}),/Portada inválida/);
+ console.log('Private cover transport: 15 isolated safety scenarios passed');
 })().catch(e=>{console.error(e);process.exitCode=1});
