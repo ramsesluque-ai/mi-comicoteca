@@ -67,7 +67,9 @@
    if(!res.ok&&res.status!==400&&res.status!==409){
      // A timeout/5xx may occur AFTER Storage persisted the object. Never blindly retry POST.
      if(res.status>=500){
-       const uncertain=await read({session,cfg,key,fetchImpl,integrity});
+       let uncertain;
+       try{uncertain=await read({session,cfg,key,fetchImpl,integrity})}
+       catch(_readError){throw Error('Subida incierta ('+res.status+'): GET de verificación falló; no reintentar automáticamente')}
        if(uncertain){
          const check=await integrity.verifyPair(blob,uncertain);
          if(!check.equal)throw Error('Conflicto tras respuesta incierta: SHA-256 distinto; no sobrescribir');
