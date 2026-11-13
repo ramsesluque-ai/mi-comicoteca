@@ -61,7 +61,44 @@
      note:'Un nombre de archivo coincidente no garantiza integridad: hay que validar SHA-256 binario antes de transferir.'
    };
  }
- const api={coverKey,localKeys,remoteKeys,compare};
+ // User-requested byte audit. READ ONLY: reads the shared legacy cache and private
+ // Storage, never modifies either. Names alone are not evidence of matching covers.
+ async function compareBytes({session,cfg,cacheStorage=root.caches,fetcher=root.fetch,integrity=root.MCSyncV2CoverIntegrity,maxCheck=30,onProgress=()=>{},signal}={}){
+   const uid=String(session?.user?.id||'');
+   check(/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(uid)&&session?.access_token,'Sesión privada inválida');
+   check(cfg?.url&&cfg?.publishableKey,'Configuración privada no disponible');
+   check(cacheStorage?.open&&integrity?.verifyPair,'Verificador de portadas no disponible');
+   check(Number.isInteger(maxCheck)&&maxCheck>0&&maxCheck<=50,'Límite de comprobación inválido');
+   const base=String(cfg.url).replace(/\/+$/,'');
+   const headers={apikey:cfg.publishableKey,Authorization:'Bearer '+session.access_token};
+   const who=await fetcher(base+'/auth/v1/user',{method:'GET',headers,cache:'no-store',signal});
+   if(!who.ok)throw Error('Sesión no verificada (HTTP '+who.status+')');
+   const profile=await who.json();
+   check(profile?.id===uid,'La identidad autenticada no coincide');
+   const [local,remote]=await Promise.all([localKeys({cacheStorage}),remoteKeys({session,cfg,fetcher,signal})]);
+   const names=[...local].filter(k=>remote.has(k)).sort();
+   const cache=await cacheStorage.open(CACHE);
+   const stats={totalMatched:names.length,checked:0,identical:0,different:0,remaining:names.length,complete:false,readOnly:true,safeToWrite:false};
+   for(const key of names.slice(0,maxCheck)){
+     if(signal?.aborted)throw Error('Comprobación cancelada');
+     check(/^[a-zA-Z0-9_.-]{1,180}$/.test(key)&&key!=='.'&&key!=='..','Clave privada de portada inválida');
+     const item=await cache.match('https://mi-comicoteca.local/cover/'+encodeURIComponent(key));
+     check(item,'Portada local desaparecida durante la comprobación');
+     const localBlob=await item.blob();
+     const url=base+'/storage/v1/object/'+BUCKET+'/'+encodeURIComponent(uid)+'/'+encodeURIComponent(key);
+     const result=await fetcher(url,{method:'GET',headers,cache:'no-store',signal});
+     if(!result.ok)throw Error('No se pudo verificar portada privada ('+result.status+')');
+     const remoteBlob=await result.blob();
+     check(['image/jpeg','image/png','image/webp'].includes(localBlob.type)&&['image/jpeg','image/png','image/webp'].includes(remoteBlob.type),'Imagen privada no válida');
+     const hashes=await integrity.verifyPair(localBlob,remoteBlob);
+     if(hashes.equal)stats.identical++;else stats.different++;
+     stats.checked++;stats.remaining=names.length-stats.checked;
+     onProgress({...stats});
+   }
+   stats.complete=stats.remaining===0;
+   return stats;
+ }
+ const api={coverKey,localKeys,remoteKeys,compare,compareBytes};
  root.MCSyncV2CoverInventory=api;
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
