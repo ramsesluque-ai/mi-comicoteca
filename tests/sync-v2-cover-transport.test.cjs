@@ -43,6 +43,25 @@ function fake(){
   return race.fetchImpl(url,opts);
  };
  assert.equal((await transport.copyIfAbsent({...args,fetchImpl:fetchRace})).status,'concurrent-identical');
+ // Ambiguous 503: Storage may have persisted the image before response was lost.
+ const persisted=fake();
+ const responseLost=async(url,opts)=>{
+   const result=await persisted.fetchImpl(url,opts);
+   if(opts.method==='POST')return {ok:false,status:503};
+   return result;
+ };
+ assert.equal((await transport.copyIfAbsent({...args,key:'response-lost',fetchImpl:responseLost})).status,'uploaded-response-lost-verified');
+ assert.equal(persisted.calls.filter(x=>x.method==='POST').length,1);
+ const notPersisted=fake();
+ const unavailable=async(url,opts)=>opts.method==='POST'?{ok:false,status:503}:notPersisted.fetchImpl(url,opts);
+ await assert.rejects(()=>transport.copyIfAbsent({...args,key:'not-persisted',fetchImpl:unavailable}),/Subida incierta/);
+ assert.equal(notPersisted.calls.filter(x=>x.method==='POST').length,0);
+ const corrupted=fake();
+ const wrongAfter503=async(url,opts)=>{
+   if(opts.method==='POST'){corrupted.storage.set(url,blob('different bytes'));return {ok:false,status:503}}
+   return corrupted.fetchImpl(url,opts);
+ };
+ await assert.rejects(()=>transport.copyIfAbsent({...args,key:'corrupted-503',fetchImpl:wrongAfter503}),/Conflicto tras respuesta incierta/);
  // Downloads must be verified against the manifest hash before any CoverVault write.
  const digest=await integrity.sha256(args.blob);
  const verified=await transport.readVerified({...args,expectedSha256:digest});
@@ -59,5 +78,5 @@ function fake(){
  assert.equal(f.calls.filter(x=>x.method==='POST').length,before);
  const badRead=async()=>({ok:true,status:200,blob:async()=>new Blob(['HTML'],{type:'text/html'})});
  await assert.rejects(()=>transport.read({...args,key:'bad-remote',fetchImpl:badRead}),/Portada inválida/);
- console.log('Private cover transport: 15 isolated safety scenarios passed');
+ console.log('Private cover transport: 18 isolated safety scenarios passed');
 })().catch(e=>{console.error(e);process.exitCode=1});
