@@ -1,0 +1,38 @@
+name: MI COMICTECA Sync V2 isolated safety gate
+on:
+  push:
+    branches: [commercial-published]
+    paths:
+      - 'sync-v2-reconcile.js'
+      - 'sync-v2-read-plan.js'
+      - 'manual-sync-v2-button.js'
+      - 'cloud-migration.js'
+      - 'tests/sync-v2-*.test.js'
+      - '.github/workflows/sync-v2-safety.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-reconciliation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate JS syntax
+        run: |
+          node --check sync-v2-reconcile.js
+          node --check sync-v2-read-plan.js
+          node --check manual-sync-v2-button.js
+          node --check cloud-migration.js
+      - name: Run isolated two-device regression (no Supabase credentials)
+        run: node tests/sync-v2-two-device-isolated.test.js
+      - name: Confirm V1 is not loaded by production HTML
+        run: |
+          if grep -Eiq '<script[^>]+src=["\x27][^"\x27]*cloud-collection-sync\.js' index.html; then
+            echo 'ERROR: unsafe V1 loaded by production index.html'
+            exit 1
+          fi
+          echo 'Legacy V1 is not loaded in index.html'
