@@ -166,7 +166,8 @@ async function mcOpenMorrisonFourTomos(){
  if(found.some(r=>!r)){toast('No se han encontrado los cuatro tomos en el Maestro');return}
  const names=['Batman y Robin','Batman contra Robin','¡Batman y Robin deben morir!','Caballero Oscuro contra Caballero Blanco'];
  const key='mc-curated:ecc:batman-robin-morrison-2012';
- const curated=found.map((r,i)=>({...r,issueNr:String(i+1),issue:String(i+1),title:names[i],catalogHeader:'Batman y Robin · Etapa Grant Morrison (4 tomos)',series:'Batman y Robin · Etapa Grant Morrison (4 tomos)',volume:'',stage:'Tomos recopilatorios',startYear:'2012–2013'}));
+ const second=rows.find(r=>String(r.isbn||'').replace(/\D/g,'')==='9788416303724'&&String(r.catalogHeader||r.series||'').toLocaleLowerCase('es').includes('batman y robin deben morir'));
+ const curated=[...found,...(second?[second]:[])].map((r,i)=>({...r,issueNr:String(i===4?3:i+1),issue:String(i===4?3:i+1),title:i===4?'¡Batman y Robin deben morir! · 2.ª edición':names[i],catalogHeader:'Batman y Robin · Etapa Grant Morrison (4 tomos)',series:'Batman y Robin · Etapa Grant Morrison (4 tomos)',volume:'',stage:'Tomos recopilatorios',startYear:'2012–2013'}));
  MCMasterUI.visibleGroups.set(key,{publisher:'ECC',rows:curated});
  await openMasterCollection(encodeURIComponent(key));
 }
