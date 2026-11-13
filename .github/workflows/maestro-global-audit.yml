@@ -1,0 +1,24 @@
+name: Maestro global read-only audit
+on:
+  workflow_dispatch:
+  push:
+    branches: [commercial-published]
+    paths:
+      - 'scripts/audit_maestro_global.py'
+      - '.github/workflows/maestro-global-audit.yml'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Audit bibliographic records and cover gaps without writes
+        run: python3 scripts/audit_maestro_global.py
+      - name: Upload review reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: maestro-global-audit
+          path: audit-output/
+          retention-days: 30
