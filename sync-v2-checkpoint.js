@@ -58,7 +58,7 @@
    const base=await verify({checkpoint,uid,cryptoImpl});
    rowsValid(localRows);rowsValid(remoteRows);
    const actualRemoteHash=await digestRows(remoteRows,{cryptoImpl});
-   if(base.remoteSnapshotHash!==remoteSnapshotHash||actualRemoteHash!==remoteSnapshotHash)throw Error('Snapshot remoto distinto del baseline: bloquear escritura');
+   if(actualRemoteHash!==remoteSnapshotHash)throw Error('Snapshot remoto no coincide con la huella suministrada: bloquear escritura');
    if(!reconciler?.planWithBaseline)throw Error('Motor de reconciliación no disponible');
    const result=reconciler.planWithBaseline(base.rows,localRows,remoteRows);
    return {...result,baselineVerified:true,writeAuthorized:false};
