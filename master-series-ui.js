@@ -23,10 +23,10 @@ masterView=async function(){
 '<div class="panel mc-master-series-panel"><div class="mc-master-filter-dashboard">'+
  '<label class="mc-mf mc-mf-search"><span>⌕ BUSCAR COLECCIÓN</span><input id="mq" value="'+esc(state.q)+'" placeholder="Editorial, serie, etapa…" aria-label="Buscar colección"></label>'+
  '<label class="mc-mf mc-mf-publisher"><span>▣ EDITORIAL</span><select id="mpub" aria-label="Editorial">'+option('','Todas las editoriales',state.publisher)+(idx.publishers||[]).map(p=>option(p.publisher,p.publisher,state.publisher)).join('')+'</select></label>'+
- '<label class="mc-mf mc-mf-header"><span>▤ CABECERA / SERIE</span><select data-master-filter="catalogHeader" onchange="mcMasterSetFilter('catalogHeader',this.value)" aria-label="Cabecera">'+option('','Todas las cabeceras',state.header)+'</select></label>'+
- '<label class="mc-mf mc-mf-volume"><span>▥ VOLUMEN</span><select data-master-filter="volume" onchange="mcMasterSetFilter('volume',this.value)" aria-label="Volumen">'+option('','Todos los volúmenes',state.volume)+'</select></label>'+
- '<label class="mc-mf mc-mf-stage"><span>◆ ETAPA</span><select data-master-filter="stage" onchange="mcMasterSetFilter('stage',this.value)" aria-label="Etapa">'+option('','Todas las etapas',state.stage)+'</select></label>'+
- '<label class="mc-mf mc-mf-year"><span>◷ AÑO DE INICIO</span><select data-master-filter="startYear" onchange="mcMasterSetFilter('startYear',this.value)" aria-label="Año de inicio">'+option('','Todos los años',state.year)+'</select></label>'+
+ '<label class="mc-mf mc-mf-header"><span>▤ CABECERA / SERIE</span><select data-master-filter="catalogHeader" onchange="mcMasterSetFilter(&quot;catalogHeader&quot;,this.value)" aria-label="Cabecera">'+option('','Todas las cabeceras',state.header)+'</select></label>'+
+ '<label class="mc-mf mc-mf-volume"><span>▥ VOLUMEN</span><select data-master-filter="volume" onchange="mcMasterSetFilter(&quot;volume&quot;,this.value)" aria-label="Volumen">'+option('','Todos los volúmenes',state.volume)+'</select></label>'+
+ '<label class="mc-mf mc-mf-stage"><span>◆ ETAPA</span><select data-master-filter="stage" onchange="mcMasterSetFilter(&quot;stage&quot;,this.value)" aria-label="Etapa">'+option('','Todas las etapas',state.stage)+'</select></label>'+
+ '<label class="mc-mf mc-mf-year"><span>◷ AÑO DE INICIO</span><select data-master-filter="startYear" onchange="mcMasterSetFilter(&quot;startYear&quot;,this.value)" aria-label="Año de inicio">'+option('','Todos los años',state.year)+'</select></label>'+
  '<div class="mc-mf-hint" id="mc-master-filter-hint">Sin filtros activos · se muestran todos los registros</div>'+
  '</div><div id="masterbody">'+info()+'</div></div>';
 };
