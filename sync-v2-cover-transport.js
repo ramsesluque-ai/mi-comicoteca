@@ -14,6 +14,9 @@
    if(!integrity?.sha256||!integrity?.verifyPair)throw Error('Verificador SHA-256 no disponible');
    return uid;
  }
+ function assertCover(blob){
+   if(!(blob instanceof Blob)||!blob.size||blob.size>5*1024*1024||!['image/jpeg','image/png','image/webp'].includes(blob.type))throw Error('Portada inválida: se requiere JPG, PNG o WebP no vacío de hasta 5 MB');
+ }
  function path(uid,key){return '/storage/v1/object/user-covers/'+encodeURIComponent(uid)+'/'+encodeURIComponent(key)}
  async function read({session,cfg,key,fetchImpl=root.fetch,integrity=root.MCSyncV2CoverIntegrity}){
    const uid=validate({session,cfg,key,integrity});
@@ -21,6 +24,7 @@
    if(res.status===404)return null;
    if(!res.ok)throw Error('No se pudo recuperar portada ('+res.status+')');
    const blob=await res.blob();
+   assertCover(blob);
    await integrity.sha256(blob);
    return blob;
  }
@@ -38,6 +42,7 @@
  }
  async function copyIfAbsent({session,cfg,key,blob,fetchImpl=root.fetch,integrity=root.MCSyncV2CoverIntegrity}){
    const uid=validate({session,cfg,key,integrity});
+   assertCover(blob);
    const expected=await integrity.sha256(blob);
    const existing=await read({session,cfg,key,fetchImpl,integrity});
    if(existing){
