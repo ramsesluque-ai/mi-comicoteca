@@ -74,6 +74,8 @@ renderMaster=async function(){
  const morrisonKey='mc-curated:ecc:batman-robin-morrison-2012';
  const morrisonIds=['gcd_935104','gcd_1036700','gcd_1171670','gcd_1171660'];
  const morrisonRows=morrisonIds.map(id=>rows.find(r=>String(r.id)===id)).filter(Boolean);
+ const morrisonSecondEdition=rows.find(r=>String(r.isbn||'').replace(/\D/g,'')==='9788416303724'&&mcSENorm(r.catalogHeader||r.series).includes('batman y robin deben morir'));
+ const morrisonAllRows=morrisonSecondEdition?[...morrisonRows,morrisonSecondEdition]:morrisonRows;
  const showMorrison=pub==='ECC'&&morrisonRows.length===4&&!state.header&&!state.volume&&!state.stage&&!state.year&&(!q||mcSENorm('Batman y Robin Grant Morrison cuatro tomos Batman contra Robin deben morir Caballero Oscuro contra Caballero Blanco').includes(q));
  if(showMorrison){const sample={...morrisonRows[0],catalogHeader:'Batman y Robin · Etapa Grant Morrison (4 tomos)',series:'Batman y Robin · Etapa Grant Morrison (4 tomos)',startYear:'2012–2013',volume:'',stage:'Tomos recopilatorios'};groups.set(morrisonKey,{sample,cover:coverFor(morrisonRows[0]),count:4});}
  // Personal-only series are shown as reconciliation candidates, never counted as verified Maestro records.
@@ -94,7 +96,7 @@ renderMaster=async function(){
  const personalCards=[...missing.entries()].sort((a,b)=>String(a[1].sample.catalogHeader||a[1].sample.series).localeCompare(String(b[1].sample.catalogHeader||b[1].sample.series),'es',{numeric:true}));
  MCMasterUI.visibleGroups=new Map();
  for(const [key,g] of groups){MCMasterUI.visibleGroups.set(key,{publisher:pub,rows:filtered.filter(x=>mcMasterGroupKey(x)===key)});}
- if(showMorrison)MCMasterUI.visibleGroups.set(morrisonKey,{publisher:pub,rows:morrisonRows.map((r,i)=>({...r,issueNr:String(i+1),issue:String(i+1),title:['Batman y Robin','Batman contra Robin','¡Batman y Robin deben morir!','Caballero Oscuro contra Caballero Blanco'][i],catalogHeader:'Batman y Robin · Etapa Grant Morrison (4 tomos)',series:'Batman y Robin · Etapa Grant Morrison (4 tomos)',volume:'',stage:'Tomos recopilatorios',startYear:'2012–2013'}))});
+ if(showMorrison)MCMasterUI.visibleGroups.set(morrisonKey,{publisher:pub,rows:morrisonAllRows.map((r,i)=>({...r,issueNr:String(i===4?3:i+1),issue:String(i===4?3:i+1),title:i===4?'¡Batman y Robin deben morir! · 2.ª edición':['Batman y Robin','Batman contra Robin','¡Batman y Robin deben morir!','Caballero Oscuro contra Caballero Blanco'][i],catalogHeader:'Batman y Robin · Etapa Grant Morrison (4 tomos)',series:'Batman y Robin · Etapa Grant Morrison (4 tomos)',volume:'',stage:'Tomos recopilatorios',startYear:'2012–2013'}))});
  const list=[...groups.entries()].sort((a,b)=>mcMasterGroupLabel(a[1].sample).localeCompare(mcMasterGroupLabel(b[1].sample),'es',{numeric:true}));
  const per=48,pages=Math.max(1,Math.ceil(list.length/per));state.page=Math.min(state.page,pages);
  const slice=list.slice((state.page-1)*per,state.page*per);
