@@ -1,0 +1,20 @@
+'use strict';
+const assert=require('node:assert/strict');
+const {webcrypto}=require('node:crypto');
+const {sha256,verifyPair,verifyExpected}=require('../sync-v2-cover-integrity.js');
+const blob=bytes=>new Blob([Uint8Array.from(bytes)],{type:'image/webp'});
+(async()=>{
+ const a=blob([1,2,3]),b=blob([1,2,4]),same=blob([1,2,3]);
+ const opts={cryptoImpl:webcrypto};
+ const h=await sha256(a,opts);
+ assert.match(h,/^[a-f0-9]{64}$/);
+ assert.equal((await verifyPair(a,same,opts)).equal,true);
+ assert.equal((await verifyPair(a,b,opts)).equal,false);
+ assert.equal((await verifyExpected(a,h.toUpperCase(),opts)).equal,true);
+ assert.equal((await verifyExpected(b,h,opts)).equal,false);
+ await assert.rejects(sha256(blob([]),opts),/vacía/);
+ await assert.rejects(sha256(a,{...opts,maxBytes:2}),/demasiado grande/);
+ await assert.rejects(sha256(a,{cryptoImpl:{}}),/no disponible/);
+ await assert.rejects(verifyExpected(a,'not-a-hash',opts),/inválida/);
+ console.log('SYNC_V2_COVER_SHA256_PASS binary match, mismatch, bounds, invalid digest, fail-closed');
+})().catch(e=>{console.error(e);process.exitCode=1});
