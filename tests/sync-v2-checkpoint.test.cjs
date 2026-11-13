@@ -4,10 +4,11 @@ const {webcrypto}=require('node:crypto');
 const cp=require('../sync-v2-checkpoint.js');
 require('../sync-v2-reconcile.js');
 const uid='11111111-1111-4111-8111-111111111111',other='22222222-2222-4222-8222-222222222222';
-const hash='a'.repeat(64),opts={uid,cryptoImpl:webcrypto};
+const opts={uid,cryptoImpl:webcrypto};
 const r=(id,title,extra={})=>({id,publisher:'Editorial',series:'Serie',issue:id,title,...extra});
 (async()=>{
  const original=[r('1','Original',{coverKey:'key-1',notes:'before'})];
+ const hash=await cp.digestRows(original,{cryptoImpl:webcrypto});
  const checkpoint=await cp.create({...opts,rows:original,remoteSnapshotHash:hash});
  assert.equal((await cp.verify({checkpoint,...opts})).rows.length,1);
  const plan=await cp.plan({...opts,checkpoint,localRows:[{...original[0],notes:'after'}],remoteRows:original,remoteSnapshotHash:hash,reconciler:globalThis.MCReconcileV2});
@@ -21,7 +22,7 @@ const r=(id,title,extra={})=>({id,publisher:'Editorial',series:'Serie',issue:id,
  const tampered=structuredClone(checkpoint);tampered.payload.rows[0].coverKey='';
  await assert.rejects(cp.verify({checkpoint:tampered,...opts}),/alterado/);
  await assert.rejects(cp.create({...opts,rows:[original[0],original[0]],remoteSnapshotHash:hash}),/duplicado/);
- const conflict=await cp.plan({...opts,checkpoint,localRows:[{...original[0],title:'Local'}],remoteRows:[{...original[0],title:'Remoto'}],remoteSnapshotHash:hash,reconciler:globalThis.MCReconcileV2});
+ const conflict=await cp.plan({...opts,checkpoint,localRows:[{...original[0],title:'Local'}],remoteRows:[{...original[0],title:'Remoto'}],remoteSnapshotHash:await cp.digestRows([{...original[0],title:'Remoto'}],{cryptoImpl:webcrypto}),reconciler:globalThis.MCReconcileV2});
  assert.equal(conflict.conflicts.length,1);
  assert.equal(conflict.upload.length+conflict.download.length+conflict.merged.length,0);
  const gone=await cp.plan({...opts,checkpoint,localRows:[],remoteRows:original,remoteSnapshotHash:hash,reconciler:globalThis.MCReconcileV2});
