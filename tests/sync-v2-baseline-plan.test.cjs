@@ -1,0 +1,16 @@
+'use strict';
+const assert=require('node:assert/strict');
+const {plan}=require('../sync-v2-baseline-plan.js');
+const a=(id,title)=>({id,title,coverKey:'private:keep'});
+const base=[a(1,'old')];
+assert.deepEqual(plan({local:base,remote:base,baseline:base}).identical,['1']);
+assert.deepEqual(plan({local:base,remote:[a(1,'new')],baseline:base}).download,['1']);
+assert.deepEqual(plan({local:[a(1,'new')],remote:base,baseline:base}).upload,['1']);
+assert.equal(plan({local:[a(1,'local')],remote:[a(1,'remote')],baseline:base}).conflicts[0].reason,'concurrent-edits');
+assert.equal(plan({local:[],remote:base,baseline:base}).conflicts[0].reason,'missing-without-tombstone');
+assert.deepEqual(plan({local:[a(2,'new')],remote:[],baseline:[]}).untracked,['2']);
+assert.deepEqual(plan({local:base,remote:base,baseline:base,tombstones:[{id:1,explicit:true,baseHash:'abc'}]}).deletionsBlocked,['1']);
+assert.throws(()=>plan({local:base,remote:base,baseline:base,tombstones:[{id:1}]}));
+assert.throws(()=>plan({local:[a(1,'a'),a(1,'b')],remote:[],baseline:[]}));
+assert.equal(plan({local:base,remote:base,baseline:base}).safeToExecute,false);
+console.log('Sync V2 baseline safety: 10 assertions passed');
