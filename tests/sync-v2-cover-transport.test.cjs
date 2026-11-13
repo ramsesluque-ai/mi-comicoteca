@@ -75,7 +75,11 @@ function fake(){
  const lostFetch=async(url,opts)=>opts.method==='POST'?Promise.reject(Error('offline')):lost.fetchImpl(url,opts);
  await assert.rejects(()=>transport.copyIfAbsent({...args,key:'network-missing',fetchImpl:lostFetch}),/Subida incierta/);
  const unreadable=fake();
- const unreadableFetch=async()=>{throw Error('network offline')};
+ let unreadableGets=0;
+ const unreadableFetch=async(url,opts)=>{
+   if(opts.method==='GET'&&++unreadableGets===1)return {ok:false,status:404};
+   throw Error('network offline');
+ };
  await assert.rejects(()=>transport.copyIfAbsent({...args,key:'network-unreadable',fetchImpl:unreadableFetch}),/Subida incierta/);
  const mismatch=fake();
  const mismatchFetch=async(url,opts)=>{
