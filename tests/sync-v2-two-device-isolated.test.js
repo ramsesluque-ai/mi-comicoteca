@@ -31,7 +31,7 @@ check('independent edits merge without dropping cover',()=>{
   assert.equal(p.merged[0].needsRemote,true);
 });
 check('concurrent same-field edit blocks all writes',()=>{
-  const l=[row('device-stable-1','Changed A')],r=[row('device-stable-1','Changed B')];
+  const l=[row('device-stable-1','Changed A',{coverKey:'cover-1',notes:'base'})],r=[row('device-stable-1','Changed B',{coverKey:'cover-1',notes:'base'})];
   const p=planWithBaseline(base,l,r);
   assert.equal(p.conflicts[0].reason,'concurrent-field-edits');
   assert.equal(p.upload.length+p.download.length+p.merged.length,0);
