@@ -34,6 +34,7 @@
    if(!cryptoImpl?.subtle?.digest)throw Error('SHA-256 obligatorio');
    return async value=>hex(new Uint8Array(await cryptoImpl.subtle.digest('SHA-256',enc.encode(JSON.stringify(stable(value))))));
  }
+ async function digestRows(rows,{cryptoImpl=root.crypto}={}){rowsValid(rows);return codec(cryptoImpl)(rows)}
  async function create({uid,rows,remoteSnapshotHash,cryptoImpl=root.crypto}){
    if(!uidOK(uid))throw Error('Usuario inválido');
    rowsValid(rows);
@@ -56,12 +57,13 @@
  async function plan({checkpoint,uid,localRows,remoteRows,remoteSnapshotHash,reconciler=root.MCReconcileV2,cryptoImpl=root.crypto}){
    const base=await verify({checkpoint,uid,cryptoImpl});
    rowsValid(localRows);rowsValid(remoteRows);
-   if(base.remoteSnapshotHash!==remoteSnapshotHash)throw Error('Snapshot remoto distinto del baseline: bloquear escritura');
+   const actualRemoteHash=await digestRows(remoteRows,{cryptoImpl});
+   if(base.remoteSnapshotHash!==remoteSnapshotHash||actualRemoteHash!==remoteSnapshotHash)throw Error('Snapshot remoto distinto del baseline: bloquear escritura');
    if(!reconciler?.planWithBaseline)throw Error('Motor de reconciliación no disponible');
    const result=reconciler.planWithBaseline(base.rows,localRows,remoteRows);
    return {...result,baselineVerified:true,writeAuthorized:false};
  }
- const api={create,verify,plan,rowsValid};
+ const api={create,verify,plan,rowsValid,digestRows};
  root.MCSyncV2Checkpoint=api;
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
