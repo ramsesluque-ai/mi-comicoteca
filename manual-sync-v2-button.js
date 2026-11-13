@@ -79,7 +79,7 @@
          session,cfg,maxCheck:30,
          onProgress:x=>{if(panel.isConnected)covers.textContent='SHA-256: '+x.checked+' / '+x.totalMatched+' portadas comprobadas; '+x.identical+' idénticas, '+x.different+' diferentes. Ningún dato modificado.';}
        });
-       if(panel.isConnected)covers.textContent='Integridad privada: '+result.checked+' portadas verificadas byte a byte; '+result.identical+' idénticas, '+result.different+' diferentes; '+result.remaining+' sin comprobar'+(result.complete?' (comprobación completa).':' (límite de 30 por comprobación).')+' Sin escrituras. La coincidencia no habilita todavía la sincronización.';
+       if(panel.isConnected)covers.textContent=result.checked===0?'Integridad privada NO VALIDADA: no hay portadas emparejadas verificadas byte a byte (0 comprobaciones). Las portadas locales y remotas pueden existir sin coincidir por clave. No se ha modificado ninguna imagen; la sincronización sigue bloqueada.':'Integridad privada: '+result.checked+' portadas verificadas byte a byte; '+result.identical+' idénticas, '+result.different+' diferentes; '+result.remaining+' sin comprobar'+(result.complete?' (comprobación completa).':' (límite de 30 por comprobación).')+' Sin escrituras. La coincidencia no habilita todavía la sincronización.';
      }catch(e){if(panel.isConnected)covers.textContent='No se pudo verificar la integridad: '+String(e.message||e)+'. No se ha modificado ninguna portada.'}
      finally{coverAudit.disabled=false}
    };
