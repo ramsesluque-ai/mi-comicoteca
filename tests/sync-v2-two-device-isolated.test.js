@@ -83,8 +83,8 @@ check('adding a cover while another device edits notes remains mergeable',()=>{
   assert.equal(p.merged[0].record.notes,'after');
 });
 check('owner diagnostic: 16505 shared and 18 remote-only never authorize live writes',()=>{
-  const shared=Array.from({length:16505},(_,i)=>row('stable-'+i,'Comic '+i));
-  const remote=[...shared,...Array.from({length:18},(_,i)=>row('remote-extra-'+i,'Extra '+i))];
+  const shared=Array.from({length:16505},(_,i)=>row('stable-'+i,'Comic '+i,{issue:String(i+1)}));
+  const remote=[...shared,...Array.from({length:18},(_,i)=>row('remote-extra-'+i,'Extra '+i,{issue:String(16506+i)}))];
   const plan=planWithBaseline(shared,shared,remote);
   assert.equal(plan.unchanged.length,16505);
   assert.equal(plan.download.length,18);
