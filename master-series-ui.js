@@ -50,7 +50,9 @@ renderMaster=async function(){
    bind();return;
  }
  body.innerHTML='<p class="muted">Cargando colecciones de '+esc(pub)+'…</p>';
- const rows=await mcMasterLoadPublisher(pub);
+ let rows;
+ try{rows=await mcMasterLoadPublisher(pub);if(!Array.isArray(rows))throw new Error('Formato de catálogo incorrecto');}
+ catch(err){console.error('[Maestro] Error cargando editorial',pub,err);body.innerHTML='<p role="alert" class="muted">No se han podido cargar las colecciones de '+esc(pub)+'. Vuelve a seleccionar la editorial o recarga la página. No se han eliminado datos.</p>';return;}
  if(token!==state.serial)return;
  for(const [field,label,value] of [['catalogHeader','Todas las cabeceras',state.header],['volume','Todos los volúmenes',state.volume],['stage','Todas las etapas',state.stage],['startYear','Todos los años',state.year]]){
    const el=document.querySelector('[data-master-filter="'+field+'"]');
@@ -65,12 +67,14 @@ renderMaster=async function(){
    return checks.every(([field,prop])=>!state[prop]||normalize(r[field])===state[prop]);
  });
 
- const sharedCovers=typeof window.mcSharedCovers==='function'?await window.mcSharedCovers(true):{};
+ let sharedCovers={};
+ try{if(typeof window.mcSharedCovers==='function')sharedCovers=await window.mcSharedCovers(true)||{};}catch(err){console.warn('[Maestro] Portadas compartidas no disponibles; se muestra el catálogo',err);}
  if(token!==state.serial)return;
  // Apply the same approved-cover and bibliographic override enrichment used by the issue modal.
  // Previously the series list only read the shared-cover map, so covers coming from
  // master overrides appeared inside a collection but not on its series card.
- const enriched=typeof mcMasterEnrichRows==='function'?await mcMasterEnrichRows(filtered):filtered;
+ let enriched=filtered;
+ try{if(typeof mcMasterEnrichRows==='function')enriched=await mcMasterEnrichRows(filtered)||filtered;}catch(err){console.warn('[Maestro] Enriquecimiento no disponible; se muestran las fichas originales',err);}
  if(token!==state.serial)return;
  const coverFor=r=>{const key=typeof window.mcMasterCoverKey==='function'?window.mcMasterCoverKey(r):'';return key&&sharedCovers[key]?{...r,coverUrl:sharedCovers[key]}:r};
  const coverRank=r=>{const n=String(r.issueNr||r.issue||'').trim();return /^(?:0*1)(?:\D|$)/.test(n)?0:1};
@@ -86,7 +90,8 @@ renderMaster=async function(){
  const showMorrison=pub==='ECC'&&morrisonRows.length===4&&!state.header&&!state.volume&&!state.stage&&!state.year&&(!q||mcSENorm('Batman y Robin Grant Morrison cuatro tomos Batman contra Robin deben morir Caballero Oscuro contra Caballero Blanco').includes(q));
  if(showMorrison){const sample={...morrisonRows[0],catalogHeader:'Batman y Robin · Etapa Grant Morrison (4 tomos)',series:'Batman y Robin · Etapa Grant Morrison (4 tomos)',startYear:'2012–2013',volume:'',stage:'Tomos recopilatorios'};groups.set(morrisonKey,{sample,cover:coverFor(morrisonRows[0]),count:4});}
  // Personal-only series are shown as reconciliation candidates, never counted as verified Maestro records.
- const personal=await allStore('comics');
+ let personal=[];
+ try{if(typeof allStore==='function')personal=await allStore('comics')||[];}catch(err){console.warn('[Maestro] Colección local no disponible; el Maestro público sigue visible',err);}
  if(token!==state.serial)return;
  const existingNames=new Set(rows.map(r=>mcSENorm(r.catalogHeader||r.series)));
  const missing=new Map();
