@@ -63,6 +63,26 @@
      const summary=await MCSyncV2CoverInventory.compare({session,cfg});
      if(panel.isConnected)covers.textContent='Portadas privadas (solo lectura): '+summary.local+' archivos locales; '+summary.remote+' en Supabase; '+summary.matched+' coinciden por nombre; '+summary.onlyLocal+' solo locales; '+summary.onlyRemote+' solo en nube. Falta verificar SHA-256 binario. Ninguna imagen modificada.';
    }catch(e){if(panel.isConnected)covers.textContent='Portadas: no se pudo completar la comprobación ('+String(e.message||e)+'). Sin escrituras.'}})();
+   // Explicit SHA-256 check; never upload, install or overwrite a cover.
+   const coverAudit=document.createElement('button');
+   coverAudit.type='button';
+   coverAudit.textContent='Comprobar integridad de portadas (SHA-256)';
+   coverAudit.style.cssText='padding:9px 12px;margin:6px 8px 10px 0;border-radius:8px;cursor:pointer;background:#27465c;color:white;border:1px solid #73b9d1';
+   coverAudit.onclick=async()=>{
+     coverAudit.disabled=true;
+     try{
+       const raw=sessionStorage.getItem('mc_supabase_session_v1')||localStorage.getItem('mc_supabase_session_v1');
+       const session=raw?JSON.parse(raw):null,cfg=window.MI_COMICOTECA_CLOUD||{};
+       if(!window.MCSyncV2CoverInventory?.compareBytes)throw Error('Comprobación binaria no disponible');
+       covers.textContent='Comparando bytes de portadas privadas (solo lectura)…';
+       const result=await window.MCSyncV2CoverInventory.compareBytes({
+         session,cfg,maxCheck:30,
+         onProgress:x=>{if(panel.isConnected)covers.textContent='SHA-256: '+x.checked+' / '+x.totalMatched+' portadas comprobadas; '+x.identical+' idénticas, '+x.different+' diferentes. Ningún dato modificado.';}
+       });
+       if(panel.isConnected)covers.textContent='Integridad privada: '+result.checked+' portadas verificadas byte a byte; '+result.identical+' idénticas, '+result.different+' diferentes; '+result.remaining+' sin comprobar'+(result.complete?' (comprobación completa).':' (límite de 30 por comprobación).')+' Sin escrituras. La coincidencia no habilita todavía la sincronización.';
+     }catch(e){if(panel.isConnected)covers.textContent='No se pudo verificar la integridad: '+String(e.message||e)+'. No se ha modificado ninguna portada.'}
+     finally{coverAudit.disabled=false}
+   };
    const backup=document.createElement('button');backup.type='button';backup.textContent='Descargar respaldo local (JSON + SHA-256)';backup.style.cssText='padding:9px 12px;margin:10px 8px 0 0;border-radius:8px;cursor:pointer;background:#16678a;color:white;border:1px solid #73b9d1';
    backup.onclick=async()=>{backup.disabled=true;backup.textContent='Preparando respaldo…';try{
      if(typeof allStore!=='function')throw Error('Almacén local no disponible');
@@ -101,7 +121,7 @@
    }catch(e){diagnostic.textContent='Respaldo NO verificado: '+String(e.message||e)+'. No se ha modificado ningún dato.'}finally{verifyBtn.disabled=false}};
    verifyBox.append(verifyTitle,jsonInput,shaInput,verifyBtn);
    const close=document.createElement('button');close.type='button';close.textContent='Entendido';close.style.cssText='padding:9px 16px;border-radius:8px;cursor:pointer';close.onclick=()=>panel.remove();
-   panel.append(title,p,diagnostic,covers,backup,verifyBox,close);document.body.append(panel);close.focus();
+   panel.append(title,p,diagnostic,covers,coverAudit,backup,verifyBox,close);document.body.append(panel);close.focus();
  }
  function mount(){
    const anchor=findNewComic();
