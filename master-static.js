@@ -106,7 +106,8 @@ const MC_VERIFIED_MASTER_RECORDS={
  'gcd_2227639':{title:'¡Scooby-Doo! y Sus Amigos · N.º 7',pages:'72'},
  'gcd_2227640':{title:'¡Scooby-Doo! y Sus Amigos · N.º 8',pages:'72'},
  'gcd_2227641':{title:'¡Scooby-Doo! y Sus Amigos · N.º 9',pages:'72'},
- 'gcd_2227642':{title:'¡Scooby-Doo! y Sus Amigos · N.º 10',pages:'72'}
+ 'gcd_2227642':{title:'¡Scooby-Doo! y Sus Amigos · N.º 10',pages:'72'},
+ 'gcd_1171660':{isbn:'9788415925583',pages:'144'}
 };
 // Normalize legacy bibliographic sentinels for every publisher, not only ECC.
 function mcMasterCleanField(v){const s=String(v??'').trim();return /^(?:-1|null|undefined)$/i.test(s)?'':s}
