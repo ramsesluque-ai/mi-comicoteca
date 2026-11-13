@@ -67,6 +67,14 @@
      else if(r===a){if(l===undefined)delete record[key];else record[key]=local[key]}
      else conflicts.push(key);
    }
+   // A remote or local empty cover field must never silently discard a saved cover.
+   // Require explicit conflict resolution for clearing any protected cover metadata.
+   const protectedCoverFields=['coverKey','coverUrl','coverSourceUrl','coverUrls'];
+   const cleared=protectedCoverFields.filter(key=>{
+     const before=base[key],after=record[key];
+     return !empty(before)&&empty(after);
+   });
+   if(cleared.length)return {status:'conflict',reason:'protected-cover-cleared',fields:cleared};
    if(conflicts.length)return {status:'conflict',reason:'concurrent-field-edits',fields:conflicts};
    return {status:'merged',record};
  }
