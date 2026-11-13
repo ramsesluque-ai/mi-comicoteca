@@ -64,8 +64,9 @@ renderMaster=async function(){
  const enriched=typeof mcMasterEnrichRows==='function'?await mcMasterEnrichRows(filtered):filtered;
  if(token!==state.serial)return;
  const coverFor=r=>{const key=typeof window.mcMasterCoverKey==='function'?window.mcMasterCoverKey(r):'';return key&&sharedCovers[key]?{...r,coverUrl:sharedCovers[key]}:r};
+ const coverRank=r=>{const n=String(r.issueNr||r.issue||'').trim();return /^(?:0*1)(?:\D|$)/.test(n)?0:1};
  const groups=new Map();
- for(const original of enriched){const r=coverFor(original);const key=mcMasterGroupKey(r);if(!groups.has(key))groups.set(key,{sample:r,cover:null,count:0});const g=groups.get(key);g.count++;if(!g.cover&&r.coverUrl)g.cover=r}
+ for(const original of enriched){const r=coverFor(original);const key=mcMasterGroupKey(r);if(!groups.has(key))groups.set(key,{sample:r,cover:null,count:0});const g=groups.get(key);g.count++;if(r.coverUrl&&(!g.cover||coverRank(r)<coverRank(g.cover)))g.cover=r}
  // Curated reading/edition grouping: reuse the four original ECC bibliographic records.
  // This is an additional navigation group, not a new edition or duplicated Maestro record.
  const morrisonKey='mc-curated:ecc:batman-robin-morrison-2012';
