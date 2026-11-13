@@ -17,7 +17,7 @@ const r=(id,title,extra={})=>({id,publisher:'Editorial',series:'Serie',issue:id,
  assert.equal(plan.merged.length,1);
  assert.equal(plan.merged[0].record.coverKey,'key-1');
  await assert.rejects(cp.verify({checkpoint,uid:other,cryptoImpl:webcrypto}),/otro usuario/);
- await assert.rejects(cp.plan({...opts,checkpoint,localRows:original,remoteRows:original,remoteSnapshotHash:'b'.repeat(64),reconciler:globalThis.MCReconcileV2}),/Snapshot remoto distinto/);
+ await assert.rejects(cp.plan({...opts,checkpoint,localRows:original,remoteRows:original,remoteSnapshotHash:'b'.repeat(64),reconciler:globalThis.MCReconcileV2}),/Snapshot remoto no coincide/);
  await assert.rejects(cp.plan({...opts,checkpoint:null,localRows:original,remoteRows:original,remoteSnapshotHash:hash,reconciler:globalThis.MCReconcileV2}),/Baseline ausente/);
  const tampered=structuredClone(checkpoint);tampered.payload.rows[0].coverKey='';
  await assert.rejects(cp.verify({checkpoint:tampered,...opts}),/alterado/);
