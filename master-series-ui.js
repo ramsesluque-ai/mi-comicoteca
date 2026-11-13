@@ -6,6 +6,13 @@ const normalize=v=>String(v??'').trim();
 const option=(value,label,selected)=>'<option value="'+esc(value)+'"'+(value===selected?' selected':'')+'>'+esc(label)+'</option>';
 const unique=(rows,key)=>[...new Set(rows.map(x=>normalize(x[key])).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es',{numeric:true}));
 const opts=(rows,key,label,value)=>'<select data-master-filter="'+key+'" aria-label="'+esc(label)+'">'+option('',label,value)+unique(rows,key).map(v=>option(v,v,value)).join('')+'</select>';
+// Stable delegated handlers: filter controls are recreated during navigation and async rendering.
+window.mcMasterSetFilter=function(field,value){
+ const map={catalogHeader:'header',volume:'volume',stage:'stage',startYear:'year'};
+ if(!Object.prototype.hasOwnProperty.call(map,field))return;
+ state[map[field]]=String(value||'');state.page=1;
+ renderMaster();
+};
 const info=()=>'<div class="mc-master-info">Selecciona una editorial para explorar sus colecciones. Los datos se cargan por editorial para mantener el catálogo ágil.</div>';
 masterView=async function(){
  const idx=await mcSEMasterIndex();
@@ -16,10 +23,10 @@ masterView=async function(){
 '<div class="panel mc-master-series-panel"><div class="mc-master-filter-dashboard">'+
  '<label class="mc-mf mc-mf-search"><span>⌕ BUSCAR COLECCIÓN</span><input id="mq" value="'+esc(state.q)+'" placeholder="Editorial, serie, etapa…" aria-label="Buscar colección"></label>'+
  '<label class="mc-mf mc-mf-publisher"><span>▣ EDITORIAL</span><select id="mpub" aria-label="Editorial">'+option('','Todas las editoriales',state.publisher)+(idx.publishers||[]).map(p=>option(p.publisher,p.publisher,state.publisher)).join('')+'</select></label>'+
- '<label class="mc-mf mc-mf-header"><span>▤ CABECERA / SERIE</span><select data-master-filter="catalogHeader" aria-label="Cabecera">'+option('','Todas las cabeceras',state.header)+'</select></label>'+
- '<label class="mc-mf mc-mf-volume"><span>▥ VOLUMEN</span><select data-master-filter="volume" aria-label="Volumen">'+option('','Todos los volúmenes',state.volume)+'</select></label>'+
- '<label class="mc-mf mc-mf-stage"><span>◆ ETAPA</span><select data-master-filter="stage" aria-label="Etapa">'+option('','Todas las etapas',state.stage)+'</select></label>'+
- '<label class="mc-mf mc-mf-year"><span>◷ AÑO DE INICIO</span><select data-master-filter="startYear" aria-label="Año de inicio">'+option('','Todos los años',state.year)+'</select></label>'+
+ '<label class="mc-mf mc-mf-header"><span>▤ CABECERA / SERIE</span><select data-master-filter="catalogHeader" onchange="mcMasterSetFilter('catalogHeader',this.value)" aria-label="Cabecera">'+option('','Todas las cabeceras',state.header)+'</select></label>'+
+ '<label class="mc-mf mc-mf-volume"><span>▥ VOLUMEN</span><select data-master-filter="volume" onchange="mcMasterSetFilter('volume',this.value)" aria-label="Volumen">'+option('','Todos los volúmenes',state.volume)+'</select></label>'+
+ '<label class="mc-mf mc-mf-stage"><span>◆ ETAPA</span><select data-master-filter="stage" onchange="mcMasterSetFilter('stage',this.value)" aria-label="Etapa">'+option('','Todas las etapas',state.stage)+'</select></label>'+
+ '<label class="mc-mf mc-mf-year"><span>◷ AÑO DE INICIO</span><select data-master-filter="startYear" onchange="mcMasterSetFilter('startYear',this.value)" aria-label="Año de inicio">'+option('','Todos los años',state.year)+'</select></label>'+
  '<div class="mc-mf-hint" id="mc-master-filter-hint">Sin filtros activos · se muestran todos los registros</div>'+
  '</div><div id="masterbody">'+info()+'</div></div>';
 };
@@ -114,7 +121,7 @@ function pager(total,pages){return '<div class="pager"><span>'+total.toLocaleStr
 function bind(){
  const pub=document.getElementById('mpub');if(pub)pub.onchange=()=>{state.publisher=pub.value;state.header='';state.volume='';state.stage='';state.year='';state.page=1;renderMaster()};
  const q=document.getElementById('mq');if(q)q.oninput=()=>{state.q=q.value;state.page=1;renderMaster()};
- document.querySelectorAll('[data-master-filter]').forEach(el=>el.onchange=()=>{const map={catalogHeader:'header',volume:'volume',stage:'stage',startYear:'year'};state[map[el.dataset.masterFilter]]=el.value;state.page=1;renderMaster()});
+ // Filters use stable inline onchange handlers; do not replace them here.
  document.querySelectorAll('[data-master-publisher]').forEach(el=>el.onclick=()=>{state.publisher=el.dataset.masterPublisher;state.header='';state.volume='';state.stage='';state.year='';state.page=1;pub.value=state.publisher;renderMaster()});
  document.querySelectorAll('[data-master-page]').forEach(el=>el.onclick=()=>{state.page+=Number(el.dataset.masterPage);renderMaster()});
  document.querySelectorAll('[data-master-personal]').forEach(el=>{const open=()=>openSeries(el.dataset.masterPersonal);el.onclick=open;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open()}}});
