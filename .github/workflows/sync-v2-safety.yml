@@ -5,6 +5,7 @@ on:
     paths:
       - 'sync-v2-reconcile.js'
       - 'sync-v2-read-plan.js'
+      - 'sync-v2-cover-integrity.js'
       - 'manual-sync-v2-button.js'
       - 'cloud-migration.js'
       - 'tests/sync-v2-*.test.js'
@@ -25,6 +26,7 @@ jobs:
         run: |
           node --check sync-v2-reconcile.js
           node --check sync-v2-cover-inventory.js
+          node --check sync-v2-cover-integrity.js
           node --check sync-v2-manual-plan.js
           node --check manual-sync-v2-button.js
           node --check cloud-migration.js
@@ -32,6 +34,7 @@ jobs:
         run: |
           node tests/sync-v2-two-device-isolated.test.js
           node tests/sync-v2-cover-inventory.test.cjs
+          node tests/sync-v2-cover-integrity.test.cjs
           node tests/sync-v2-manual-plan.test.cjs
       - name: Confirm legacy V1 is fail-closed
         run: |
