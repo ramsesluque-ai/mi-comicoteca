@@ -10,6 +10,7 @@ on:
       - 'manual-sync-v2-button.js'
       - 'cloud-migration.js'
       - 'tests/sync-v2-*.test.js'
+      - 'tests/sync-v2-*.test.cjs'
       - '.github/workflows/sync-v2-safety.yml'
   workflow_dispatch:
 permissions:
@@ -38,6 +39,7 @@ jobs:
           node tests/sync-v2-cover-inventory.test.cjs
           node tests/sync-v2-cover-integrity.test.cjs
           node tests/sync-v2-cover-transport.test.cjs
+          node tests/sync-v2-cover-isolation.test.cjs
           node tests/sync-v2-manual-plan.test.cjs
       - name: Confirm legacy V1 is fail-closed
         run: |
