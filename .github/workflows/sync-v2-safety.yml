@@ -33,10 +33,24 @@ jobs:
           node tests/sync-v2-two-device-isolated.test.js
           node tests/sync-v2-cover-inventory.test.cjs
           node tests/sync-v2-manual-plan.test.cjs
-      - name: Confirm V1 is not loaded by production HTML
+      - name: Confirm legacy V1 is fail-closed
         run: |
-          if grep -Eiq '<script[^>]+src=["\x27][^"\x27]*cloud-collection-sync\.js' index.html; then
-            echo 'ERROR: unsafe V1 loaded by production index.html'
-            exit 1
-          fi
-          echo 'Legacy V1 is not loaded in index.html'
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const vm = require('node:vm');
+          const code = fs.readFileSync('cloud-collection-sync.js', 'utf8');
+          let mutations = 0;
+          const sandbox = {
+            window: {},
+            console: { warn() {} },
+            fetch: () => { mutations++; throw Error('Unexpected V1 network call'); },
+            indexedDB: { open() { mutations++; throw Error('Unexpected V1 database call'); } },
+          };
+          vm.runInNewContext(code, sandbox, { timeout: 1000 });
+          const sync = sandbox.window.ComictecaCloudSync;
+          if (!sync || sync.getStatus().ready !== false) throw Error('V1 is not paused');
+          Promise.resolve(sync.sync()).then(result => {
+            if (!result || result.paused !== true || mutations !== 0) throw Error('V1 is not fail-closed');
+            console.log('Legacy V1 is paused; no network or database access');
+          }).catch(error => { console.error(error); process.exitCode = 1; });
+          NODE
