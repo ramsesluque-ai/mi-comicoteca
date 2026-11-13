@@ -79,7 +79,7 @@ const args=(uid,key,blob)=>({session:session(uid),cfg,key,blob,fetchImpl:fakeFet
    }
    return fakeFetch(url,options);
  };
- assert.equal((await transport.copyIfAbsent({...args(uidA,uncertainKey,cover),fetchImpl:uncertainFetch})).status,'uploaded-and-verified');
+ assert.equal((await transport.copyIfAbsent({...args(uidA,uncertainKey,cover),fetchImpl:uncertainFetch})).status,'uploaded-response-lost-verified');
  const countBeforeRetry=objects.size;
  assert.equal((await transport.copyIfAbsent({...args(uidA,uncertainKey,cover),fetchImpl:uncertainFetch})).status,'already-identical');
  assert.equal(objects.size,countBeforeRetry);
