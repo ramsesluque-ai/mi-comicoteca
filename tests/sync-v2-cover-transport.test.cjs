@@ -56,6 +56,20 @@ function fake(){
  const unavailable=async(url,opts)=>opts.method==='POST'?{ok:false,status:503}:notPersisted.fetchImpl(url,opts);
  await assert.rejects(()=>transport.copyIfAbsent({...args,key:'not-persisted',fetchImpl:unavailable}),/Subida incierta/);
  assert.equal(notPersisted.calls.filter(x=>x.method==='POST').length,0);
+ // POST 503 followed by an unavailable verification GET is ambiguous: never retry blindly.
+ let ambiguousGets=0,ambiguousPosts=0;
+ const unavailableVerification=async(url,opts)=>{
+   if(opts.method==='GET'){
+     ambiguousGets++;
+     if(ambiguousGets===1)return {ok:false,status:404};
+     throw Error('verification network outage');
+   }
+   ambiguousPosts++;
+   return {ok:false,status:503};
+ };
+ await assert.rejects(()=>transport.copyIfAbsent({...args,key:'503-get-offline',fetchImpl:unavailableVerification}),/Subida incierta.*GET de verificación falló/);
+ assert.equal(ambiguousPosts,1);
+ assert.equal(ambiguousGets,2);
  const corrupted=fake();
  const wrongAfter503=async(url,opts)=>{
    if(opts.method==='POST'){corrupted.storage.set(url,blob('different bytes'));return {ok:false,status:503}}
@@ -103,5 +117,5 @@ function fake(){
  assert.equal(f.calls.filter(x=>x.method==='POST').length,before);
  const badRead=async()=>({ok:true,status:200,blob:async()=>new Blob(['HTML'],{type:'text/html'})});
  await assert.rejects(()=>transport.read({...args,key:'bad-remote',fetchImpl:badRead}),/Portada inválida/);
- console.log('Private cover transport: 18 isolated safety scenarios passed');
+ console.log('Private cover transport: 19 isolated safety scenarios passed');
 })().catch(e=>{console.error(e);process.exitCode=1});
