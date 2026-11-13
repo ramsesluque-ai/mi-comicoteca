@@ -32,7 +32,7 @@ assert.equal(scooby.length,10);
 for(const s of scooby){assert.equal(s.pages,'72');assert.match(s.title,/N.º\s+[1-9]|N.º\s+10/);}
 const html=fs.readFileSync('index.html','utf8'),engine=fs.readFileSync('search-engine.js','utf8');
 for(const file of ['search-engine.js','master-static.js','master-series-ui.js']){
- assert(new RegExp(file.replace(/\\./g,'\\\\.')+'\\\\?v=[^"\\\\s]+').test(html),'Maestro asset is missing a cache version: '+file);
+ assert(html.includes(file+'?v='),'Maestro asset is missing a cache version: '+file);
 }
 assert(engine.includes("MC_ECC_CATALOG_REV='20261112-ecc-refresh1'"),'ECC data query must use new revision');
 assert(engine.includes("cache:eccChunk?'no-cache':'force-cache'"),'ECC data cache must revalidate');
