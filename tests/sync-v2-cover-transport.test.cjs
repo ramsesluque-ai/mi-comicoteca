@@ -62,6 +62,27 @@ function fake(){
    return corrupted.fetchImpl(url,opts);
  };
  await assert.rejects(()=>transport.copyIfAbsent({...args,key:'corrupted-503',fetchImpl:wrongAfter503}),/Conflicto tras respuesta incierta/);
+ // A thrown network error after POST can still mean Storage persisted the bytes.
+ const dropped=fake();
+ const droppedFetch=async(url,opts)=>{
+   const result=await dropped.fetchImpl(url,opts);
+   if(opts.method==='POST')throw Error('connection reset after commit');
+   return result;
+ };
+ assert.equal((await transport.copyIfAbsent({...args,key:'network-dropped',fetchImpl:droppedFetch})).status,'uploaded-network-error-verified');
+ assert.equal(dropped.calls.filter(x=>x.method==='POST').length,1);
+ const lost=fake();
+ const lostFetch=async(url,opts)=>opts.method==='POST'?Promise.reject(Error('offline')):lost.fetchImpl(url,opts);
+ await assert.rejects(()=>transport.copyIfAbsent({...args,key:'network-missing',fetchImpl:lostFetch}),/Subida incierta/);
+ const unreadable=fake();
+ const unreadableFetch=async()=>{throw Error('network offline')};
+ await assert.rejects(()=>transport.copyIfAbsent({...args,key:'network-unreadable',fetchImpl:unreadableFetch}),/Subida incierta/);
+ const mismatch=fake();
+ const mismatchFetch=async(url,opts)=>{
+   if(opts.method==='POST'){mismatch.storage.set(url,blob('different bytes'));throw Error('connection reset')}
+   return mismatch.fetchImpl(url,opts);
+ };
+ await assert.rejects(()=>transport.copyIfAbsent({...args,key:'network-mismatch',fetchImpl:mismatchFetch}),/Conflicto tras error de red/);
  // Downloads must be verified against the manifest hash before any CoverVault write.
  const digest=await integrity.sha256(args.blob);
  const verified=await transport.readVerified({...args,expectedSha256:digest});
