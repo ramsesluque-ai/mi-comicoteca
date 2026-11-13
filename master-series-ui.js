@@ -52,6 +52,8 @@ renderMaster=async function(){
  const checks=[['catalogHeader','header'],['volume','volume'],['stage','stage'],['startYear','year']];
  for(const [field,prop] of checks){if(state[prop]&&!rows.some(r=>normalize(r[field])===state[prop]))state[prop]='';document.querySelector('[data-master-filter="'+field+'"]').value=state[prop]}
  let filtered=rows.filter(r=>{
+   // Quarantine unverified ECC 2019 grouping; preserve source records for later reconciliation.
+   if(mcSENorm(r.publisher)==='ecc'&&mcSENorm(r.catalogHeader||r.series)==='1st issue special'&&String(r.startYear||'')==='2019')return false;
    if(q&&!mcSENorm([r.publisher,r.catalogHeader,r.series,r.title,r.isbn,r.issueNr].join(' ')).includes(mcSENorm(q)))return false;
    return checks.every(([field,prop])=>!state[prop]||normalize(r[field])===state[prop]);
  });
