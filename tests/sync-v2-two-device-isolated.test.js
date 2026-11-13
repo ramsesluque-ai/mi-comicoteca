@@ -65,4 +65,21 @@ check('malformed or duplicate IDs are blocked',()=>{
   assert.ok(planWithBaseline([], [{...a,id:''}],[]).conflicts.length);
   assert.ok(planWithBaseline([], [a,a],[]).conflicts.length);
 });
+check('clearing an existing cover is an explicit conflict, not an automatic merge',()=>{
+  const baseline=row('cover-protected','Original',{coverKey:'stored-cover',coverUrl:'https://example.test/cover.webp'});
+  const local={...baseline,coverKey:'',coverUrl:''};
+  const remote={...baseline};
+  const p=planWithBaseline([baseline],[local],[remote]);
+  assert.equal(p.conflicts[0].reason,'protected-cover-cleared');
+  assert.equal(p.upload.length+p.download.length+p.merged.length,0);
+});
+check('adding a cover while another device edits notes remains mergeable',()=>{
+  const baseline=row('cover-added','Original',{notes:'before'});
+  const local={...baseline,coverKey:'new-cover'};
+  const remote={...baseline,notes:'after'};
+  const p=planWithBaseline([baseline],[local],[remote]);
+  assert.equal(p.conflicts.length,0);
+  assert.equal(p.merged[0].record.coverKey,'new-cover');
+  assert.equal(p.merged[0].record.notes,'after');
+});
 console.log('Isolated reconciliation tests passed; NOT a Supabase RLS or browser E2E test.');
