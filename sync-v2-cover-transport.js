@@ -52,7 +52,19 @@
    }
    const res=await fetchImpl(cfg.url+path(uid,key),{method:'POST',headers:{apikey:cfg.publishableKey,Authorization:'Bearer '+session.access_token,'Content-Type':blob.type||'image/webp','x-upsert':'false'},body:blob});
    // Concurrent creation can yield 400/409; re-read and verify, never blindly accept.
-   if(!res.ok&&res.status!==400&&res.status!==409)throw Error('Subida rechazada ('+res.status+')');
+   if(!res.ok&&res.status!==400&&res.status!==409){
+     // A timeout/5xx may occur AFTER Storage persisted the object. Never blindly retry POST.
+     if(res.status>=500){
+       const uncertain=await read({session,cfg,key,fetchImpl,integrity});
+       if(uncertain){
+         const check=await integrity.verifyPair(blob,uncertain);
+         if(!check.equal)throw Error('Conflicto tras respuesta incierta: SHA-256 distinto; no sobrescribir');
+         return {status:'uploaded-response-lost-verified',sha256:expected};
+       }
+       throw Error('Subida incierta ('+res.status+'): portada ausente tras GET; reintento manual seguro');
+     }
+     throw Error('Subida rechazada ('+res.status+')');
+   }
    const stored=await read({session,cfg,key,fetchImpl,integrity});
    if(!stored)throw Error('No se pudo verificar la portada tras subida');
    const comparison=await integrity.verifyPair(blob,stored);
