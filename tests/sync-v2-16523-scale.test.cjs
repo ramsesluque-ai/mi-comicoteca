@@ -21,13 +21,23 @@ assert.equal(p.unchanged.length,N);
 assert.equal(p.upload.length+p.download.length+p.merged.length,0);
 // Non-overlapping edits on different devices merge, preserving ID.
 local[123]={...local[123],title:'Local update'};
-remote[123]={...remote[123],coverUrl:'https://example.org/updated.jpg'};
+remote[123]={...remote[123],notes:'Remote note update'};
 p=planWithBaseline(base,local,remote);
 assert.equal(p.conflicts.length,0);
 assert.equal(p.merged.length,1);
 assert.equal(p.merged[0].record.id,base[123].id);
 assert.equal(p.merged[0].record.title,'Local update');
-assert.equal(p.merged[0].record.coverUrl,'https://example.org/updated.jpg');
+assert.equal(p.merged[0].record.notes,'Remote note update');
+assert.equal(p.merged[0].record.coverUrl,base[123].coverUrl);
+// Cover replacements are deliberately NOT treated as a safe field-level merge.
+remote[123]={...remote[123],coverUrl:'https://example.org/updated.jpg'};
+p=planWithBaseline(base,local,remote);
+assert.ok(p.conflicts.some(c=>c.id===base[123].id&&c.reason==='cover-reference-changed'));
+assert.equal(p.upload.length+p.download.length+p.merged.length,0);
+// Restore the safe independent edits for the acknowledgement test.
+remote[123]={...base[123],notes:'Remote note update'};
+p=planWithBaseline(base,local,remote);
+assert.equal(p.conflicts.length,0);
 // An acknowledged second pass must be idempotent.
 const acknowledged=base.map((r,i)=>i===123?p.merged[0].record:r);
 p=planWithBaseline(acknowledged,acknowledged,acknowledged);
