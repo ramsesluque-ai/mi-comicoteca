@@ -2,6 +2,10 @@
 /* Owner-only V2 download test. Explicit opt-in. Never delete local data or
  overwrite a populated field. Duplicate edition/issue IDs are skipped. */
 (async function(){
+ // Hard safety gate: legacy owner-only migration routes are not the validated Sync V2 flow.
+ // Never enable without authenticated two-session E2E, RLS and binary-cover validation.
+ const SYNC_V2_OWNER_WRITE_E2E_APPROVED=false;
+ if(!SYNC_V2_OWNER_WRITE_E2E_APPROVED){console.info('MI COMICTECA Sync V2: legacy owner write route disabled pending E2E');return;}
  if(new URLSearchParams(location.search).get('syncv2')!=='recepcion')return;
  const OWNER='0bcbe06d-263d-4ac1-a516-355d27d417f1';
  const s=JSON.parse(sessionStorage.getItem('mc_supabase_session_v1')||'null');
