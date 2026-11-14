@@ -100,7 +100,14 @@
    if(!comparison.equal)throw Error('SHA-256 distinto tras subida; requiere intervención');
    return {status:res.ok?'uploaded-and-verified':'concurrent-identical',sha256:expected};
  }
- const api={verifySession,read,readVerified,copyIfAbsent};
+ // Explicit authenticated gate for future write orchestration. The existing
+ // low-level copyIfAbsent remains staged and must never be exposed directly to UI.
+ async function verifiedCopyIfAbsent(options){
+   if(!options||typeof options!=='object')throw Error('Opciones de portada obligatorias');
+   await verifySession({session:options.session,cfg:options.cfg,fetchImpl:options.fetchImpl||root.fetch});
+   return copyIfAbsent(options);
+ }
+ const api={verifySession,read,readVerified,copyIfAbsent,verifiedCopyIfAbsent};
  root.MCSyncV2CoverTransport=api;
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
