@@ -34,13 +34,19 @@
    // Cover references must never be propagated as ordinary bibliographic edits.
    // A changed coverKey/coverUrl requires a separately verified private binary
    // transfer; otherwise a merge could silently orphan a user's local image.
-   if(['coverKey','coverUrl'].some(field=>canon(lv[field]??null)!==canon(rv[field]??null))){
+   if(['coverKey','coverUrl','coverSourceUrl','coverUrls'].some(field=>canon(lv[field]??null)!==canon(rv[field]??null))){
     out.conflicts.push({id,reason:'cover-reference-changed'});
     continue;
    }
    if(lc===bc)out.download.push(id);
    else if(rc===bc)out.upload.push(id);
    else out.conflicts.push({id,reason:'concurrent-edits'});
+  }
+  // No partial batch execution: any conflict or untracked ID blocks all proposals.
+  // A missing baseline is never evidence that a record is safe to create.
+  if(out.conflicts.length||out.untracked.length||out.deletionsBlocked.length){
+   out.download=[];
+   out.upload=[];
   }
   return out;
  }
