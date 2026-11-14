@@ -17,4 +17,13 @@ assert.equal(plan({local:base,remote:[{...a(1,'old'),coverUrl:'https://example.t
 assert.equal(plan({local:[{...a(1,'local'),coverKey:'private:local'}],remote:[{...a(1,'remote'),coverKey:'private:remote'}],baseline:base}).conflicts[0].reason,'cover-reference-changed');
 assert.deepEqual(plan({local:[a(1,'local')],remote:base,baseline:base}).upload,['1']);
 assert.equal(plan({local:base,remote:base,baseline:base}).safeToExecute,false);
-console.log('Sync V2 baseline safety: 14 assertions passed');
+const mixed=plan({local:[a(1,'local'),a(2,'new'),a(3,'local')],remote:[a(1,'old'),a(3,'remote')],baseline:[a(1,'old'),a(3,'old')]});
+assert.equal(mixed.conflicts[0].reason,'concurrent-edits');
+assert.deepEqual(mixed.untracked,['2']);
+assert.deepEqual(mixed.upload,[],'no partial uploads with unresolved conflict');
+assert.deepEqual(mixed.download,[],'no partial downloads with unresolved conflict');
+const untracked=plan({local:[a(1,'new'),a(2,'new')],remote:[a(1,'old')],baseline:[a(1,'old')]});
+assert.deepEqual(untracked.upload,[],'untracked records block otherwise valid upload');
+assert.equal(plan({local:[{...a(1,'old'),coverSourceUrl:'https://example.test/a'}],remote:base,baseline:base}).conflicts[0].reason,'cover-reference-changed');
+assert.equal(plan({local:base,remote:[{...a(1,'old'),coverUrls:['https://example.test/a']}],baseline:base}).conflicts[0].reason,'cover-reference-changed');
+console.log('Sync V2 baseline safety: 21 assertions passed');
