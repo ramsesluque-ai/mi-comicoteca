@@ -12,16 +12,19 @@ let result=threeWay(base,{...base,title:'Edición local'},{...base,coverUrl:'htt
 assert.equal(result.status,'merged');assert.equal(result.record.title,'Edición local');assert.equal(result.record.coverUrl,'https://example.org/new.jpg');
 result=threeWay(base,{...base,title:'Local'},{...base,title:'Nube'});
 assert.equal(result.status,'conflict');assert.ok(result.fields.includes('title'));
-result=threeWay(base,{id:base.id,deleted:true},{...base,title:'Nube'});
+result=threeWay(base,{id:base.id,deleted:true,deletedAt:'2026-11-11T00:00:00Z'},{...base,title:'Nube'});
 assert.equal(result.reason,'delete-versus-edit');
-result=threeWay(base,{...base,deleted:true},{...base});
+result=threeWay(base,{...base,deleted:true,deletedAt:'2026-11-11T00:00:00Z'},{...base});
 assert.equal(result.status,'merged');assert.equal(result.record.deleted,true);
-result=threeWay(base,{...base,deleted:true},{...base,deleted:true});
+result=threeWay(base,{...base,deleted:true,deletedAt:'2026-11-11T00:00:00Z'},{...base,deleted:true,deletedAt:'2026-11-11T00:00:00Z'});
 assert.equal(result.status,'unchanged');
-result=threeWay(base,{...base,deleted:true},{id:base.id,deleted:false});
+result=threeWay(base,{...base,deleted:true,deletedAt:'2026-11-11T00:00:00Z'},{id:base.id,deleted:false});
 assert.equal(result.reason,'delete-versus-edit');
 result=threeWay(base,{...base,title:'Local'},{...base,title:'Local'});
 assert.equal(result.status,'merged');assert.equal(result.record.title,'Local');
+// Bare deletion markers are rejected; valid timestamps are mandatory for acknowledged deletes.
+result=threeWay(base,{...base,deleted:true},{...base});
+assert.equal(result.reason,'invalid-tombstone-timestamp');
 const p=planWithBaseline([base],[base],[base]);
 assert.equal(p.conflicts.length,0);assert.equal(p.unchanged.length,1);
 const missing=planWithBaseline([base],[],[base]);
