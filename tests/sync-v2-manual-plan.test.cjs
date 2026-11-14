@@ -35,7 +35,8 @@ function cloud(rows){return rows.map(r=>({user_id:uid,local_id:'comics:'+r.id,me
  changedRemote[3].metadata={kind:'comics',deleted:true};
  const state=service(changedRemote);
  const diff=await compare({session,cfg,localRows:edited,fetcher:state.fetcher});
- assert.equal(diff.onlyLocal,2);
+ // The remote tombstone is matched, not a candidate for re-upload.
+ assert.equal(diff.onlyLocal,1);
  assert.equal(diff.onlyCloud,1);
  assert.equal(diff.tombstones,1);
  assert.equal(diff.different,2);
