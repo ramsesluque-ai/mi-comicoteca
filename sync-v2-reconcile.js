@@ -60,6 +60,11 @@
        // Never choose a winner by last-write-wins: a stale device could erase audit history.
        if(local.deletedAt!==remote.deletedAt)
          return {status:'conflict',reason:'divergent-tombstone-timestamps'};
+       // Matching deletion dates alone do not prove the two tombstones carry
+       // the same metadata. Preserve evidence and fail closed on divergence.
+       const fields=new Set([...Object.keys(local),...Object.keys(remote)]);
+       const different=[...fields].filter(k=>JSON.stringify(local[k])!==JSON.stringify(remote[k]));
+       if(different.length)return {status:'conflict',reason:'divergent-tombstone-payload',fields:different};
        return {status:'unchanged',record:{...remote,deleted:true}};
      }
      const deleted=local.deleted?local:remote,other=local.deleted?remote:local;
