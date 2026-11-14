@@ -98,4 +98,27 @@ check('owner diagnostic: no baseline forbids guessing whether missing items were
   assert.equal(plan.upload.length,0);
   assert.equal(plan.download.length,1);
 });
+check('one conflict blocks unrelated downloads and uploads in the same batch',()=>{
+  const stable=row('stable','Original');
+  const changedA={...stable,title:'A'};
+  const changedB={...stable,title:'B'};
+  const pendingLocal=row('local-new','New local',{issue:'2'});
+  const pendingRemote=row('remote-new','New remote',{issue:'3'});
+  const p=planWithBaseline([stable],[changedA,pendingLocal],[changedB,pendingRemote]);
+  assert.ok(p.conflicts.some(c=>c.reason==='concurrent-field-edits'));
+  assert.equal(p.upload.length+p.download.length+p.merged.length,0);
+});
+check('acknowledged tombstone cannot be resurrected by an offline device',()=>{
+  const deleted={...a,deleted:true,deletedAt:'2026-11-13T00:00:00Z'};
+  const p=planWithBaseline([deleted],[a],[deleted]);
+  assert.ok(p.conflicts.some(c=>c.reason==='tombstone-resurrection'));
+  assert.equal(p.upload.length+p.download.length+p.merged.length,0);
+});
+check('stable ID reused for a different issue is a conflict',()=>{
+  const original=row('same-id','First',{issue:'1'});
+  const reassigned=row('same-id','Second',{issue:'2'});
+  const p=planWithBaseline([original],[reassigned],[original]);
+  assert.ok(p.conflicts.some(c=>c.reason==='stable-id-bibliographic-identity-mismatch'));
+  assert.equal(p.upload.length+p.download.length+p.merged.length,0);
+});
 console.log('Isolated reconciliation tests passed; NOT a Supabase RLS or browser E2E test.');
