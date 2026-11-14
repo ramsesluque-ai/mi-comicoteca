@@ -9,7 +9,7 @@ const cfg={url:'https://fake.invalid',publishableKey:'test-only'};
 const session=(id)=>({user:{id},access_token:'fake-'+id});
 const make=(n)=>({id:'id-'+String(n).padStart(5,'0'),publisher:'Test',series:'Test series',issueNr:String(n),title:'Comic '+n,coverKey:'private-'+n});
 const rows=Array.from({length:501},(_,i)=>make(i));
-const backend=new Map([[uid,rows.map(record=>({user_id:uid,local_id:'comics:'+record.id,metadata:{kind:'comics',record}}))],[other,[{user_id:other,local_id:'comics:foreign',metadata:{kind:'comics',record:make(999)}}]]]);
+const backend=new Map([[uid,rows.map(record=>({user_id:uid,local_id:'comics:'+record.id,metadata:{kind:'comics',record}}))],[other,[{user_id:other,local_id:'comics:id-00999',metadata:{kind:'comics',record:make(999)}}]]]);
 function fake({failAt=0,deny=false,abortAt=0}={}){
  let calls=0,mutations=0;
  const fetcher=async(url,opts)=>{
