@@ -87,6 +87,12 @@
      return !empty(before)&&empty(after);
    });
    if(cleared.length)return {status:'conflict',reason:'protected-cover-cleared',fields:cleared};
+   // A nonempty cover reference changing to another nonempty reference is not
+   // proof that the replacement binary was transferred and SHA-256 verified.
+   // Keep the old reference until the private-cover transport explicitly confirms it.
+   const replaced=protectedCoverFields.filter(key=>
+     !empty(base[key])&&!empty(record[key])&&JSON.stringify(base[key])!==JSON.stringify(record[key]));
+   if(replaced.length)return {status:'conflict',reason:'cover-reference-changed',fields:replaced};
    if(conflicts.length)return {status:'conflict',reason:'concurrent-field-edits',fields:conflicts};
    return {status:'merged',record};
  }
