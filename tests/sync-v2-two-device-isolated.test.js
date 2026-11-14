@@ -141,4 +141,21 @@ check('calendar rollover tombstones cannot silently delete records',()=>{
     assert.equal(p.upload.length+p.download.length+p.merged.length,0);
   }
 });
+check('divergent valid tombstone timestamps block entire reconciliation batch',()=>{
+  const original=row('deleted-stable','Original');
+  const localDeleted={...original,deleted:true,deletedAt:'2026-11-13T00:00:00Z'};
+  const remoteDeleted={...original,deleted:true,deletedAt:'2026-11-14T00:00:00Z'};
+  const pending=row('new-local','Pending',{issue:'2'});
+  const p=planWithBaseline([original],[localDeleted,pending],[remoteDeleted]);
+  assert.ok(p.conflicts.some(c=>c.reason==='divergent-tombstone-timestamps'));
+  assert.equal(p.upload.length+p.download.length+p.merged.length,0);
+});
+check('identical valid tombstone timestamps remain acknowledged',()=>{
+  const original=row('deleted-stable','Original');
+  const deleted={...original,deleted:true,deletedAt:'2026-11-13T00:00:00Z'};
+  const p=planWithBaseline([original],[deleted],[{...deleted}]);
+  assert.equal(p.conflicts.length,0);
+  assert.equal(p.unchanged.length,1);
+  assert.equal(p.upload.length+p.download.length+p.merged.length,0);
+});
 console.log('Isolated reconciliation tests passed; NOT a Supabase RLS or browser E2E test.');
