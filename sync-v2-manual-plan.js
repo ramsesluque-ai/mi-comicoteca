@@ -58,7 +58,13 @@
        if(!key.startsWith('comics:')){stats.otherKinds++;continue}
        const m=row.metadata||{},id=key.slice('comics:'.length);
        assert(id&&m.kind==='comics','La clave de una ficha no coincide con su tipo');
-       if(m.deleted===true){stats.tombstones++;continue}
+       if(m.deleted===true){
+         // A cloud tombstone is NOT an upload candidate. Count its local ID as
+         // seen, but never interpret its absence as permission to delete.
+         stats.tombstones++;
+         if(local.has(id))matched.add(id);
+         continue;
+       }
        assert(m.record&&String(m.record.id)===id,'La nube contiene una ficha con identidad inconsistente');
        stats.cloud++;
        if(local.has(id)){
