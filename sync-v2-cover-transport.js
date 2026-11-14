@@ -18,9 +18,9 @@
    const uid=session?.user?.id;
    if(!uid||!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(uid)||!session?.access_token)
      throw Error('Sesión autenticada inválida');
-   if(!cfg?.url||!/^https:\\/\\//.test(cfg.url)||!cfg?.publishableKey)
+   if(!cfg?.url||!cfg.url.startsWith('https://')||!cfg?.publishableKey)
      throw Error('Configuración cloud inválida');
-   const response=await fetchImpl(cfg.url.replace(/\\/+$/,'')+'/auth/v1/user',{
+   const response=await fetchImpl(cfg.url.replace(/\/+$/,'')+'/auth/v1/user',{
      method:'GET',cache:'no-store',headers:{apikey:cfg.publishableKey,Authorization:'Bearer '+session.access_token}
    });
    if(!response.ok)throw Error('Identidad de portada no verificada (HTTP '+response.status+')');
