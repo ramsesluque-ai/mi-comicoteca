@@ -33,6 +33,9 @@ function fake(){
  assert.equal(f.calls.filter(x=>x.method==='POST').length,1);
  await assert.rejects(()=>transport.copyIfAbsent({...args,key:'../other'}),/inválido/);
  await assert.rejects(()=>transport.copyIfAbsent({...args,session:{user:{id:uid}}}),/Sesión/);
+ // A 36-character string of hyphens is not a valid UID; fail before any HTTP request.
+ await assert.rejects(()=>transport.copyIfAbsent({...args,session:{user:{id:'-'.repeat(36)},access_token:'test-token'}}),/Sesión/);
+ await assert.rejects(()=>transport.read({...args,session:{user:{id:'12345678123412341234123456789abc'},access_token:'test-token'}}),/Sesión/);
  const f2=fake(),other={...args,fetchImpl:f2.fetchImpl};
  assert.equal(await transport.read(other),null);
  // Simulate race: another writer creates an identical blob between GET and POST.
