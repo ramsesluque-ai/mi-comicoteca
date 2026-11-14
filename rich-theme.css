@@ -15,9 +15,3 @@ body{background:radial-gradient(circle at 82% 8%,rgba(139,92,246,.12),transparen
 
 /* Novedades: acento propio para distinguir las novedades editoriales. */
 .nav button[data-v=novedades]{--accent:#38cbed}
-
-/* Collection cards: unverified totals must never inherit the absolute 22px percentage overlay. */
-.series-card.visual .series-percent:has(.series-unverified-note),
-.series-card.visual .series-unverified-note,
-.series-card.visual .series-unverified-total{position:static!important;inset:auto!important;transform:none!important;display:block!important;font-size:11px!important;font-weight:500!important;line-height:1.35!important;white-space:normal!important;max-width:100%!important;overflow-wrap:anywhere!important;text-align:left!important;opacity:1!important;margin:6px 0 0!important}
-.series-card.visual .series-percent:has(.series-unverified-note){font-size:11px!important}
