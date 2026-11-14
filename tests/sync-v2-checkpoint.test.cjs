@@ -19,6 +19,12 @@ const r=(id,title,extra={})=>({id,publisher:'Editorial',series:'Serie',issue:id,
  await assert.rejects(cp.verify({checkpoint,uid:other,cryptoImpl:webcrypto}),/otro usuario/);
  await assert.rejects(cp.plan({...opts,checkpoint,localRows:original,remoteRows:original,remoteSnapshotHash:'b'.repeat(64),reconciler:globalThis.MCReconcileV2}),/Snapshot remoto no coincide/);
  await assert.rejects(cp.plan({...opts,checkpoint:null,localRows:original,remoteRows:original,remoteSnapshotHash:hash,reconciler:globalThis.MCReconcileV2}),/Baseline ausente/);
+ await assert.rejects(cp.create({...opts,rows:original,remoteSnapshotHash:'f'.repeat(64)}),/huella remota no corresponde/);
+ const forged=structuredClone(checkpoint);
+ forged.payload.remoteSnapshotHash='f'.repeat(64);
+ const payloadText=JSON.stringify((function stable(v){if(Array.isArray(v))return v.map(stable);if(v&&typeof v==='object'){const o={};for(const k of Object.keys(v).sort())o[k]=stable(v[k]);return o}return v})(forged.payload));
+ forged.sha256=require('node:crypto').createHash('sha256').update(payloadText).digest('hex');
+ await assert.rejects(cp.verify({checkpoint:forged,...opts}),/Baseline inconsistente/);
  const tampered=structuredClone(checkpoint);tampered.payload.rows[0].coverKey='';
  await assert.rejects(cp.verify({checkpoint:tampered,...opts}),/alterado/);
  await assert.rejects(cp.create({...opts,rows:[original[0],original[0]],remoteSnapshotHash:hash}),/duplicado/);
