@@ -55,6 +55,13 @@
    if(!result.equal)throw Error('SHA-256 de portada remota no coincide; no instalar');
    return {status:'verified',blob,sha256:result.actualSha256};
  }
+ // Authenticated read gate: a cached session object alone is not sufficient
+ // to authorize installation of a private image on a second device.
+ async function verifiedReadVerified(options){
+   if(!options||typeof options!=='object')throw Error('Opciones de portada obligatorias');
+   await verifySession({session:options.session,cfg:options.cfg,fetchImpl:options.fetchImpl||root.fetch});
+   return readVerified(options);
+ }
  async function copyIfAbsent({session,cfg,key,blob,fetchImpl=root.fetch,integrity=root.MCSyncV2CoverIntegrity}){
    const uid=validate({session,cfg,key,integrity});
    assertCover(blob);
@@ -107,7 +114,7 @@
    await verifySession({session:options.session,cfg:options.cfg,fetchImpl:options.fetchImpl||root.fetch});
    return copyIfAbsent(options);
  }
- const api={verifySession,read,readVerified,copyIfAbsent,verifiedCopyIfAbsent};
+ const api={verifySession,read,readVerified,verifiedReadVerified,copyIfAbsent,verifiedCopyIfAbsent};
  root.MCSyncV2CoverTransport=api;
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
