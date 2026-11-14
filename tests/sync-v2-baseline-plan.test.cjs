@@ -26,4 +26,9 @@ const untracked=plan({local:[a(1,'new'),a(2,'new')],remote:[a(1,'old')],baseline
 assert.deepEqual(untracked.upload,[],'untracked records block otherwise valid upload');
 assert.equal(plan({local:[{...a(1,'old'),coverSourceUrl:'https://example.test/a'}],remote:base,baseline:base}).conflicts[0].reason,'cover-reference-changed');
 assert.equal(plan({local:base,remote:[{...a(1,'old'),coverUrls:['https://example.test/a']}],baseline:base}).conflicts[0].reason,'cover-reference-changed');
-console.log('Sync V2 baseline safety: 21 assertions passed');
+
+const bothChanged=[{...a(1,'old'),coverKey:'private:new'}];
+assert.equal(plan({local:bothChanged,remote:bothChanged,baseline:base}).conflicts[0].reason,'cover-reference-changed-since-baseline','matching metadata cannot certify binary cover transfer');
+const protectedMixed=plan({local:[...bothChanged,a(2,'edited')],remote:[...bothChanged,a(2,'old')],baseline:[...base,a(2,'old')]});
+assert.deepEqual(protectedMixed.upload,[],'unverified cover change blocks unrelated upload batch');
+console.log('Sync V2 baseline safety: 23 assertions passed');
