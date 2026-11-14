@@ -52,7 +52,7 @@
      // A deletion is only actionable when backed by an explicit, valid tombstone.
      // A bare `deleted: true` can be produced by malformed imports or partial pages.
      for(const candidate of [local,remote]){
-       if(candidate.deleted && (typeof candidate.deletedAt!=='string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(candidate.deletedAt) || !Number.isFinite(Date.parse(candidate.deletedAt))))
+       if(candidate.deleted && (typeof candidate.deletedAt!=='string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(candidate.deletedAt) || !Number.isFinite(Date.parse(candidate.deletedAt)) || new Date(candidate.deletedAt).toISOString().slice(0,19)!==candidate.deletedAt.slice(0,19)))
          return {status:'conflict',reason:'invalid-tombstone-timestamp'};
      }
      if(local.deleted&&remote.deleted)return {status:'unchanged',record:{...remote,deleted:true}};
