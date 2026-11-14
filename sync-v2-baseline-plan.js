@@ -28,6 +28,13 @@
   for(const id of new Set([...l.keys(),...r.keys(),...b.keys(),...deleted])){
    const lv=l.get(id),rv=r.get(id),bv=b.get(id),lc=lv===undefined?null:canon(lv),rc=rv===undefined?null:canon(rv),bc=bv===undefined?null:canon(bv);
    if(deleted.has(id)){out.deletionsBlocked.push(id);continue}
+   // Matching metadata on both devices does not prove the binary cover was copied.
+   // Even identical cover references changed since baseline require a separate SHA-256 audit.
+   if(bv&&lv&&rv&&['coverKey','coverUrl','coverSourceUrl','coverUrls'].some(field=>
+     canon(lv[field]??null)===canon(rv[field]??null)&&canon(lv[field]??null)!==canon(bv[field]??null))){
+     out.conflicts.push({id,reason:'cover-reference-changed-since-baseline'});
+     continue;
+   }
    if(lc===rc){if(lc!==null)out.identical.push(id);continue}
    if(bc===null){out.untracked.push(id);continue}
    if(lc===null||rc===null){out.conflicts.push({id,reason:'missing-without-tombstone'});continue}
