@@ -25,6 +25,17 @@ function fake(){
  return {storage,calls,fetchImpl};
 }
 (async()=>{
+ const identityFetch=async(url,opts)=>{
+   assert.equal(url,'https://test.invalid/auth/v1/user');
+   assert.equal(opts.method,'GET');
+   assert.equal(opts.headers.Authorization,'Bearer test-token');
+   return {ok:true,status:200,json:async()=>({id:uid})};
+ };
+ assert.equal(await transport.verifySession({session,cfg,fetchImpl:identityFetch}),uid);
+ await assert.rejects(()=>transport.verifySession({session,cfg,fetchImpl:async()=>({ok:true,status:200,json:async()=>({id:'abcdefab-1234-1234-1234-abcdefabcdef'})})}),/no coincide/);
+ await assert.rejects(()=>transport.verifySession({session,cfg,fetchImpl:async()=>({ok:false,status:403})}),/403/);
+ await assert.rejects(()=>transport.verifySession({session,cfg,fetchImpl:async()=>({ok:false,status:503})}),/503/);
+ await assert.rejects(()=>transport.verifySession({session:{user:{id:uid}},cfg,fetchImpl:identityFetch}),/Sesión/);
  const f=fake(),args={session,cfg,key:'comic-1',blob:blob('cover-A'),fetchImpl:f.fetchImpl,integrity};
  assert.equal((await transport.copyIfAbsent(args)).status,'uploaded-and-verified');
  assert.equal((await transport.copyIfAbsent(args)).status,'already-identical');
