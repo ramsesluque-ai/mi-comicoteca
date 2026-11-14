@@ -49,6 +49,12 @@
    if(base.deleted && (!local.deleted || !remote.deleted))
      return {status:'conflict',reason:'tombstone-resurrection'};
    if(local.deleted||remote.deleted){
+     // A deletion is only actionable when backed by an explicit, valid tombstone.
+     // A bare `deleted: true` can be produced by malformed imports or partial pages.
+     for(const candidate of [local,remote]){
+       if(candidate.deleted && (typeof candidate.deletedAt!=='string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(candidate.deletedAt) || !Number.isFinite(Date.parse(candidate.deletedAt))))
+         return {status:'conflict',reason:'invalid-tombstone-timestamp'};
+     }
      if(local.deleted&&remote.deleted)return {status:'unchanged',record:{...remote,deleted:true}};
      const deleted=local.deleted?local:remote,other=local.deleted?remote:local;
      const changed=new Set([...Object.keys(base),...Object.keys(other)]);
