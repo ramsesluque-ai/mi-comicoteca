@@ -20,7 +20,7 @@
  function path(uid,key){return '/storage/v1/object/user-covers/'+encodeURIComponent(uid)+'/'+encodeURIComponent(key)}
  async function read({session,cfg,key,fetchImpl=root.fetch,integrity=root.MCSyncV2CoverIntegrity}){
    const uid=validate({session,cfg,key,integrity});
-   const res=await fetchImpl(cfg.url+path(uid,key),{method:'GET',cache:'no-store',headers:{apikey:cfg.publishableKey,Authorization:'Bearer '+session.access_token}});
+   const res=await fetchImpl(cfg.url.replace(/\/+$/,'')+path(uid,key),{method:'GET',cache:'no-store',headers:{apikey:cfg.publishableKey,Authorization:'Bearer '+session.access_token}});
    if(res.status===404)return null;
    if(!res.ok)throw Error('No se pudo recuperar portada ('+res.status+')');
    const blob=await res.blob();
@@ -52,7 +52,7 @@
    }
    let res;
    try{
-     res=await fetchImpl(cfg.url+path(uid,key),{method:'POST',headers:{apikey:cfg.publishableKey,Authorization:'Bearer '+session.access_token,'Content-Type':blob.type||'image/webp','x-upsert':'false'},body:blob});
+     res=await fetchImpl(cfg.url.replace(/\/+$/,'')+path(uid,key),{method:'POST',headers:{apikey:cfg.publishableKey,Authorization:'Bearer '+session.access_token,'Content-Type':blob.type||'image/webp','x-upsert':'false'},body:blob});
    }catch(error){
      // Network failures can happen after the server commits. Re-read instead of retrying POST.
      let uncertain;
