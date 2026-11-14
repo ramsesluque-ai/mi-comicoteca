@@ -90,6 +90,24 @@ function caches(){
  assert.equal((await bridge.upload(opts(uidA,'uncertain',device1,lostDigest))).status,'uploaded-response-lost-verified');
  assert.equal((await bridge.upload(opts(uidA,'uncertain',device1,lostDigest))).status,'already-identical');
  assert.equal(requests.filter(r=>r.method==='POST'&&r.url.endsWith('/uncertain')).length,1);
+ // Fail closed when the authenticated /auth/v1/user identity differs from
+ // the claimed session owner. Neither private cache nor object storage is touched.
+ const impersonated=caches(),reqBefore=requests.length;
+ const forgedSession={user:{id:uidB},access_token:'token:'+uidA};
+ await assert.rejects(bridge.installIfAbsent({
+   ...opts(uidB,'forged-cover',impersonated,digest),
+   session:forgedSession,blob:original
+ }),/Identidad autenticada distinta/);
+ assert.equal(impersonated.actions.length,0);
+ assert.equal(impersonated.namespaces.size,0);
+ assert.equal(requests.length,reqBefore+1);
+ assert(requests.at(-1).url.endsWith('/auth/v1/user'));
+ // Malformed object keys are rejected before any authenticated request.
+ const beforeBadKey=requests.length;
+ for(const key of ['../escape','folder/cover','..','', 'bad?query']){
+   await assert.rejects(bridge.upload(opts(uidA,key,device1,digest)),/Clave privada inválida/);
+ }
+ assert.equal(requests.length,beforeBadKey);
  // No mixing with Maestro buckets and no catalog mutations.
  assert(requests.filter(r=>r.method!=='GET'&&r.method!=='POST').length===0);
  assert(requests.every(r=>r.url.includes('/auth/v1/user')||r.url.includes('/storage/v1/object/user-covers/')));
