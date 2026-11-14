@@ -8,7 +8,7 @@
  const safeKey=k=>typeof k==='string'&&/^[a-zA-Z0-9_.-]{1,180}$/.test(k)&&k!=='.'&&k!=='..';
  function validate({session,cfg,key,integrity}){
    const uid=session?.user?.id;
-   if(!uid||!/^[0-9a-f-]{36}$/i.test(uid)||!session?.access_token)throw Error('Sesión autenticada inválida');
+   if(!uid||!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(uid)||!session?.access_token)throw Error('Sesión autenticada inválida');
    if(!cfg?.url||!/^https:\/\//.test(cfg.url)||!cfg?.publishableKey)throw Error('Configuración cloud inválida');
    if(!safeKey(key))throw Error('Identificador de portada inválido');
    if(!integrity?.sha256||!integrity?.verifyPair)throw Error('Verificador SHA-256 no disponible');
