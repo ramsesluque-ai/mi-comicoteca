@@ -37,7 +37,27 @@ async function mcSEStaticMaster(x){
   if(code){const refs=(await mcSEIsbnIndex())[code]||[];for(const ref of refs)if(ref?.[0])paths.push(ref[0])}
   if(!paths.length&&x.publisher){for(const p of mcSEPublisherMeta(idx,x.publisher))paths.push(...(p.chunks||[]))}
   const rows=paths.length?await mcSEChunks(paths):[];
-  const out=[];for(const r of rows)if(mcSERowMatch(x,r))out.push(mcSEFromRow(x,r,over));
+  // Shared Maestro covers live outside the static publisher JSON. Resolve them
+  // against the exact issue key, never against a series-level cover.
+  let shared={};
+  if(typeof window.mcSharedCovers==='function'){
+    try{shared=await window.mcSharedCovers(true)||{}}catch(err){console.warn('[Ficha] No se pudo consultar las portadas compartidas',err)}
+  }
+  const out=[];
+  for(const r of rows){
+    if(!mcSERowMatch(x,r))continue;
+    const candidate=mcSEFromRow(x,r,over);
+    const key=typeof window.mcMasterCoverKey==='function'?window.mcMasterCoverKey(r):'';
+    const sharedUrl=key?String(shared[key]||'').trim():'';
+    if(/^https:\\/\\//i.test(sharedUrl)){
+      const urls=mcSEMergeCovers(sharedUrl,candidate.data.coverUrls);
+      candidate.data.coverUrls=urls;
+      candidate.data.coverUrl=urls[0]||'';
+      candidate.score+=2000;
+      candidate.source='Maestro España · portada compartida';
+    }
+    out.push(candidate);
+  }
   /* Un override por ISBN es un registro verificado aunque el índice base todavía no lo localice. */
   if(code&&over[code]&&!out.some(c=>mcSECode(c.data?.isbn)===code)){const o=over[code];out.push(mcSECandidate('Maestro España · '+(o.source||'Enriquecido'),{...o,series:o.series||x.catalogHeader||x.series||'',issueNr:o.issueNr||x.issueNr||x.issue||'',coverUrls:[o.coverUrl].filter(Boolean)},15000,[o.coverUrl]))}
   return out;
