@@ -83,7 +83,7 @@
      }catch(e){if(panel.isConnected)covers.textContent='No se pudo verificar la integridad: '+String(e.message||e)+'. No se ha modificado ninguna portada.'}
      finally{coverAudit.disabled=false}
    };
-   const backup=document.createElement('button');backup.type='button';backup.textContent='Descargar respaldo local (JSON + SHA-256)';backup.style.cssText='padding:9px 12px;margin:10px 8px 0 0;border-radius:8px;cursor:pointer;background:#16678a;color:white;border:1px solid #73b9d1';
+   const backup=document.createElement('button');backup.type='button';backup.textContent='Respaldar fichas locales (JSON + SHA-256; sin portadas)';backup.style.cssText='padding:9px 12px;margin:10px 8px 0 0;border-radius:8px;cursor:pointer;background:#16678a;color:white;border:1px solid #73b9d1';
    backup.onclick=async()=>{backup.disabled=true;backup.textContent='Preparando respaldo…';try{
      if(typeof allStore!=='function')throw Error('Almacén local no disponible');
      const comics=await allStore('comics');if(!Array.isArray(comics))throw Error('Lectura local incompleta');
@@ -95,7 +95,7 @@
      const name='mi-comicoteca-respaldo-'+new Date().toISOString().replace(/[:.]/g,'-');
      function download(data,filename,type){const blob=new Blob([data],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)}
      download(payload,name+'.json','application/json');download(sha+'  '+name+'.json\n',name+'.sha256','text/plain');
-     diagnostic.textContent='Respaldo preparado: '+comics.length.toLocaleString('es-ES')+' fichas, '+bytes.length.toLocaleString('es-ES')+' bytes, SHA-256 '+sha+'. Conserva ambos archivos; no se han modificado datos.';
+     diagnostic.textContent='Respaldo preparado: '+comics.length.toLocaleString('es-ES')+' fichas, '+bytes.length.toLocaleString('es-ES')+' bytes, SHA-256 '+sha+'. ATENCIÓN: este respaldo contiene fichas, NO los bytes de las portadas de CacheStorage. Conserva ambos archivos; no se han modificado datos.';
      backup.textContent='Descargar respaldo de nuevo';
    }catch(e){diagnostic.textContent='No se pudo preparar respaldo: '+String(e.message||e)+'. Ningún dato modificado.';backup.textContent='Reintentar respaldo'}finally{backup.disabled=false}};
    const verifyBox=document.createElement('div');
@@ -117,7 +117,7 @@
      const parsed=JSON.parse(new TextDecoder().decode(bytes));
      if(parsed?.format!=='mi-comicoteca-local-backup-v1'||!Array.isArray(parsed.comics)||parsed.count!==parsed.comics.length)throw Error('Estructura o recuento inválidos');
      const ids=new Set();for(const c of parsed.comics){const id=String(c?.id??'');if(!id||ids.has(id))throw Error('ID vacío o duplicado en el respaldo');ids.add(id)}
-     diagnostic.textContent='Respaldo verificado: '+ids.size.toLocaleString('es-ES')+' fichas, SHA-256 '+actual+'. No se ha restaurado ni modificado ningún dato. Sincronización real bloqueada hasta pruebas E2E.';
+     diagnostic.textContent='Respaldo verificado: '+ids.size.toLocaleString('es-ES')+' fichas, SHA-256 '+actual+'. Solo fichas: NO incluye imágenes de portadas. No se ha restaurado ni modificado ningún dato. Sincronización real bloqueada hasta pruebas E2E.';
    }catch(e){diagnostic.textContent='Respaldo NO verificado: '+String(e.message||e)+'. No se ha modificado ningún dato.'}finally{verifyBtn.disabled=false}};
    verifyBox.append(verifyTitle,jsonInput,shaInput,verifyBtn);
    const close=document.createElement('button');close.type='button';close.textContent='Entendido';close.style.cssText='padding:9px 16px;border-radius:8px;cursor:pointer';close.onclick=()=>panel.remove();
