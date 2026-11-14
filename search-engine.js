@@ -44,18 +44,29 @@ async function mcSEStaticMaster(x){
   if(typeof window.mcSharedCovers==='function'){
     try{shared=await window.mcSharedCovers(true)||{}}catch(err){console.warn('[Ficha] No se pudo consultar las portadas compartidas',err)}
   }
+  // Use the same issue-level enrichment as the visible Maestro issue viewer.
+  // The previous search ignored verified records and shared covers keyed after enrichment.
+  let enriched=rows;
+  if(typeof mcMasterEnrichRows==='function'){
+    try{enriched=await mcMasterEnrichRows(rows)||rows}catch(err){console.warn('[Ficha] Enriquecimiento Maestro no disponible',err)}
+  }
   const out=[];
-  for(const r of rows){
+  for(let i=0;i<rows.length;i++){
+    const r=rows[i],full=enriched[i]||r;
     if(!mcSERowMatch(x,r))continue;
-    const candidate=mcSEFromRow(x,r,over);
+    // Never attach a cover from a different volume or starting year.
+    if(x.volume&&r.volume&&mcSENorm(x.volume)!==mcSENorm(r.volume))continue;
+    if(x.startYear&&r.startYear&&String(x.startYear)!==String(r.startYear))continue;
+    const candidate=mcSEFromRow(x,full,over);
     const key=typeof window.mcMasterCoverKey==='function'?window.mcMasterCoverKey(r):'';
-    const sharedUrl=key?String(shared[key]||'').trim():'';
-    if(/^https:\\/\\//i.test(sharedUrl)){
-      const urls=mcSEMergeCovers(sharedUrl,candidate.data.coverUrls);
+    const fullKey=typeof window.mcMasterCoverKey==='function'?window.mcMasterCoverKey(full):'';
+    const sharedUrl=String(shared[fullKey]||shared[key]||'').trim();
+    const urls=mcSEMergeCovers(sharedUrl,full.coverUrl,candidate.data.coverUrls);
+    if(urls.length){
       candidate.data.coverUrls=urls;
-      candidate.data.coverUrl=urls[0]||'';
+      candidate.data.coverUrl=urls[0];
       candidate.score+=2000;
-      candidate.source='Maestro España · portada compartida';
+      candidate.source='Maestro España · portada disponible';
     }
     out.push(candidate);
   }
