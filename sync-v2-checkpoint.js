@@ -39,6 +39,8 @@
    if(!uidOK(uid))throw Error('Usuario inválido');
    rowsValid(rows);
    if(!/^[a-f0-9]{64}$/i.test(remoteSnapshotHash||''))throw Error('Huella remota obligatoria');
+   const actualHash=await digestRows(rows,{cryptoImpl});
+   if(actualHash!==remoteSnapshotHash.toLowerCase())throw Error('La huella remota no corresponde a las fichas del baseline');
    const canonicalRows=stable(rows);
    const payload={format:'mi-comicoteca-sync-v2-baseline-v1',uid:uid.toLowerCase(),remoteSnapshotHash:remoteSnapshotHash.toLowerCase(),rows:canonicalRows};
    const sha256=await codec(cryptoImpl)(payload);
@@ -52,6 +54,8 @@
    rowsValid(payload.rows);
    const computed=await codec(cryptoImpl)(payload);
    if(computed!==sha256.toLowerCase())throw Error('Baseline alterado: SHA-256 no coincide');
+   const rowsHash=await digestRows(payload.rows,{cryptoImpl});
+   if(rowsHash!==payload.remoteSnapshotHash.toLowerCase())throw Error('Baseline inconsistente: la huella remota no corresponde a sus fichas');
    return {rows:payload.rows,remoteSnapshotHash:payload.remoteSnapshotHash,sha256:computed};
  }
  async function plan({checkpoint,uid,localRows,remoteRows,remoteSnapshotHash,reconciler=root.MCReconcileV2,cryptoImpl=root.crypto}){
