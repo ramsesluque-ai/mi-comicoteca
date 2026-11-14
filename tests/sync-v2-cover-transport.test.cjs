@@ -36,6 +36,14 @@ function fake(){
  // A 36-character string of hyphens is not a valid UID; fail before any HTTP request.
  await assert.rejects(()=>transport.copyIfAbsent({...args,session:{user:{id:'-'.repeat(36)},access_token:'test-token'}}),/Sesión/);
  await assert.rejects(()=>transport.read({...args,session:{user:{id:'12345678123412341234123456789abc'},access_token:'test-token'}}),/Sesión/);
+ // A configured base URL ending in / must not create //storage paths (404 on some gateways).
+ const trailing=fake();
+ const trailingArgs={...args,cfg:{...cfg,url:cfg.url+'/'},key:'trailing-slash',fetchImpl:async(url,opts)=>{
+   assert.equal(url,'https://test.invalid/storage/v1/object/user-covers/'+uid+'/trailing-slash');
+   return trailing.fetchImpl(url,opts);
+ }};
+ assert.equal((await transport.copyIfAbsent(trailingArgs)).status,'uploaded-and-verified');
+ assert.equal((await transport.readVerified({...trailingArgs,expectedSha256:await integrity.sha256(args.blob)})).status,'verified');
  const f2=fake(),other={...args,fetchImpl:f2.fetchImpl};
  assert.equal(await transport.read(other),null);
  // Simulate race: another writer creates an identical blob between GET and POST.
