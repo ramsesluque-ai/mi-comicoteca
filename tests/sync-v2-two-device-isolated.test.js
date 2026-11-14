@@ -178,4 +178,13 @@ check('new cover reference may be added when baseline has none',()=>{
   assert.equal(p.conflicts.length,0);
   assert.equal(p.merged.length,1);
 });
+check('equal deletion timestamps with different payloads must not hide a conflict',()=>{
+  const original=row('deleted-payload','Original',{coverKey:'original-cover'});
+  const deleted={...original,deleted:true,deletedAt:'2026-11-13T00:00:00Z'};
+  const altered={...deleted,coverKey:'different-cover'};
+  const pending=row('unrelated-local','Pending',{issue:'3'});
+  const p=planWithBaseline([original],[deleted,pending],[altered]);
+  assert.ok(p.conflicts.some(c=>c.reason==='divergent-tombstone-payload'&&c.fields.includes('coverKey')));
+  assert.equal(p.upload.length+p.download.length+p.merged.length,0);
+});
 console.log('Isolated reconciliation tests passed; NOT a Supabase RLS or browser E2E test.');
