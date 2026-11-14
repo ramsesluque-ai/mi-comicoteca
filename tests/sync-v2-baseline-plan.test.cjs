@@ -12,5 +12,9 @@ assert.deepEqual(plan({local:[a(2,'new')],remote:[],baseline:[]}).untracked,['2'
 assert.deepEqual(plan({local:base,remote:base,baseline:base,tombstones:[{id:1,explicit:true,baseHash:'abc'}]}).deletionsBlocked,['1']);
 assert.throws(()=>plan({local:base,remote:base,baseline:base,tombstones:[{id:1}]}));
 assert.throws(()=>plan({local:[a(1,'a'),a(1,'b')],remote:[],baseline:[]}));
+assert.equal(plan({local:[{...a(1,'old'),coverKey:'private:local'}],remote:base,baseline:base}).conflicts[0].reason,'cover-reference-changed');
+assert.equal(plan({local:base,remote:[{...a(1,'old'),coverUrl:'https://example.test/cover.png'}],baseline:base}).conflicts[0].reason,'cover-reference-changed');
+assert.equal(plan({local:[{...a(1,'local'),coverKey:'private:local'}],remote:[{...a(1,'remote'),coverKey:'private:remote'}],baseline:base}).conflicts[0].reason,'cover-reference-changed');
+assert.deepEqual(plan({local:[a(1,'local')],remote:base,baseline:base}).upload,['1']);
 assert.equal(plan({local:base,remote:base,baseline:base}).safeToExecute,false);
-console.log('Sync V2 baseline safety: 10 assertions passed');
+console.log('Sync V2 baseline safety: 14 assertions passed');
