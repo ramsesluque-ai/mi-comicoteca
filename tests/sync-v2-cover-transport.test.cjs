@@ -36,6 +36,17 @@ function fake(){
  await assert.rejects(()=>transport.verifySession({session,cfg,fetchImpl:async()=>({ok:false,status:403})}),/403/);
  await assert.rejects(()=>transport.verifySession({session,cfg,fetchImpl:async()=>({ok:false,status:503})}),/503/);
  await assert.rejects(()=>transport.verifySession({session:{user:{id:uid}},cfg,fetchImpl:identityFetch}),/Sesión/);
+ // New write gate must authenticate against /auth/v1/user BEFORE any Storage POST.
+ const gated=fake();
+ const gatedFetch=async(url,opts)=>url.endsWith('/auth/v1/user')?identityFetch(url,opts):gated.fetchImpl(url,opts);
+ assert.equal((await transport.verifiedCopyIfAbsent({session,cfg,key:'gated',blob:blob('gated-bytes'),fetchImpl:gatedFetch,integrity})).status,'uploaded-and-verified');
+ assert.equal(gated.calls.filter(x=>x.method==='POST').length,1);
+ const deniedGate=fake();
+ await assert.rejects(()=>transport.verifiedCopyIfAbsent({session,cfg,key:'blocked',blob:blob('blocked'),integrity,fetchImpl:async(url,opts)=>url.endsWith('/auth/v1/user')?{ok:false,status:403}:deniedGate.fetchImpl(url,opts)}),/403/);
+ assert.equal(deniedGate.calls.length,0);
+ const wrongGate=fake();
+ await assert.rejects(()=>transport.verifiedCopyIfAbsent({session,cfg,key:'blocked',blob:blob('blocked'),integrity,fetchImpl:async(url,opts)=>url.endsWith('/auth/v1/user')?{ok:true,status:200,json:async()=>({id:'abcdefab-1234-1234-1234-abcdefabcdef'})}:wrongGate.fetchImpl(url,opts)}),/no coincide/);
+ assert.equal(wrongGate.calls.length,0);
  const f=fake(),args={session,cfg,key:'comic-1',blob:blob('cover-A'),fetchImpl:f.fetchImpl,integrity};
  assert.equal((await transport.copyIfAbsent(args)).status,'uploaded-and-verified');
  assert.equal((await transport.copyIfAbsent(args)).status,'already-identical');
