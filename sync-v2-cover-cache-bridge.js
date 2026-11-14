@@ -3,6 +3,8 @@
  * This module is NOT loaded by the production button. The source is a per-user
  * CacheStorage namespace, never the legacy shared CoverVault cache.
  * No catalogue/metadata writes, deletions, upserts or automatic sync.
+ * Both bridge and transport independently verify the live JWT identity before
+ * any private Storage transfer; callers cannot bypass the authenticated gate.
  */
 (function(root){
  const CACHE_PREFIX='mi-comicoteca-private-covers-v2-';
@@ -30,7 +32,7 @@
    return uid;
  }
  function dependencies({cacheStorage=root.caches,integrity=root.MCSyncV2CoverIntegrity,transport=root.MCSyncV2CoverTransport}){
-   if(!cacheStorage?.open||!integrity?.sha256||!integrity?.verifyExpected||!integrity?.verifyPair||!transport?.copyIfAbsent||!transport?.readVerified)
+   if(!cacheStorage?.open||!integrity?.sha256||!integrity?.verifyExpected||!integrity?.verifyPair||!transport?.verifiedCopyIfAbsent||!transport?.verifiedReadVerified)
      throw Error('Dependencias privadas de sincronización no disponibles');
    return {cacheStorage,integrity,transport};
  }
@@ -73,13 +75,13 @@
    const blob=await item.blob();
    const check=await deps.integrity.verifyExpected(blob,expectedSha256);
    if(!check.equal)throw Error('SHA-256 local distinto del manifiesto: subida bloqueada');
-   return deps.transport.copyIfAbsent({session,cfg,key,blob,integrity:deps.integrity,fetchImpl});
+   return deps.transport.verifiedCopyIfAbsent({session,cfg,key,blob,integrity:deps.integrity,fetchImpl});
  }
  async function download({session,cfg,key,expectedSha256,cacheStorage,integrity,transport,fetchImpl}){
    await verifiedOwner({session,cfg,key,fetchImpl});
    const deps=dependencies({cacheStorage,integrity,transport});
    if(!validHash(expectedSha256))throw Error('SHA-256 esperado obligatorio');
-   const remote=await deps.transport.readVerified({session,cfg,key,expectedSha256,integrity:deps.integrity,fetchImpl});
+   const remote=await deps.transport.verifiedReadVerified({session,cfg,key,expectedSha256,integrity:deps.integrity,fetchImpl});
    if(remote.status==='missing')return {status:'missing'};
    return installIfAbsent({session,cfg,key,blob:remote.blob,expectedSha256,cacheStorage:deps.cacheStorage,integrity:deps.integrity,transport:deps.transport,fetchImpl});
  }
