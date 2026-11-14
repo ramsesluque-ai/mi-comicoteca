@@ -31,6 +31,13 @@
    if(lc===rc){if(lc!==null)out.identical.push(id);continue}
    if(bc===null){out.untracked.push(id);continue}
    if(lc===null||rc===null){out.conflicts.push({id,reason:'missing-without-tombstone'});continue}
+   // Cover references must never be propagated as ordinary bibliographic edits.
+   // A changed coverKey/coverUrl requires a separately verified private binary
+   // transfer; otherwise a merge could silently orphan a user's local image.
+   if(['coverKey','coverUrl'].some(field=>canon(lv[field]??null)!==canon(rv[field]??null))){
+    out.conflicts.push({id,reason:'cover-reference-changed'});
+    continue;
+   }
    if(lc===bc)out.download.push(id);
    else if(rc===bc)out.upload.push(id);
    else out.conflicts.push({id,reason:'concurrent-edits'});
