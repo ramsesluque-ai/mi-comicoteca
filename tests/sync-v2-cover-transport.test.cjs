@@ -47,6 +47,18 @@ function fake(){
  const wrongGate=fake();
  await assert.rejects(()=>transport.verifiedCopyIfAbsent({session,cfg,key:'blocked',blob:blob('blocked'),integrity,fetchImpl:async(url,opts)=>url.endsWith('/auth/v1/user')?{ok:true,status:200,json:async()=>({id:'abcdefab-1234-1234-1234-abcdefabcdef'})}:wrongGate.fetchImpl(url,opts)}),/no coincide/);
  assert.equal(wrongGate.calls.length,0);
+ // Download gate: no Storage GET unless token identity is independently verified.
+ const readGate=fake();
+ const expectedGated=await integrity.sha256(blob('download'));
+ readGate.storage.set(cfg.url+'/storage/v1/object/user-covers/'+uid+'/download',blob('download'));
+ const readGateFetch=async(url,opts)=>url.endsWith('/auth/v1/user')?identityFetch(url,opts):readGate.fetchImpl(url,opts);
+ assert.equal((await transport.verifiedReadVerified({session,cfg,key:'download',expectedSha256:expectedGated,integrity,fetchImpl:readGateFetch})).status,'verified');
+ const deniedRead=fake();
+ await assert.rejects(()=>transport.verifiedReadVerified({session,cfg,key:'download',expectedSha256:expectedGated,integrity,fetchImpl:async(url,opts)=>url.endsWith('/auth/v1/user')?{ok:false,status:403}:deniedRead.fetchImpl(url,opts)}),/403/);
+ assert.equal(deniedRead.calls.length,0);
+ const wrongRead=fake();
+ await assert.rejects(()=>transport.verifiedReadVerified({session,cfg,key:'download',expectedSha256:expectedGated,integrity,fetchImpl:async(url,opts)=>url.endsWith('/auth/v1/user')?{ok:true,status:200,json:async()=>({id:'abcdefab-1234-1234-1234-abcdefabcdef'})}:wrongRead.fetchImpl(url,opts)}),/no coincide/);
+ assert.equal(wrongRead.calls.length,0);
  const f=fake(),args={session,cfg,key:'comic-1',blob:blob('cover-A'),fetchImpl:f.fetchImpl,integrity};
  assert.equal((await transport.copyIfAbsent(args)).status,'uploaded-and-verified');
  assert.equal((await transport.copyIfAbsent(args)).status,'already-identical');
