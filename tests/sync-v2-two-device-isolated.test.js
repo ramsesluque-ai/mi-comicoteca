@@ -133,4 +133,12 @@ check('invalid tombstone date is rejected even when both devices agree',()=>{
   assert.ok(p.conflicts.some(c=>c.reason==='invalid-tombstone-timestamp'));
   assert.equal(p.upload.length+p.download.length+p.merged.length,0);
 });
+check('calendar rollover tombstones cannot silently delete records',()=>{
+  for(const deletedAt of ['2026-02-30T00:00:00Z','2026-04-31T12:00:00Z','2026-11-13T25:00:00Z']){
+    const l={...a,deleted:true,deletedAt};
+    const p=planWithBaseline(base,[l],cloud);
+    assert.ok(p.conflicts.some(c=>c.reason==='invalid-tombstone-timestamp'),deletedAt);
+    assert.equal(p.upload.length+p.download.length+p.merged.length,0);
+  }
+});
 console.log('Isolated reconciliation tests passed; NOT a Supabase RLS or browser E2E test.');
