@@ -8,8 +8,10 @@ const row={id:'comic-1',publisher:'Forum',series:'Spiderman',volume:'2',startYea
 const base={...row};
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 assert.equal(identity(row),identity({...row,publisher:'FÓRUM',series:'SPIDERMAN'}));
-let result=threeWay(base,{...base,title:'Edición local'},{...base,coverUrl:'https://example.org/new.jpg'});
-assert.equal(result.status,'merged');assert.equal(result.record.title,'Edición local');assert.equal(result.record.coverUrl,'https://example.org/new.jpg');
+let result=threeWay(base,{...base,title:'Edición local'},{...base,notes:'Nota remota'});
+assert.equal(result.status,'merged');assert.equal(result.record.title,'Edición local');assert.equal(result.record.notes,'Nota remota');
+result=threeWay(base,{...base,title:'Edición local'},{...base,coverUrl:'https://example.org/new.jpg'});
+assert.equal(result.reason,'cover-reference-changed');
 result=threeWay(base,{...base,title:'Local'},{...base,title:'Nube'});
 assert.equal(result.status,'conflict');assert.ok(result.fields.includes('title'));
 result=threeWay(base,{id:base.id,deleted:true,deletedAt:'2026-11-11T00:00:00Z'},{...base,title:'Nube'});
@@ -88,7 +90,7 @@ console.log('PASS: sync V2 assertions including duplicate-ID guard; no network, 
 
 // Idempotence: applying an acknowledged merge twice must produce no additional writes.
 const localEdit={...base,title:'Local title'};
-const remoteEdit={...base,coverUrl:'https://example.org/revised.jpg'};
+const remoteEdit={...base,notes:'Remote edit'};
 const first=planWithBaseline([base],[localEdit],[remoteEdit]);
 assert.equal(first.conflicts.length,0);
 assert.equal(first.merged.length,1);
@@ -100,10 +102,10 @@ assert.equal(second.upload.length+second.download.length+second.merged.length,0)
 // Field removal is an edit, not an absent record or a reason to delete a comic.
 const removed={...base};delete removed.synopsis;
 const withSynopsis={...base,synopsis:'Original summary'};
-const removedField=threeWay(withSynopsis,{...withSynopsis,synopsis:undefined},{...withSynopsis,coverUrl:'https://example.org/updated.jpg'});
+const removedField=threeWay(withSynopsis,{...withSynopsis,synopsis:undefined},{...withSynopsis,notes:'Updated remotely'});
 assert.equal(removedField.status,'merged');
 assert.equal(Object.hasOwn(removedField.record,'synopsis'),false);
-assert.equal(removedField.record.coverUrl,'https://example.org/updated.jpg');
+assert.equal(removedField.record.notes,'Updated remotely');
 
 // Two IDs for the same complete bibliographic issue must not create duplicate comics.
 for (const [baseline,local,remote] of [
