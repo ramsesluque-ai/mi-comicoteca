@@ -5,7 +5,7 @@ const {compare,localIndex,canonical}=require('../sync-v2-manual-plan.js');
 const uid='00000000-0000-4000-8000-000000000001',cfg={url:'https://example.supabase.co',publishableKey:'public-test-key'},session={access_token:'test-token',user:{id:uid}};
 const make=(i)=>({id:'c'+String(i).padStart(6,'0'),publisher:'ECC',catalogHeader:'Test',issueNr:String(i),title:'Tomo '+i,coverUrl:'https://example.org/'+i+'.jpg'});
 const local=Array.from({length:16523},(_,i)=>make(i));
-function service(remote,{badUser=false,malformed=false,repeatPage=false,unauthenticated=false}={}){
+function service(remote,{badUser=false,malformed=false,repeatPage=false,unauthenticated=false,foreignRow=false,denied=false,serverError=false}={}){
  let calls=0,history=[];
  return {history,fetcher:async (url,options)=>{
    assert.equal(options.method,'GET','read-only preflight must never write');
@@ -14,6 +14,9 @@ function service(remote,{badUser=false,malformed=false,repeatPage=false,unauthen
    const q=new URL(url).searchParams,pageSize=Number(q.get('limit')),after=q.get('local_id')?.slice(3)||null;
    let selected=remote.filter(x=>!after||x.local_id>after).slice(0,pageSize);
    if(repeatPage&&calls++>0)selected=remote.slice(0,pageSize);
+   if(foreignRow&&selected.length)selected[0]={...selected[0],user_id:'00000000-0000-4000-8000-000000000002'};
+   if(denied)return {ok:false,status:403};
+   if(serverError)return {ok:false,status:503};
    if(malformed&&selected.length)selected[0]={...selected[0],metadata:{kind:'comics',record:{id:'WRONG'}}};
    return {ok:true,status:200,json:async()=>selected};
  }};
@@ -42,13 +45,13 @@ function cloud(rows){return rows.map(r=>({user_id:uid,local_id:'comics:'+r.id,me
  assert.equal(diff.different,2);
  assert.equal(diff.equal,16519);
  assert.equal(diff.safeToWrite,false);
- for(const opts of [{badUser:true},{unauthenticated:true},{malformed:true},{repeatPage:true}]){
+ for(const opts of [{badUser:true},{unauthenticated:true},{malformed:true},{repeatPage:true},{foreignRow:true},{denied:true},{serverError:true}]){
    const svc=service(cloud(local),opts);
-   await assert.rejects(compare({session,cfg,localRows:local,fetcher:svc.fetcher}),/identidad|verificar|inconsistente|fuera de orden/);
+   await assert.rejects(compare({session,cfg,localRows:local,fetcher:svc.fetcher}),/identidad|verificar|inconsistente|fuera de orden|otro usuario|403|503/);
  }
  const source=fs.readFileSync('sync-v2-manual-plan.js','utf8');
  assert.doesNotMatch(source,/\b(?:putStore|delStore|bulkPut)\s*\(/);
  assert.doesNotMatch(source,/\bmethod\s*:\s*['"](?:POST|PATCH|PUT|DELETE)['"]/);
  assert.match(fs.readFileSync('manual-sync-v2-button.js','utf8'),/MCSyncV2ReadPlan\.compare/);
- console.log('SYNC_V2_MANUAL_READ_PLAN_PASS, 16523 records, authentication, keyset and conflicts');
+ console.log('SYNC_V2_MANUAL_READ_PLAN_PASS, 16523 records, authenticated keyset, cross-user RLS response guard, 403/503 and conflicts');
 })().catch(e=>{console.error(e);process.exitCode=1});
