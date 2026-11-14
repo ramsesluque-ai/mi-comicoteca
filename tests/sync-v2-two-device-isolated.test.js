@@ -121,4 +121,16 @@ check('stable ID reused for a different issue is a conflict',()=>{
   assert.ok(p.conflicts.some(c=>c.reason==='stable-id-bibliographic-identity-mismatch'));
   assert.equal(p.upload.length+p.download.length+p.merged.length,0);
 });
+check('bare deletion flag without timestamp cannot delete a record',()=>{
+  const l={...a,deleted:true};
+  const p=planWithBaseline(base,[l],cloud);
+  assert.ok(p.conflicts.some(c=>c.reason==='invalid-tombstone-timestamp'));
+  assert.equal(p.upload.length+p.download.length+p.merged.length,0);
+});
+check('invalid tombstone date is rejected even when both devices agree',()=>{
+  const tombstone={...a,deleted:true,deletedAt:'2026-99-99T00:00:00Z'};
+  const p=planWithBaseline(base,[tombstone],[tombstone]);
+  assert.ok(p.conflicts.some(c=>c.reason==='invalid-tombstone-timestamp'));
+  assert.equal(p.upload.length+p.download.length+p.merged.length,0);
+});
 console.log('Isolated reconciliation tests passed; NOT a Supabase RLS or browser E2E test.');
