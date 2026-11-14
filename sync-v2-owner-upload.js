@@ -2,6 +2,10 @@
 /* Owner-only explicit initial migration. Not automatic. Local IndexedDB is authoritative.
    No cloud deletes; no local writes. Does not migrate binary cover assets. */
 (async function(){
+ // Hard safety gate: legacy owner-only migration routes are not the validated Sync V2 flow.
+ // Never enable without authenticated two-session E2E, RLS and binary-cover validation.
+ const SYNC_V2_OWNER_WRITE_E2E_APPROVED=false;
+ if(!SYNC_V2_OWNER_WRITE_E2E_APPROVED){console.info('MI COMICTECA Sync V2: legacy owner write route disabled pending E2E');return;}
  if(new URLSearchParams(location.search).get('syncv2')!=='subida')return;
  const OWNER='0bcbe06d-263d-4ac1-a516-355d27d417f1';
  const session=JSON.parse(sessionStorage.getItem('mc_supabase_session_v1')||'null');
