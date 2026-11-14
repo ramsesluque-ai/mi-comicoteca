@@ -158,4 +158,24 @@ check('identical valid tombstone timestamps remain acknowledged',()=>{
   assert.equal(p.unchanged.length,1);
   assert.equal(p.upload.length+p.download.length+p.merged.length,0);
 });
+check('replacing a nonempty private cover reference requires verified binary transfer',()=>{
+  for(const field of ['coverKey','coverUrl','coverSourceUrl','coverUrls']){
+    const oldValue=field==='coverUrls'?['https://example.test/old.webp']:'old-private-cover';
+    const newValue=field==='coverUrls'?['https://example.test/new.webp']:'new-private-cover';
+    const original=row('cover-replacement','Original',{[field]:oldValue});
+    const changed={...original,[field]:newValue};
+    for(const [local,remote] of [[changed,original],[original,changed]]){
+      const p=planWithBaseline([original],[local],[remote]);
+      assert.ok(p.conflicts.some(c=>c.reason==='cover-reference-changed'&&c.fields.includes(field)),field);
+      assert.equal(p.upload.length+p.download.length+p.merged.length,0);
+    }
+  }
+});
+check('new cover reference may be added when baseline has none',()=>{
+  const original=row('cover-add-safe','Original');
+  const changed={...original,coverKey:'new-private-cover'};
+  const p=planWithBaseline([original],[changed],[original]);
+  assert.equal(p.conflicts.length,0);
+  assert.equal(p.merged.length,1);
+});
 console.log('Isolated reconciliation tests passed; NOT a Supabase RLS or browser E2E test.');
