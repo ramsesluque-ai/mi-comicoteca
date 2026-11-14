@@ -55,7 +55,13 @@
        if(candidate.deleted && (typeof candidate.deletedAt!=='string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(candidate.deletedAt) || !Number.isFinite(Date.parse(candidate.deletedAt)) || new Date(candidate.deletedAt).toISOString().slice(0,19)!==candidate.deletedAt.slice(0,19)))
          return {status:'conflict',reason:'invalid-tombstone-timestamp'};
      }
-     if(local.deleted&&remote.deleted)return {status:'unchanged',record:{...remote,deleted:true}};
+     if(local.deleted&&remote.deleted){
+       // Independently changed deletion timestamps are not equivalent acknowledgements.
+       // Never choose a winner by last-write-wins: a stale device could erase audit history.
+       if(local.deletedAt!==remote.deletedAt)
+         return {status:'conflict',reason:'divergent-tombstone-timestamps'};
+       return {status:'unchanged',record:{...remote,deleted:true}};
+     }
      const deleted=local.deleted?local:remote,other=local.deleted?remote:local;
      const changed=new Set([...Object.keys(base),...Object.keys(other)]);
      changed.delete('deleted');
