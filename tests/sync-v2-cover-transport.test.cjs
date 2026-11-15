@@ -171,6 +171,12 @@ function fake(){
  assert.equal(f.calls.filter(x=>x.method==='POST').length,before);
  const badRead=async()=>({ok:true,status:200,blob:async()=>new Blob(['HTML'],{type:'text/html'})});
  await assert.rejects(()=>transport.read({...args,key:'bad-remote',fetchImpl:badRead}),/Portada inválida/);
+ // Private cover uploads must reject unsupported media before any Storage request.
+ const invalidMedia=fake();
+ for(const bad of [new Blob(['not-an-image'],{type:'text/html'}),new Blob(['svg'],{type:'image/svg+xml'}),new Blob(['bytes'],{type:'application/octet-stream'})]){
+  await assert.rejects(()=>transport.copyIfAbsent({...args,key:'invalid-media',blob:bad,fetchImpl:invalidMedia.fetchImpl}),/Portada inválida/);
+ }
+ assert.equal(invalidMedia.calls.length,0,'Unsupported cover MIME must not reach private Storage');
  // A denied authenticated read must never be interpreted as a missing object.
  const denied=async()=>({ok:false,status:403});
  await assert.rejects(()=>transport.read({...args,key:'denied',fetchImpl:denied}),/403/);
