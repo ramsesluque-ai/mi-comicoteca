@@ -43,6 +43,7 @@ jobs:
         run: |
           node tests/sync-v2-production-guard.test.cjs
           node tests/sync-v2-two-device-isolated.test.js
+          node tests/sync-v2-two-device-cover-roundtrip.test.cjs
           node tests/sync-v2-baseline-plan.test.cjs
           node tests/sync-v2-checkpoint.test.cjs
           node tests/sync-v2-cover-inventory.test.cjs
