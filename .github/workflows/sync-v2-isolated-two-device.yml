@@ -1,0 +1,21 @@
+name: Sync V2 isolated two-device regression
+on:
+  push:
+    branches: [commercial-published]
+    paths:
+      - 'sync-v2-reconcile.js'
+      - 'tests/sync-v2-isolated-two-device-regression.cjs'
+      - '.github/workflows/sync-v2-isolated-two-device.yml'
+  workflow_dispatch:
+jobs:
+  isolated:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify isolated two-device reconciliation (no production credentials)
+        run: node tests/sync-v2-isolated-two-device-regression.cjs
