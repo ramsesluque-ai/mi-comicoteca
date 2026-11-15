@@ -25,4 +25,10 @@ const protectedCover=threeWay(record('cover',{coverKey:'private/a'}),record('cov
 assert.equal(protectedCover.reason,'protected-cover-cleared');
 const deleted=planWithBaseline([base],[{...base,deleted:true,deletedAt:'2026-11-15T09:00:00Z'}],[{...base,title:'Edited elsewhere'}]);
 assert.equal(deleted.conflicts[0].reason,'delete-versus-edit');
+const newCover=threeWay(record('new-cover'),record('new-cover',{coverKey:'uid/cover-a'}),record('new-cover'));
+assert.equal(newCover.reason,'cover-reference-added-unverified','new private cover references require verified binary transfer');
+const newCoverUrl=threeWay(record('new-url'),record('new-url'),record('new-url',{coverUrl:'https://example.invalid/image.jpg'}));
+assert.equal(newCoverUrl.reason,'cover-reference-added-unverified','remote cover URL must not be trusted without binary verification');
+const safeText=threeWay(record('text-only'),record('text-only',{title:'Changed'}),record('text-only'));
+assert.equal(safeText.status,'merged','ordinary metadata changes remain reconcilable');
 console.log('PASS: isolated two-device merge, conflict, pagination gap, cover protection and tombstone');
