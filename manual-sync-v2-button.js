@@ -25,6 +25,10 @@
      const raw=sessionStorage.getItem('mc_supabase_session_v1')||localStorage.getItem('mc_supabase_session_v1');
      const session=raw?JSON.parse(raw):null;
      const authenticated=Boolean(session?.user?.id&&session?.access_token);
+     if(authenticated){
+       const expectedDB='comicteca-user-'+session.user.id;
+       if(typeof DBN!=='string'||DBN!==expectedDB)throw Error('La base local no corresponde a la cuenta autenticada. Cierra y vuelve a abrir la sesión antes de comparar; no se modificó ningún dato.');
+     }
      const rows=typeof allStore==='function'?await allStore('comics'):null;
      if(!panel.isConnected)return;
      diagnostic.textContent=(authenticated?'Sesión identificada. ':'Inicia sesión para sincronizar. ')+(Array.isArray(rows)?rows.length.toLocaleString('es-ES')+' fichas locales detectadas. ':'No se pudo verificar la colección local. ')+'No se ha realizado ninguna escritura ni descarga.';
