@@ -46,6 +46,7 @@ jobs:
           node tests/sync-v2-two-device-cover-roundtrip.test.cjs
           node tests/sync-v2-baseline-plan.test.cjs
           node tests/sync-v2-checkpoint.test.cjs
+          node tests/sync-v2-restart-stale-baseline.test.cjs
           node tests/sync-v2-cover-inventory.test.cjs
           node tests/sync-v2-cover-bytes.test.cjs
           node tests/sync-v2-cover-integrity.test.cjs
