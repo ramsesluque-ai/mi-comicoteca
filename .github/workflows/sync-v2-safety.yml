@@ -14,6 +14,7 @@ on:
       - 'cloud-migration.js'
       - 'tests/sync-v2-*.test.js'
       - 'tests/sync-v2-*.test.cjs'
+      - 'tests/sync-v2-*-harness.cjs'
       - '.github/workflows/sync-v2-safety.yml'
   workflow_dispatch:
 permissions:
@@ -47,6 +48,7 @@ jobs:
           node tests/sync-v2-baseline-plan.test.cjs
           node tests/sync-v2-checkpoint.test.cjs
           node tests/sync-v2-restart-stale-baseline.test.cjs
+          node tests/sync-v2-two-session-retry-harness.cjs
           node tests/sync-v2-cover-inventory.test.cjs
           node tests/sync-v2-cover-bytes.test.cjs
           node tests/sync-v2-cover-integrity.test.cjs
