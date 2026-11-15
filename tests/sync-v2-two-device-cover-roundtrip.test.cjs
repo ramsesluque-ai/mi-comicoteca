@@ -20,7 +20,7 @@ function receive(device) {
   assert.equal(p.conflicts.length,0);
   assert.equal(p.upload.length+p.merged.length,0);
   for(const item of p.download) {
-    const record=clone(item.record);
+    const record=clone(item);
     assert.equal(record.coverKey,'cover-1');
     const stored=remoteCovers.get('user-a/'+record.coverKey);
     assert.ok(stored);
@@ -40,13 +40,15 @@ assert.equal(digest(deviceB.covers.get('cover-1')),digest(binary));
 deviceA.rows[0].notes='edited on A';
 let p=plan(deviceA);
 assert.equal(p.conflicts.length,0);
-assert.equal(p.upload.length,1);
+assert.equal(p.merged.length,1);
+assert.equal(p.merged[0].needsRemote,true);
 assert.equal(p.download.length,0);
 remote=clone(deviceA.rows);
 deviceA.baseline=clone(remote);
 // Device B receives the new version without losing its private binary.
 p=plan(deviceB);
-assert.equal(p.download.length,1);
+assert.equal(p.merged.length,1);
+assert.equal(p.merged[0].needsLocal,true);
 deviceB.rows=clone(remote);
 deviceB.baseline=clone(remote);
 assert.equal(deviceB.rows[0].notes,'edited on A');
