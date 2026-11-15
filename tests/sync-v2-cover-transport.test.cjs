@@ -59,6 +59,15 @@ function fake(){
  const wrongRead=fake();
  await assert.rejects(()=>transport.verifiedReadVerified({session,cfg,key:'download',expectedSha256:expectedGated,integrity,fetchImpl:async(url,opts)=>url.endsWith('/auth/v1/user')?{ok:true,status:200,json:async()=>({id:'abcdefab-1234-1234-1234-abcdefabcdef'})}:wrongRead.fetchImpl(url,opts)}),/no coincide/);
  assert.equal(wrongRead.calls.length,0);
+ // Expired sessions and rate limiting must fail closed before any private Storage access.
+ for(const status of [401,429,503]){
+   const isolated=fake();
+   const denied=async(url,opts)=>url.endsWith('/auth/v1/user')?{ok:false,status}:isolated.fetchImpl(url,opts);
+   await assert.rejects(()=>transport.verifiedReadVerified({session,cfg,key:'blocked',expectedSha256:expectedGated,integrity,fetchImpl:denied}),new RegExp(String(status)));
+   await assert.rejects(()=>transport.verifiedCopyIfAbsent({session,cfg,key:'blocked',blob:blob('blocked'),integrity,fetchImpl:denied}),new RegExp(String(status)));
+   assert.equal(isolated.calls.length,0,'No private GET/POST on identity HTTP '+status);
+ }
+
  const f=fake(),args={session,cfg,key:'comic-1',blob:blob('cover-A'),fetchImpl:f.fetchImpl,integrity};
  assert.equal((await transport.copyIfAbsent(args)).status,'uploaded-and-verified');
  assert.equal((await transport.copyIfAbsent(args)).status,'already-identical');
