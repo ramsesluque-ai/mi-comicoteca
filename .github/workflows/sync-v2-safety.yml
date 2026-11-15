@@ -3,18 +3,13 @@ on:
   push:
     branches: [commercial-published]
     paths:
-      - 'sync-v2-reconcile.js'
-      - 'sync-v2-baseline-plan.js'
-      - 'sync-v2-checkpoint.js'
-      - 'sync-v2-read-plan.js'
-      - 'sync-v2-cover-integrity.js'
-      - 'sync-v2-cover-transport.js'
-      - 'sync-v2-cover-cache-bridge.js'
+      # Any V2 module or isolated test must rerun the fail-closed safety gate.
+      # In particular owner-upload/receive and future harnesses cannot bypass CI.
+      - 'sync-v2-*.js'
       - 'manual-sync-v2-button.js'
+      - 'cloud-collection-sync.js'
       - 'cloud-migration.js'
-      - 'tests/sync-v2-*.test.js'
-      - 'tests/sync-v2-*.test.cjs'
-      - 'tests/sync-v2-*-harness.cjs'
+      - 'tests/sync-v2-*'
       - '.github/workflows/sync-v2-safety.yml'
   workflow_dispatch:
 permissions:
