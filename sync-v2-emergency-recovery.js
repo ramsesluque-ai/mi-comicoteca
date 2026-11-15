@@ -45,7 +45,8 @@
   backup.disabled=false;
   backup.onclick=async()=>{
    const blob=new Blob([JSON.stringify({type:'mi-comicteca-cloud-recovery',createdAt:new Date().toISOString(),owner:OWNER,records:cloud})],{type:'application/json'});
-   const bytes=await blob.arrayBuffer();backupHash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');\n   const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='mi-comicteca-respaldo-nube-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+   const bytes=await blob.arrayBuffer();backupHash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');
+   const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='mi-comicteca-respaldo-nube-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
    downloaded=true;apply.disabled=false;
    status.textContent='Respaldo generado. SHA-256: '+backupHash+'. Comprueba que está en Descargas antes de continuar. '+missing.length+' fichas pendientes.';
   };
