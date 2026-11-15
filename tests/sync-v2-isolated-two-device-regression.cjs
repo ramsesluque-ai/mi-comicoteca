@@ -31,4 +31,17 @@ const newCoverUrl=threeWay(record('new-url'),record('new-url'),record('new-url',
 assert.equal(newCoverUrl.reason,'cover-reference-added-unverified','remote cover URL must not be trusted without binary verification');
 const safeText=threeWay(record('text-only'),record('text-only',{title:'Changed'}),record('text-only'));
 assert.equal(safeText.status,'merged','ordinary metadata changes remain reconcilable');
+// No baseline: never propagate a new row that references an unverified private cover.
+const firstCoverUpload=planWithBaseline([],[record('fresh-upload',{coverKey:'uid/private.jpg'})],[]);
+assert.equal(firstCoverUpload.conflicts[0].reason,'new-record-cover-unverified');
+assert.equal(firstCoverUpload.upload.length,0);
+const firstCoverDownload=planWithBaseline([],[],[record('fresh-download',{coverUrl:'https://example.invalid/cover.jpg'})]);
+assert.equal(firstCoverDownload.conflicts[0].reason,'new-record-cover-unverified');
+assert.equal(firstCoverDownload.download.length,0);
+const firstTextOnly=planWithBaseline([],[record('fresh-text')],[]);
+assert.equal(firstTextOnly.conflicts.length,0);
+assert.equal(firstTextOnly.upload.length,1,'new metadata-only records remain plannable');
+const mixedBatch=planWithBaseline([],[record('safe'),record('unsafe',{coverKey:'uid/private.jpg'})],[]);
+assert.equal(mixedBatch.conflicts[0].reason,'new-record-cover-unverified');
+assert.equal(mixedBatch.upload.length,0,'any unverified cover blocks the entire batch');
 console.log('PASS: isolated two-device merge, conflict, pagination gap, cover protection and tombstone');
