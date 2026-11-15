@@ -1,0 +1,21 @@
+name: Sync V2 transport safety
+on:
+  push:
+    branches: [commercial-published]
+    paths:
+      - 'sync-v2-transport-guard.js'
+      - 'sync-v2-transport-guard.test.cjs'
+      - '.github/workflows/sync-v2-transport-safety.yml'
+  workflow_dispatch:
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check sync-v2-transport-guard.js
+      - run: node --test sync-v2-transport-guard.test.cjs
