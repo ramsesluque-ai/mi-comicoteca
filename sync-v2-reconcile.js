@@ -98,6 +98,10 @@
    const replaced=protectedCoverFields.filter(key=>
      !empty(base[key])&&!empty(record[key])&&JSON.stringify(base[key])!==JSON.stringify(record[key]));
    if(replaced.length)return {status:'conflict',reason:'cover-reference-changed',fields:replaced};
+   // A newly added cover reference also needs a verified private binary.
+   // A URL/key alone cannot establish that the second device can retrieve it.
+   const added=protectedCoverFields.filter(key=>empty(base[key])&&!empty(record[key]));
+   if(added.length)return {status:'conflict',reason:'cover-reference-added-unverified',fields:added};
    if(conflicts.length)return {status:'conflict',reason:'concurrent-field-edits',fields:conflicts};
    return {status:'merged',record};
  }
