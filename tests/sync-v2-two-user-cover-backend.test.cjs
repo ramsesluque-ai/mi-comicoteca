@@ -64,6 +64,40 @@ const args=(uid,key,blob)=>({session:session(uid),cfg,key,blob,fetchImpl:fakeFet
    return previousFetch(url,options);
  };
  await assert.rejects(transport.copyIfAbsent({...args(uidA,raceKey,cover),fetchImpl:raceFetch}),/SHA-256 distinto/);
+
+ // Concurrent create with identical bytes must be accepted only after GET verification.
+ for(const status of [400,409]){
+   const key='race-identical-'+status;
+   let postCount=0;
+   const concurrentFetch=async(url,options)=>{
+     if(options.method==='POST'&&url.endsWith('/'+key)){
+       postCount++;
+       objects.set(uidA+'/'+key,{bytes:Buffer.from(await options.body.arrayBuffer()),type:options.body.type});
+       return {ok:false,status};
+     }
+     return fakeFetch(url,options);
+   };
+   const result=await transport.copyIfAbsent({...args(uidA,key,cover),fetchImpl:concurrentFetch});
+   assert.equal(result.status,'concurrent-identical');
+   assert.equal(postCount,1);
+   assert.equal(await sha(await transport.read(args(uidA,key))),await sha(cover));
+ }
+ // A lost network response after persistence must be reconciled via GET, not a second POST.
+ const lostKey='lost-network-response';
+ let lostPosts=0;
+ const lostFetch=async(url,options)=>{
+   if(options.method==='POST'&&url.endsWith('/'+lostKey)){
+     lostPosts++;
+     objects.set(uidA+'/'+lostKey,{bytes:Buffer.from(await options.body.arrayBuffer()),type:options.body.type});
+     throw Error('network disconnected after commit');
+   }
+   return fakeFetch(url,options);
+ };
+ assert.equal((await transport.copyIfAbsent({...args(uidA,lostKey,cover),fetchImpl:lostFetch})).status,'uploaded-network-error-verified');
+ assert.equal(lostPosts,1);
+ assert.equal((await transport.copyIfAbsent({...args(uidA,lostKey,cover),fetchImpl:lostFetch})).status,'already-identical');
+ assert.equal(lostPosts,1);
+
  await assert.rejects(transport.readVerified({...args(uidA,'cover-1'),expectedSha256:'invalid'}),/SHA-256 esperado/);
  await assert.rejects(transport.copyIfAbsent({...args(uidA,'cover-1',cover),session:{user:{id:uidA},access_token:''}}),/Sesión/);
  await assert.rejects(transport.copyIfAbsent(args(uidA,'../escape',cover)),/inválido/);
