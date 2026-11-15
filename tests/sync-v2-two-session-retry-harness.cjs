@@ -28,6 +28,27 @@ deviceB=clone(remote);
 const settled=planWithBaseline(baseline,deviceA,remote);
 assert.equal(settled.conflicts.length,0);
 assert.equal(settled.unchanged.length,2);
+// Lost acknowledgement after the server commits: a retry must converge, not
+// mistake the existing remote row for an independent concurrent creation.
+// A missing local checkpoint is *not* safe to infer: fail closed instead.
+const lostAckRemote=clone(remote);
+const lostAck=planWithBaseline([],deviceA,lostAckRemote);
+assert.equal(lostAck.upload.length,0);
+assert.equal(lostAck.download.length,0);
+assert(lostAck.conflicts.length>0);
+// With the previously persisted baseline, retry is idempotent.
+const acknowledgedRetry=planWithBaseline(baseline,deviceA,lostAckRemote);
+assert.equal(acknowledgedRetry.conflicts.length,0);
+assert.equal(acknowledgedRetry.unchanged.length,2);
+// Simulated foreign-user injection is never a valid backend response. This
+// harness is not an authenticated RLS test; actual RLS remains a separate gate.
+const owner='isolated-user-a',intruder='isolated-user-b';
+function validateOwnerRows(rows,uid){
+ if(rows.some(r=>r.user_id!==uid))throw Error('cross-user backend response');
+ return rows;
+}
+assert.throws(()=>validateOwnerRows([{...a,user_id:intruder}],owner),/cross-user/);
+assert.equal(validateOwnerRows([{...a,user_id:owner}],owner).length,1);
 // Independent edits on separate sessions are merged only with a shared baseline.
 deviceA[0].title='Edited on A';
 remote[0].synopsis='Edited on B';
