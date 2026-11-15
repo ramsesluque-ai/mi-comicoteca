@@ -165,6 +165,15 @@
          decisions.conflicts.push({id,reason:'unverified-tombstone-without-baseline'});
          continue;
        }
+       // A first-seen row with a cover reference must not be transferred before
+       // the binary is independently fetched and SHA-256 verified on the target.
+       // This also applies without a baseline (new records), not only three-way merges.
+       const coverFields=['coverKey','coverUrl','coverSourceUrl','coverUrls'];
+       const incoming=l&&!r?l:r&&!l?r:null;
+       if(incoming&&coverFields.some(field=>!empty(incoming[field]))){
+         decisions.conflicts.push({id,reason:'new-record-cover-unverified'});
+         continue;
+       }
        if(l&&!r)decisions.upload.push(l);
        else if(r&&!l)decisions.download.push(r);
        else if(JSON.stringify(l)===JSON.stringify(r))decisions.unchanged.push(id);
