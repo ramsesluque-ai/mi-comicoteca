@@ -50,6 +50,32 @@ function fake({failAt=0,deny=false,abortAt=0}={}){
  const result=await compare({session:session(uid),cfg,localRows:rows,fetcher:retry.fetcher,pageSize:100});
  assert.equal(result.equal,501);
  assert.equal(result.safeToWrite,false);
+ // Malicious/misconfigured backend: a valid identity cannot receive another user's rows.
+ // Reject the entire comparison rather than count or expose foreign catalogue data.
+ const foreignBackend=async(url,opts)=>{
+  if(url.endsWith('/auth/v1/user'))return {ok:true,json:async()=>({id:uid})};
+  return {ok:true,json:async()=>[{user_id:other,local_id:'comics:id-00999',metadata:{kind:'comics',record:make(999)}}]};
+ };
+ await assert.rejects(compare({session:session(uid),cfg,localRows:rows,fetcher:foreignBackend,pageSize:100}),/otro usuario/);
+ // A forged cached user ID with a valid token for someone else must be rejected
+ // at /auth/v1/user before the catalogue endpoint is contacted.
+ let catalogueCalls=0;
+ const identityMismatch=async(url)=>{
+  if(url.endsWith('/auth/v1/user'))return {ok:true,json:async()=>({id:other})};
+  catalogueCalls++;throw Error('catalogue must not be requested');
+ };
+ await assert.rejects(compare({session:session(uid),cfg,localRows:rows,fetcher:identityMismatch}),/identidad de sesión/);
+ assert.equal(catalogueCalls,0);
+ // Duplicate/out-of-order keyset rows must fail closed: partial results are
+ // never treated as complete or as permission to overwrite local records.
+ const outOfOrder=async(url)=>{
+  if(url.endsWith('/auth/v1/user'))return {ok:true,json:async()=>({id:uid})};
+  return {ok:true,json:async()=>[
+   {user_id:uid,local_id:'comics:id-00002',metadata:{kind:'comics',record:make(2)}},
+   {user_id:uid,local_id:'comics:id-00001',metadata:{kind:'comics',record:make(1)}}
+  ]};
+ };
+ await assert.rejects(compare({session:session(uid),cfg,localRows:rows,fetcher:outOfOrder,pageSize:100}),/fuera de orden/);
  const denied=fake({deny:true});
  await assert.rejects(compare({session:session(other),cfg,localRows:[],fetcher:denied.fetcher}),/403/);
  const truncated=fake();
