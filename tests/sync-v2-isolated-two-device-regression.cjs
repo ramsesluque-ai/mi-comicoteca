@@ -1,0 +1,28 @@
+'use strict';
+// Isolated two-device regression; never connects to the owner's Supabase project.
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const vm=require('node:vm');
+const source=fs.readFileSync('sync-v2-reconcile.js','utf8');
+const context={};vm.runInNewContext(source,context,{filename:'sync-v2-reconcile.js'});
+const {planWithBaseline,threeWay}=context.MCReconcileV2;
+const record=(id,extra={})=>({id,title:'Prueba aislada',publisher:'Editorial ficticia',series:'Serie ficticia',issue:'1',...extra});
+const base=record('test-device-a');
+const local=record(base.id,{title:'Edición A'});
+const remote=record(base.id,{synopsis:'Edición B'});
+const plan=planWithBaseline([base],[local],[remote]);
+assert.equal(plan.conflicts.length,0,'independent edits must not conflict');
+assert.equal(plan.merged.length,1);
+assert.equal(plan.merged[0].record.title,'Edición A');
+assert.equal(plan.merged[0].record.synopsis,'Edición B');
+const collision=planWithBaseline([base],[record(base.id,{title:'A'})],[record(base.id,{title:'B'})]);
+assert.equal(collision.conflicts[0].reason,'concurrent-field-edits');
+assert.equal(collision.upload.length+collision.download.length+collision.merged.length,0,'conflicts must block writes');
+const missing=planWithBaseline([base],[base],[]);
+assert.equal(missing.conflicts[0].reason,'missing-record-without-tombstone');
+assert.equal(missing.upload.length,0);
+const protectedCover=threeWay(record('cover',{coverKey:'private/a'}),record('cover',{coverKey:''}),record('cover',{coverKey:'private/a'}));
+assert.equal(protectedCover.reason,'protected-cover-cleared');
+const deleted=planWithBaseline([base],[{...base,deleted:true,deletedAt:'2026-11-15T09:00:00Z'}],[{...base,title:'Edited elsewhere'}]);
+assert.equal(deleted.conflicts[0].reason,'delete-versus-edit');
+console.log('PASS: isolated two-device merge, conflict, pagination gap, cover protection and tombstone');
