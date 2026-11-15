@@ -44,4 +44,13 @@ assert.equal(firstTextOnly.upload.length,1,'new metadata-only records remain pla
 const mixedBatch=planWithBaseline([],[record('safe'),record('unsafe',{coverKey:'uid/private.jpg'})],[]);
 assert.equal(mixedBatch.conflicts[0].reason,'new-record-cover-unverified');
 assert.equal(mixedBatch.upload.length,0,'any unverified cover blocks the entire batch');
+// Identical cover references on two devices do not prove the binary exists.
+const sameUnverified=planWithBaseline([],[record('same-cover',{coverKey:'uid/same.jpg'})],[record('same-cover',{coverKey:'uid/same.jpg'})]);
+assert.equal(sameUnverified.conflicts[0].reason,'new-record-cover-unverified');
+assert.equal(sameUnverified.unchanged.length,0,'unverified identical covers must not be acknowledged');
+const differingUnverified=planWithBaseline([],[record('different-cover',{coverKey:'uid/a.jpg'})],[record('different-cover',{coverKey:'uid/b.jpg'})]);
+assert.equal(differingUnverified.conflicts[0].reason,'new-record-cover-unverified');
+const sameText=planWithBaseline([],[record('same-text')],[record('same-text')]);
+assert.equal(sameText.conflicts.length,0);
+assert.equal(sameText.unchanged.length,1);
 console.log('PASS: isolated two-device merge, conflict, pagination gap, cover protection and tombstone');
