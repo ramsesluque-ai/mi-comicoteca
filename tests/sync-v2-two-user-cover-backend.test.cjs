@@ -122,5 +122,26 @@ const args=(uid,key,blob)=>({session:session(uid),cfg,key,blob,fetchImpl:fakeFet
  const forbiddenFetch=async()=>({ok:false,status:403});
  await assert.rejects(transport.copyIfAbsent({...args(uidA,'forbidden',cover),fetchImpl:forbiddenFetch}),/403/);
  assert.equal(objects.has(uidA+'/forbidden'),false);
+ // The authenticated public gates must verify /auth/v1/user BEFORE touching Storage.
+ // This checks a forged cached session, a revoked token and a valid identity.
+ let storageCalls=0,identityCalls=0;
+ const gatedFetch=async(url,options)=>{
+   if(new URL(url).pathname==='/auth/v1/user'){
+     identityCalls++;
+     const token=options.headers.Authorization;
+     if(token==='Bearer revoked')return {ok:false,status:401};
+     return {ok:true,status:200,json:async()=>({id:token==='Bearer forged'?uidB:uidA})};
+   }
+   storageCalls++;
+   return fakeFetch(url,options);
+ };
+ const gatedArgs={...args(uidA,'authenticated-cover',cover),fetchImpl:gatedFetch};
+ await assert.rejects(transport.verifiedCopyIfAbsent({...gatedArgs,session:{user:{id:uidA},access_token:'forged'}}),/no coincide/);
+ await assert.rejects(transport.verifiedReadVerified({...gatedArgs,session:{user:{id:uidA},access_token:'revoked'},expectedSha256:await sha(cover)}),/401/);
+ assert.equal(storageCalls,0,'invalid identity must not reach private Storage');
+ assert.equal(identityCalls,2);
+ assert.equal((await transport.verifiedCopyIfAbsent(gatedArgs)).status,'uploaded-and-verified');
+ assert.equal((await transport.verifiedReadVerified({...gatedArgs,expectedSha256:await sha(cover)})).status,'verified');
+ assert.equal(storageCalls>0,true);
  console.log('PASS isolated two-user cover binary transport, GET, SHA-256, conflict, retry and namespace isolation; NOT real RLS/E2E');
 })().catch(e=>{console.error(e);process.exitCode=1});
