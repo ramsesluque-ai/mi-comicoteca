@@ -182,6 +182,13 @@ function fake(){
  await assert.rejects(()=>transport.read({...args,key:'denied',fetchImpl:denied}),/403/);
  const unauthorized=async()=>({ok:false,status:401});
  await assert.rejects(()=>transport.copyIfAbsent({...args,key:'unauthorized',fetchImpl:unauthorized}),/401/);
+ // Reject path traversal and ambiguous object names before any private Storage request.
+ const unsafeKeys=fake();
+ for(const key of ['../other-user','other-user/cover','..','.','', '%2F', 'a\\\\b', 'a?b', 'a#b', 'a'.repeat(181)]){
+   await assert.rejects(()=>transport.read({...args,key,fetchImpl:unsafeKeys.fetchImpl}),/inválido/);
+   await assert.rejects(()=>transport.copyIfAbsent({...args,key,fetchImpl:unsafeKeys.fetchImpl}),/inválido/);
+ }
+ assert.equal(unsafeKeys.calls.length,0,'Unsafe object names must never reach private Storage');
  // User namespace must be derived from the authenticated session, never a supplied key.
  const secondUid='abcdefab-1234-1234-1234-abcdefabcdef';
  const secondSession={user:{id:secondUid},access_token:'second-user-token'};
