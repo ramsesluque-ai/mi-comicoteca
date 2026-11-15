@@ -174,6 +174,12 @@
          decisions.conflicts.push({id,reason:'new-record-cover-unverified'});
          continue;
        }
+       // Two devices may independently hold the same cover URL/key while neither
+       // has the binary. Equality of metadata is not a verified cover transfer.
+       if(l&&r&&coverFields.some(field=>!empty(l[field])||!empty(r[field]))){
+         decisions.conflicts.push({id,reason:'new-record-cover-unverified'});
+         continue;
+       }
        if(l&&!r)decisions.upload.push(l);
        else if(r&&!l)decisions.download.push(r);
        else if(JSON.stringify(l)===JSON.stringify(r))decisions.unchanged.push(id);
