@@ -40,17 +40,17 @@
   if(cloud.length!==EXPECTED||ids.size!==EXPECTED)throw Error('Recuento o IDs no coinciden: '+cloud.length);
   const existing=await allStore('comics'),localIds=new Set(existing.map(x=>String(x.id)));
   const missing=cloud.filter(x=>!localIds.has(String(x.id)));
-  let downloaded=false;
+  let downloaded=false; let backupHash='';
   status.textContent='Verificadas '+EXPECTED+' fichas. Locales: '+existing.length+'. Faltantes: '+missing.length+'. Sin escrituras en la nube. Las portadas privadas se revisarán aparte.';
   backup.disabled=false;
-  backup.onclick=()=>{
+  backup.onclick=async()=>{
    const blob=new Blob([JSON.stringify({type:'mi-comicteca-cloud-recovery',createdAt:new Date().toISOString(),owner:OWNER,records:cloud})],{type:'application/json'});
-   const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='mi-comicteca-respaldo-nube-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+   const bytes=await blob.arrayBuffer();backupHash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');\n   const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='mi-comicteca-respaldo-nube-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
    downloaded=true;apply.disabled=false;
-   status.textContent='Respaldo descargado. Comprueba que está en Descargas antes de continuar. '+missing.length+' fichas pendientes.';
+   status.textContent='Respaldo generado. SHA-256: '+backupHash+'. Comprueba que está en Descargas antes de continuar. '+missing.length+' fichas pendientes.';
   };
   apply.onclick=async()=>{
-   if(!downloaded||!confirm('Se añadirán únicamente '+missing.length+' fichas que faltan en este dispositivo. No se borrará ni sobrescribirá ninguna ficha local o de Supabase. ¿Continuar?'))return;
+   if(!downloaded||!backupHash||!confirm('Se añadirán únicamente '+missing.length+' fichas que faltan en este dispositivo. No se borrará ni sobrescribirá ninguna ficha local o de Supabase. ¿Continuar?'))return;
    apply.disabled=true;backup.disabled=true;
    try{
     if(missing.length){
