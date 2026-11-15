@@ -2,7 +2,7 @@
 // Offline two-session regression tests. No production credentials or network access.
 const assert=require('node:assert/strict');
 const vm=require('node:vm'),fs=require('node:fs');
-const sandbox={window:{},console,URL,encodeURIComponent,Blob,TextEncoder,crypto:require('node:crypto').webcrypto};
+const sandbox={window:{crypto:require('node:crypto').webcrypto},console,URL,encodeURIComponent,Blob,TextEncoder,crypto:require('node:crypto').webcrypto};
 vm.createContext(sandbox);
 for(const name of ['sync-v2-reconcile.js','sync-v2-manual-plan.js','sync-v2-cover-integrity.js'])
  vm.runInContext(fs.readFileSync(name,'utf8'),sandbox,{filename:name});
