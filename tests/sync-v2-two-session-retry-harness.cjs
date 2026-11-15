@@ -30,12 +30,12 @@ assert.equal(settled.conflicts.length,0);
 assert.equal(settled.unchanged.length,2);
 // Lost acknowledgement after the server commits: a retry must converge, not
 // mistake the existing remote row for an independent concurrent creation.
-// A missing local checkpoint is *not* safe to infer: fail closed instead.
+// Without a checkpoint, identical rows can be recognized but not rewritten.
 const lostAckRemote=clone(remote);
 const lostAck=planWithBaseline([],deviceA,lostAckRemote);
 assert.equal(lostAck.upload.length,0);
 assert.equal(lostAck.download.length,0);
-assert(lostAck.conflicts.length>0);
+assert.equal(lostAck.unchanged.length,2); // identical payloads are safe to recognize, not to rewrite
 // With the previously persisted baseline, retry is idempotent.
 const acknowledgedRetry=planWithBaseline(baseline,deviceA,lostAckRemote);
 assert.equal(acknowledgedRetry.conflicts.length,0);
