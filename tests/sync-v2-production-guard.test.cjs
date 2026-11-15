@@ -13,5 +13,10 @@ for(const forbidden of [/\.copyIfAbsent\s*\(/,/\.putStore\s*\(/,/\bputStore\s*\(
 }
 assert.match(legacy,/paused|disabled|desactivad/i,'Legacy V1 must remain disabled');
 assert.match(upload,/get\('syncv2'\)!=='subida'/,'Owner upload must require explicit opt-in');
+assert.match(upload,/SYNC_V2_OWNER_WRITE_E2E_APPROVED=false/,'Owner upload must remain fail-closed');
+assert.match(upload,/if\(!SYNC_V2_OWNER_WRITE_E2E_APPROVED\)\{[^}]*return;/,'Owner upload must return before touching data');
 assert.match(receive,/get\('syncv2'\)!=='recepcion'/,'Owner receive must require explicit opt-in');
+assert.match(receive,/SYNC_V2_OWNER_WRITE_E2E_APPROVED=false/,'Owner receive must remain fail-closed');
+assert.match(receive,/if\(!SYNC_V2_OWNER_WRITE_E2E_APPROVED\)\{[^}]*return;/,'Owner receive must return before touching data');
+assert.doesNotMatch(button,/MCSyncV2CoverTransport\.(?:copyIfAbsent|verifiedCopyIfAbsent)\s*\(/,'Manual button must not upload private covers');
 console.log('PASS manual sync V2 is read-only; V1 paused; owner migration paths gated');
