@@ -1,0 +1,23 @@
+name: Sync V2 offline safety regression
+on:
+  push:
+    branches: [commercial-published]
+    paths:
+      - 'sync-v2-reconcile.js'
+      - 'sync-v2-manual-plan.js'
+      - 'sync-v2-cover-integrity.js'
+      - 'tests/sync-v2-two-session-offline.cjs'
+      - '.github/workflows/sync-v2-offline.yml'
+  workflow_dispatch:
+jobs:
+  offline-two-session:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Two-account isolated backend and binary-cover tests
+        run: node tests/sync-v2-two-session-offline.cjs
