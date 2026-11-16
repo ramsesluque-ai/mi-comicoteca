@@ -7,12 +7,34 @@
 (function(root){
  function assert(condition,message){if(!condition)throw Error(message)}
  function canonical(value){
+   // Fail closed on non-JSON local data: silently dropping a field could make
+   // two different records appear equal and later authorize a destructive merge.
+   const ancestors=new Set();
    function rec(v){
+     if(v===undefined||typeof v==='function'||typeof v==='symbol'||typeof v==='bigint')
+       throw Error('Campo local no serializable: comparación bloqueada');
+     if(typeof v==='number'&&!Number.isFinite(v))
+       throw Error('Número local no finito: comparación bloqueada');
      if(v===null||typeof v!=='object')return v;
-     if(v instanceof Date)return v.toISOString();
+     if(v instanceof Date){
+       if(!Number.isFinite(v.getTime()))throw Error('Fecha local inválida');
+       return v.toISOString();
+     }
      if(typeof Blob!=='undefined'&&v instanceof Blob)throw Error('Portada binaria local: requiere respaldo independiente');
-     if(Array.isArray(v))return v.map(rec);
-     const out={};for(const k of Object.keys(v).sort()){if(v[k]!==undefined&&typeof v[k]!=='function')out[k]=rec(v[k])}return out;
+     if(ancestors.has(v))throw Error('Referencia circular en ficha local');
+     if(Object.getPrototypeOf(v)!==Object.prototype&&Object.getPrototypeOf(v)!==null&&!Array.isArray(v))
+       throw Error('Objeto local no serializable: comparación bloqueada');
+     ancestors.add(v);
+     try{
+       if(Array.isArray(v)){
+         if(Array.from({length:v.length},(_,i)=>Object.hasOwn(v,i)).some(present=>!present))
+           throw Error('Array local incompleto: comparación bloqueada');
+         return v.map(rec);
+       }
+       const out={};
+       for(const k of Object.keys(v).sort())Object.defineProperty(out,k,{value:rec(v[k]),enumerable:true,writable:true,configurable:true});
+       return out;
+     }finally{ancestors.delete(v)}
    }
    return JSON.stringify(rec(value));
  }
