@@ -31,8 +31,22 @@ function receive(device) {
   }
   device.baseline=clone(remote);
 }
-receive(deviceA);
-receive(deviceB);
+// Metadata alone must NOT authorize the first download of a private cover.
+// The binary transfer gate is separate from the reconciliation planner.
+for (const device of [deviceA, deviceB]) {
+  const blocked = plan(device);
+  assert.equal(blocked.download.length + blocked.upload.length + blocked.merged.length, 0);
+  assert.ok(blocked.conflicts.some(c => c.reason === 'new-record-cover-unverified'));
+  const stored = remoteCovers.get('user-a/' + original.coverKey);
+  assert.ok(stored, 'private cover must exist under the authenticated uid');
+  const received = Buffer.from(stored); // isolated stand-in for authenticated GET
+  assert.equal(digest(received), digest(binary), 'SHA-256 must match before accepting metadata');
+  device.covers.set(original.coverKey, received);
+  // Simulate a separately acknowledged, verified cover + record bootstrap.
+  // No planner bypass is permitted in production; browser/RLS E2E still required.
+  device.rows = [clone(original)];
+  device.baseline = [clone(original)];
+}
 assert.equal(deviceA.rows.length,1);
 assert.equal(deviceB.rows.length,1);
 assert.equal(digest(deviceB.covers.get('cover-1')),digest(binary));
