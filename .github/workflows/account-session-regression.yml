@@ -13,6 +13,7 @@ on:
       - 'tests/catalog-cloud-rehydrate.test.cjs'
       - 'app5.js'
       - 'sw.js'
+      - 'sync-v2-emergency-recovery.js'
       - '.github/workflows/account-session-regression.yml'
   workflow_dispatch:
 jobs:
@@ -34,5 +35,6 @@ jobs:
           node --check app5.js
           node --check catalog-cloud-rehydrate.js
           node --check sw.js
+          node --check sync-v2-emergency-recovery.js
       - name: Run local account-session regression tests
         run: node --test tests/account-session-regression.test.cjs tests/catalog-cloud-rehydrate.test.cjs
