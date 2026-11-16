@@ -120,7 +120,13 @@
   try{
    result=await scanCloud({uid,cfg,fetcher,verify,progress:n=>onState('Recuperando tu catálogo','Consultando Supabase de forma segura: '+n.toLocaleString('es-ES')+' fichas verificadas…')});
    // A known, nonempty cloud catalog must never be shown as blank on failure.
-   const remembered=Number(localStorage.getItem('mc-catalog-cloud-seen-'+uid)||0);
+   let remembered=0;
+   try{remembered=Number(localStorage.getItem('mc-catalog-cloud-seen-'+uid)||0)}catch(_){}
+   // The original owner's 16,523 archived rows are an independently confirmed
+   // recovery baseline, not a cloud write target. A filtered/partial RLS read
+   // must never masquerade as a legitimately empty account.
+   const owner='0bcbe06d-263d-4ac1-a516-355d27d417f1';
+   if(uid===owner)assert(result.rows.length>=16523,'La nube ha devuelto menos fichas de las 16.523 verificadas. No se mostrará un catálogo parcial o vacío.');
    assert(result.rows.length>0||remembered===0,'La colección remota aparece vacía aunque ya existía: carga bloqueada para evitar un falso catálogo nuevo.');
    if(!result.rows.length){
     document.getElementById('mc-catalog-startup-status')?.remove();
