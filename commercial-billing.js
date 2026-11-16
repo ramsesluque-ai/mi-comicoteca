@@ -36,17 +36,34 @@
  async function auth(path,opt={}){const c=cfg(),h=new Headers(opt.headers||{});h.set('apikey',c.publishableKey);return fetch(c.url+path,{...opt,headers:h})}
  async function signIn(email,password){email=String(email||'').trim();password=String(password||'');if(!email||!password)throw Error('Introduce tu email y contraseña para entrar.');const r=await auth('/auth/v1/token?grant_type=password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});const j=await r.json().catch(()=>({}));if(!r.ok)throw Error(j.msg||j.message||j.error_description||'No se pudo iniciar sesión');setSession(j);location.reload();return j}
  async function signUp(email,password){email=String(email||'').trim();password=String(password||'');if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw Error('Introduce un correo electrónico válido antes de crear la cuenta.');if(password.length<6)throw Error('La contraseña debe tener al menos 6 caracteres.');const r=await auth('/auth/v1/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});const j=await r.json().catch(()=>({}));if(!r.ok)throw Error(j.msg||j.message||j.error_description||'No se pudo crear la cuenta');if(j.access_token){setSession(j);location.reload()}return j}
+ let refreshInFlight=null;
+ async function renewSession(expected){
+  if(refreshInFlight)return refreshInFlight;
+  refreshInFlight=(async()=>{
+   const latest=getSession();
+   if(latest?.user?.id!==expected.user.id)throw Error('Ha cambiado la cuenta durante la renovación de sesión.');
+   if(latest.access_token!==expected.access_token)return latest;
+   if(!expected.refresh_token)throw Error('Tu sesión ha caducado. Inicia sesión de nuevo; tus datos no se han borrado.');
+   const response=await auth('/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh_token:expected.refresh_token})});
+   if(!response.ok){
+    // Another tab may have rotated this refresh token moments earlier.
+    const newer=readSession(localStorage);
+    if(validSession(newer)&&newer.user.id===expected.user.id&&newer.access_token!==expected.access_token)return newer;
+    throw Error('No se ha podido renovar la sesión. Inicia sesión de nuevo; no se ha borrado la colección.');
+   }
+   const refreshed=await response.json();
+   if(!validSession(refreshed)||refreshed.user.id!==expected.user.id)throw Error('Renovación con identidad distinta: acceso bloqueado.');
+   setSession(refreshed);
+   return refreshed;
+  })();
+  try{return await refreshInFlight}finally{refreshInFlight=null}
+ }
  async function currentUser(){
   const s=getSession();if(!s?.access_token)return null;
   const userRequest=token=>auth('/auth/v1/user',{headers:{Authorization:'Bearer '+token}});
   let response=await userRequest(s.access_token);
   if(response.status===401){
-   if(!s.refresh_token)throw Error('La sesión ha caducado. Entra de nuevo con tu cuenta; tu colección local se conserva.');
-   const refreshedResponse=await auth('/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh_token:s.refresh_token})});
-   if(!refreshedResponse.ok)throw Error('No se ha podido renovar la sesión. Inicia sesión de nuevo; no se ha borrado la colección.');
-   const refreshed=await refreshedResponse.json();
-   if(!validSession(refreshed)||refreshed.user.id!==s.user.id)throw Error('Renovación con identidad distinta: acceso bloqueado.');
-   setSession(refreshed);
+   const refreshed=await renewSession(s);
    response=await userRequest(refreshed.access_token);
   }
   if(!response.ok)throw Error('No se puede comprobar tu cuenta ahora mismo (HTTP '+response.status+'). Ningún dato local se ha eliminado.');
