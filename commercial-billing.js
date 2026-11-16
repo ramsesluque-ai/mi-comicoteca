@@ -36,6 +36,18 @@
  async function auth(path,opt={}){const c=cfg(),h=new Headers(opt.headers||{});h.set('apikey',c.publishableKey);return fetch(c.url+path,{...opt,headers:h})}
  async function signIn(email,password){email=String(email||'').trim();password=String(password||'');if(!email||!password)throw Error('Introduce tu email y contraseña para entrar.');const r=await auth('/auth/v1/token?grant_type=password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});const j=await r.json().catch(()=>({}));if(!r.ok)throw Error(j.msg||j.message||j.error_description||'No se pudo iniciar sesión');setSession(j);location.reload();return j}
  async function signUp(email,password){email=String(email||'').trim();password=String(password||'');if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw Error('Introduce un correo electrónico válido antes de crear la cuenta.');if(password.length<6)throw Error('La contraseña debe tener al menos 6 caracteres.');const r=await auth('/auth/v1/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});const j=await r.json().catch(()=>({}));if(!r.ok)throw Error(j.msg||j.message||j.error_description||'No se pudo crear la cuenta');if(j.access_token){setSession(j);location.reload()}return j}
+ // Supabase Auth returns HTTP 403 (bad_jwt), not just 401, for an expired JWT.
+ // Refresh shortly BEFORE expiry to avoid showing an empty catalog during login.
+ function tokenExpiresSoon(session){
+  let expires=Number(session?.expires_at)||0;
+  if(!expires){
+   try{
+    const payload=session?.access_token?.split('.')[1];
+    if(payload&&typeof atob==='function')expires=Number(JSON.parse(atob(payload.replace(/-/g,'+').replace(/_/g,'/'))).exp)||0;
+   }catch(_){}
+  }
+  return expires>0&&expires*1000<=Date.now()+60000;
+ }
  let refreshInFlight=null;
  async function renewSession(expected){
   if(refreshInFlight)return refreshInFlight;
@@ -58,15 +70,26 @@
   })();
   try{return await refreshInFlight}finally{refreshInFlight=null}
  }
+ async function refreshSession(){
+  const s=getSession();
+  if(!s)return null;
+  return renewSession(s);
+ }
  async function currentUser(){
   const s=getSession();if(!s?.access_token)return null;
   const userRequest=token=>auth('/auth/v1/user',{headers:{Authorization:'Bearer '+token}});
-  let response=await userRequest(s.access_token);
-  if(response.status===401){
-   const refreshed=await renewSession(s);
+  // If the JWT is known to expire, refresh first: otherwise GoTrue can answer
+  // 403 bad_jwt and the screen previously failed permanently at each login.
+  const active=tokenExpiresSoon(s)?await renewSession(s):s;
+  let response=await userRequest(active.access_token);
+  if(response.status===401||response.status===403){
+   // One controlled refresh also handles the Auth 403/bad_jwt response when
+   // expires_at is absent or incorrect. NEVER retry a failed identity check
+   // indefinitely, bypass RLS or clear the account's IndexedDB.
+   const refreshed=await renewSession(active);
    response=await userRequest(refreshed.access_token);
   }
-  if(!response.ok)throw Error('No se puede comprobar tu cuenta ahora mismo (HTTP '+response.status+'). Ningún dato local se ha eliminado.');
+  if(!response.ok)throw Error('No se puede comprobar tu cuenta ahora mismo (HTTP '+response.status+'). Inicia sesión de nuevo desde Cuenta / Suscripción. Ningún dato local se ha eliminado.');
   const user=await response.json();
   if(user?.id!==s.user.id)throw Error('La identidad autenticada no coincide con la colección local.');
   return user;
@@ -86,7 +109,16 @@
  el.querySelector('#cbCancelBack').onclick=()=>{cancelPanel.style.display='none';el.querySelector('#cbCancelConfirmCheck').checked=false;el.querySelector('#cbConfirmCancellation').disabled=true};
  el.querySelector('#cbConfirmCancellation').onclick=async()=>{const check=el.querySelector('#cbCancelConfirmCheck'),btn=el.querySelector('#cbConfirmCancellation');if(!check.checked)return;btn.disabled=true;state.textContent='Confirmando la baja en Stripe…';try{const result=await membershipRequest('POST',{action:'cancel',confirm:true,reason:el.querySelector('#cbCancelReason').value,comment:el.querySelector('#cbCancelComment').value});if(!result.cancelled)throw Error('Stripe todavía no ha confirmado la baja');cancelPanel.style.display='none';check.checked=false;await refresh();state.textContent='Baja confirmada en Stripe. No habrá más renovaciones y podrás acceder hasta el '+result.period_end_label+'. '+(result.email_sent?'Correo de confirmación enviado.':'El correo sigue pendiente de envío. Para cualquier consulta, escribe a contacto@micomicteca.es.')}catch(err){state.textContent='No se ha completado la baja: '+err.message}finally{btn.disabled=!check.checked}};
  el.querySelector('#cbLogout').onclick=()=>{setSession(null);location.reload()};el.querySelector('#cbClose').onclick=()=>el.style.display='none';el._refresh=refresh;return el}
- async function show(){const el=modal();el.style.display='flex';el.querySelector('#cbState').textContent='';await el._refresh();}
+ async function show(){
+  const el=modal();el.style.display='flex';el.querySelector('#cbState').textContent='';
+  try{await el._refresh()}catch(e){
+   // A revoked/expired refresh token must not prevent re-authentication.
+   // Show the login form without removing the locally cached collection.
+   el.querySelector('#cbLoggedOut').style.display='block';
+   el.querySelector('#cbLoggedIn').style.display='none';
+   el.querySelector('#cbState').textContent='Vuelve a entrar con tu correo y contraseña. Tu colección no se ha borrado. '+String(e.message||e);
+  }
+ }
  function addButton(){const nav=document.querySelector('.nav');if(!nav||document.getElementById('commercialAccountBtn'))return;const b=document.createElement('button');b.id='commercialAccountBtn';b.type='button';b.textContent='Cuenta / Suscripción';b.onclick=show;nav.appendChild(b)}
  // Fail closed: a local IndexedDB cache is not proof of entitlement.
  async function entitlement(){
@@ -136,5 +168,5 @@
   try{const e=await entitlement();accessScreen(e.state)}catch(err){console.warn('Membership check:',err);accessScreen('error')}
  }
  document.addEventListener('DOMContentLoaded',()=>{addButton();verifyAccess();const q=new URLSearchParams(location.search).get('checkout');if(q==='success')setTimeout(async()=>{try{const e=await entitlement();if(e.state==='active'){accessScreen('active');await show();document.querySelector('#cbState').textContent='Pago confirmado por Stripe. Tu membresía MI COMICTECA está activa. Pulsa Cerrar para empezar.'}else{await show();document.querySelector('#cbState').textContent='Stripe ha devuelto el proceso de pago. Estamos verificando la activación de tu membresía. No vuelvas a pagar; actualiza la página en unos instantes.'}}catch(_){await show();document.querySelector('#cbState').textContent='Estamos comprobando la confirmación del pago. No vuelvas a pagar; actualiza la página en unos instantes.'}},300);if(q==='cancelled')setTimeout(()=>{show();document.querySelector('#cbState').textContent='Checkout cancelado. No se ha realizado ningún cobro.'},300)});
- window.CommercialBilling={show,signIn,signUp,currentUser,checkout};
+ window.CommercialBilling={show,signIn,signUp,currentUser,refreshSession,checkout};
 })();
