@@ -73,14 +73,13 @@ check('clearing an existing cover is an explicit conflict, not an automatic merg
   assert.equal(p.conflicts[0].reason,'protected-cover-cleared');
   assert.equal(p.upload.length+p.download.length+p.merged.length,0);
 });
-check('adding a cover while another device edits notes remains mergeable',()=>{
+check('new cover reference is blocked until binary is verified, even with independent note edit',()=>{
   const baseline=row('cover-added','Original',{notes:'before'});
   const local={...baseline,coverKey:'new-cover'};
   const remote={...baseline,notes:'after'};
   const p=planWithBaseline([baseline],[local],[remote]);
-  assert.equal(p.conflicts.length,0);
-  assert.equal(p.merged[0].record.coverKey,'new-cover');
-  assert.equal(p.merged[0].record.notes,'after');
+  assert.ok(p.conflicts.length>0,'cover reference must not be merged without verified private bytes');
+  assert.equal(p.upload.length+p.download.length+p.merged.length,0);
 });
 check('owner diagnostic: 16505 shared and 18 remote-only never authorize live writes',()=>{
   const shared=Array.from({length:16505},(_,i)=>row('stable-'+i,'Comic '+i,{issue:String(i+1)}));
