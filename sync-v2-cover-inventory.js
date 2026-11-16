@@ -51,6 +51,17 @@
    return keys;
  }
  async function compare(opts={}){
+   // Do not disclose an inventory against a cached or switched account session.
+   // This is an authenticated read only, before either inventory is enumerated.
+   const {session,cfg,fetcher=root.fetch,signal}=opts;
+   const uid=String(session?.user?.id||'');
+   check(/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(uid)&&session?.access_token,'Sesión privada inválida');
+   check(cfg?.url&&cfg?.publishableKey,'Configuración privada no disponible');
+   const headers={apikey:cfg.publishableKey,Authorization:'Bearer '+session.access_token};
+   const who=await fetcher(String(cfg.url).replace(/\/+$/,'')+'/auth/v1/user',{method:'GET',headers,cache:'no-store',signal});
+   if(!who.ok)throw Error('Sesión no verificada (HTTP '+who.status+')');
+   const profile=await who.json();
+   check(profile?.id===uid,'La identidad autenticada no coincide');
    const [local,remote]=await Promise.all([localKeys(opts),remoteKeys(opts)]);
    const onlyLocal=[...local].filter(x=>!remote.has(x)),onlyRemote=[...remote].filter(x=>!local.has(x));
    return {
