@@ -170,12 +170,12 @@ check('replacing a nonempty private cover reference requires verified binary tra
     }
   }
 });
-check('new cover reference may be added when baseline has none',()=>{
+check('new cover reference is blocked until binary SHA-256 is verified',()=>{
   const original=row('cover-add-safe','Original');
   const changed={...original,coverKey:'new-private-cover'};
   const p=planWithBaseline([original],[changed],[original]);
-  assert.equal(p.conflicts.length,0);
-  assert.equal(p.merged.length,1);
+  assert.ok(p.conflicts.some(c=>c.reason==='cover-reference-changed'&&c.fields.includes('coverKey')));
+  assert.equal(p.upload.length+p.download.length+p.merged.length,0);
 });
 check('equal deletion timestamps with different payloads must not hide a conflict',()=>{
   const original=row('deleted-payload','Original',{coverKey:'original-cover'});
