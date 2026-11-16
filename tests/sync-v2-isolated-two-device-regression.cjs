@@ -41,7 +41,7 @@ assert.equal(firstCoverDownload.download.length,0);
 const firstTextOnly=planWithBaseline([],[record('fresh-text')],[]);
 assert.equal(firstTextOnly.conflicts.length,0);
 assert.equal(firstTextOnly.upload.length,1,'new metadata-only records remain plannable');
-const mixedBatch=planWithBaseline([],[record('safe'),record('unsafe',{coverKey:'uid/private.jpg'})],[]);
+const mixedBatch=planWithBaseline([],[record('safe',{issue:'21'}),record('unsafe',{issue:'22',coverKey:'uid/private.jpg'})],[]);
 assert.equal(mixedBatch.conflicts[0].reason,'new-record-cover-unverified');
 assert.equal(mixedBatch.upload.length,0,'any unverified cover blocks the entire batch');
 // Identical cover references on two devices do not prove the binary exists.
