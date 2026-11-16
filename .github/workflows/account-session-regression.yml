@@ -9,6 +9,10 @@ on:
       - 'account-storage-diagnostic.js'
       - 'index.html'
       - 'tests/account-session-regression.test.cjs'
+      - 'catalog-cloud-rehydrate.js'
+      - 'tests/catalog-cloud-rehydrate.test.cjs'
+      - 'app5.js'
+      - 'sw.js'
       - '.github/workflows/account-session-regression.yml'
   workflow_dispatch:
 jobs:
@@ -27,5 +31,8 @@ jobs:
           node --check app1.js
           node --check commercial-billing.js
           node --check account-storage-diagnostic.js
+          node --check app5.js
+          node --check catalog-cloud-rehydrate.js
+          node --check sw.js
       - name: Run local account-session regression tests
-        run: node --test tests/account-session-regression.test.cjs
+        run: node --test tests/account-session-regression.test.cjs tests/catalog-cloud-rehydrate.test.cjs
