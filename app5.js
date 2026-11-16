@@ -160,9 +160,12 @@ function startupFailure(stage,e){console.error('[COMICTECA startup:'+stage+']',e
   if(!MC_IMPORT_TEST&&MC_ACCOUNT_ID){
    if(document.readyState==='loading')await new Promise(resolve=>document.addEventListener('DOMContentLoaded',resolve,{once:true}));
    if(!window.MCCatalogBootstrap?.bootstrap)throw Error('La comprobación segura del catálogo no está disponible. No se mostrará una colección vacía.');
-   window.MC_CATALOG_BOOTSTRAP=await window.MCCatalogBootstrap.bootstrap({
-    database:db,dbName:DBN,uid:MC_ACCOUNT_ID,cfg:window.MI_COMICOTECA_CLOUD
-   });
+   window.MC_CATALOG_BOOT_PENDING=true;
+   try{
+    window.MC_CATALOG_BOOTSTRAP=await window.MCCatalogBootstrap.bootstrap({
+     database:db,dbName:DBN,uid:MC_ACCOUNT_ID,cfg:window.MI_COMICOTECA_CLOUD
+    });
+   }finally{window.MC_CATALOG_BOOT_PENDING=false}
   }
   await render();
  }catch(e){
