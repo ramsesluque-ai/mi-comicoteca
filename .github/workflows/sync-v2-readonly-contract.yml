@@ -3,14 +3,10 @@ on:
   push:
     branches: [commercial-published]
     paths:
-      - 'sync-v2-manual-plan.js'
-      - 'sync-v2-reconcile.js'
-      - 'sync-v2-cover-transport.js'
-      - 'sync-v2-cover-integrity.js'
-      - 'sync-v2-cover-cache-bridge.js'
+      - 'sync-v2-*.js'
       - 'manual-sync-v2-button.js'
-      - 'tests/sync-v2-fake-backend-readonly.test.cjs'
-      - 'tests/sync-v2-two-device-cover-roundtrip.test.cjs'
+      - 'tests/sync-v2-*.cjs'
+      - 'tests/sync-v2-*.js'
       - '.github/workflows/sync-v2-readonly-contract.yml'
   workflow_dispatch:
 jobs:
@@ -18,12 +14,21 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Verify isolated two-session fake backend
-        run: node --test tests/sync-v2-fake-backend-readonly.test.cjs
-      - name: Verify isolated two-device cover SHA-256 and conflict gate
-        run: node --test tests/sync-v2-two-device-cover-roundtrip.test.cjs
+      - name: Verify isolated two-session backend, covers and conflict gates
+        run: |
+          node --test tests/sync-v2-fake-backend-readonly.test.cjs
+          node --test tests/sync-v2-two-device-cover-roundtrip.test.cjs
+          node --test tests/sync-v2-isolated-two-device-regression.cjs
+      - name: Verify failure recovery, baselines and safety gates
+        run: |
+          node --test tests/sync-v2-fault-injection.test.cjs
+          node --test tests/sync-v2-restart-stale-baseline.test.cjs
+          node --test tests/sync-v2-production-guard.test.cjs
+          node --test tests/sync-v2-cover-transport.test.cjs
+          node --test tests/sync-v2-cover-isolation.test.cjs
