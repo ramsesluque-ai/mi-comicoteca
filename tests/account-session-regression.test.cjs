@@ -80,3 +80,25 @@ test('deployment HTML references new account and diagnostic versions',()=>{
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
  for(const marker of ['app1.js?v=20261116-persistent-account','commercial-billing.js?v=20261116-session-refresh','account-storage-diagnostic.js?v=20261116-empty-recovery'])assert.ok(html.includes(marker),marker);
 });
+
+test('simultaneous membership and collection checks refresh once',async()=>{
+ let refreshCalls=0;
+ const responder=async(url,opt)=>{
+  if(url.includes('grant_type=refresh_token')){
+   refreshCalls++;
+   await Promise.resolve();
+   return {ok:true,status:200,json:async()=>session('NEW')};
+  }
+  if(url.endsWith('/auth/v1/user')){
+   return opt.headers.get('Authorization')==='Bearer NEW'
+    ?{ok:true,status:200,json:async()=>({id:UID})}
+    :{ok:false,status:401};
+  }
+  throw Error('Unexpected auth request');
+ };
+ const x=isolatedBilling({persisted:session(),responder});
+ const users=await Promise.all([x.api.currentUser(),x.api.currentUser()]);
+ assert.equal(users.length,2);
+ assert.ok(users.every(user=>user.id===UID));
+ assert.equal(refreshCalls,1);
+});
