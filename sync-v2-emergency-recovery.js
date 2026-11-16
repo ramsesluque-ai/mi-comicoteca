@@ -14,15 +14,31 @@
  try{
   for(let i=0;i<50&&(typeof db==='undefined'||!db);i++)await wait(200);
   if(typeof db==='undefined'||!db)throw Error('IndexedDB no está disponible');
-  const s=JSON.parse(sessionStorage.getItem('mc_supabase_session_v1')||'null');
-  if(s?.user?.id!==OWNER||!s.access_token)throw Error('Inicia sesión con la cuenta propietaria');
+  // Verify and refresh the authenticated identity BEFORE reading the cloud.
+  // A stale tab token previously caused an endless HTTP 401 recovery failure.
+  const verified=await window.CommercialBilling?.currentUser?.();
+  if(verified?.id!==OWNER)throw Error('Inicia sesión con la cuenta propietaria');
+  const activeSession=()=>{
+   const item=localStorage.getItem('mc_supabase_session_v1')||sessionStorage.getItem('mc_supabase_session_v1');
+   const session=JSON.parse(item||'null');
+   if(session?.user?.id!==OWNER||!session.access_token)throw Error('Tu sesión ha cambiado. Inicia sesión de nuevo.');
+   return session;
+  };
   const cfg=window.MI_COMICOTECA_CLOUD;
   if(!cfg?.url||!cfg.publishableKey)throw Error('Configuración Supabase no disponible');
   const cloud=[],seen=new Set();let last=null,complete=false;
   for(let page=0;page<1000;page++){
    const after=last===null?'':'&local_id=gt.'+encodeURIComponent(last);
    const url=cfg.url+'/rest/v1/user_comics?select=user_id,local_id,metadata&user_id=eq.'+encodeURIComponent(OWNER)+'&order=local_id.asc&limit=250'+after;
-   const resp=await fetch(url,{headers:{apikey:cfg.publishableKey,Authorization:'Bearer '+s.access_token},cache:'no-store'});
+   const request=()=>fetch(url,{headers:{apikey:cfg.publishableKey,Authorization:'Bearer '+activeSession().access_token},cache:'no-store'});
+   let resp=await request();
+   if(resp.status===401||resp.status===403){
+    const refreshed=await window.CommercialBilling?.refreshSession?.();
+    if(refreshed?.user?.id!==OWNER)throw Error('Sesión caducada. Inicia sesión de nuevo antes de recuperar tu colección.');
+    const reverified=await window.CommercialBilling.currentUser();
+    if(reverified?.id!==OWNER)throw Error('Identidad cambiada. Recuperación cancelada.');
+    resp=await request();
+   }
    if(!resp.ok)throw Error('Supabase HTTP '+resp.status);
    const rows=await resp.json();if(!Array.isArray(rows))throw Error('Respuesta no válida');
    for(const x of rows){
