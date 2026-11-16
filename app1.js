@@ -1,6 +1,18 @@
 'use strict';
 const MC_IMPORT_TEST = new URLSearchParams(location.search).get('modo') === 'prueba-importacion';
-function mcAccountStorageId(){try{const s=JSON.parse(sessionStorage.getItem('mc_supabase_session_v1')||'null');const id=s?.user?.id;return typeof id==='string'&&/^[0-9a-f-]{36}$/i.test(id)?id:null}catch{return null}}
+function mcAccountStorageId(){
+ // Resolve the account BEFORE opening IndexedDB. sessionStorage alone vanishes
+ // with a browser tab, which previously selected an empty guest database.
+ // Cached IDs only select a namespace; commercial-billing verifies auth + RLS.
+ for(const storage of [localStorage,sessionStorage]){
+  try{
+   const s=JSON.parse(storage.getItem('mc_supabase_session_v1')||'null');
+   const id=s?.user?.id;
+   if(typeof id==='string'&&/^[0-9a-f-]{36}$/i.test(id)&&typeof s.access_token==='string'&&s.access_token)return id;
+  }catch(_){}
+ }
+ return null;
+}
 const MC_ACCOUNT_ID=mcAccountStorageId();
 const DBN=MC_IMPORT_TEST?'comicteca-importacion-prueba-v2':MC_ACCOUNT_ID?'comicteca-user-'+MC_ACCOUNT_ID:'comicteca-guest-v1', DBV=1, PAGE=50;let db,current='dashboard',page=1,filters={},masterCollection=null,deferredInstall=null;
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
