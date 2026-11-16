@@ -144,10 +144,10 @@ test('published page includes bootstrap before DOMContentLoaded and updated work
  const index=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
  const app5=fs.readFileSync(path.join(__dirname,'..','app5.js'),'utf8');
  const sw=fs.readFileSync(path.join(__dirname,'..','sw.js'),'utf8');
- assert.match(index,/catalog-cloud-rehydrate\.js\?v=20261116-safe-bootstrap2/);
+ assert.match(index,/catalog-cloud-rehydrate\.js\?v=20261116-auth-badjwt403/);
  assert.match(app5,/MCCatalogBootstrap\.bootstrap/);
  assert.match(sw,/comicteca-v132-safe-catalog-bootstrap/);
- assert.match(index,/mi-comicteca-release.*20261116-safe-catalog-bootstrap2/);
+ assert.match(index,/mi-comicteca-release.*20261116-auth-badjwt403/);
 });
 
 test('403 caused by token expiry mid-page refreshes and continues same account',async()=>{
