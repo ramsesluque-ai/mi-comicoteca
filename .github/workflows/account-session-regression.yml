@@ -1,0 +1,31 @@
+name: Account session and catalog visibility regression
+on:
+  push:
+    branches:
+      - commercial-published
+    paths:
+      - 'app1.js'
+      - 'commercial-billing.js'
+      - 'account-storage-diagnostic.js'
+      - 'index.html'
+      - 'tests/account-session-regression.test.cjs'
+      - '.github/workflows/account-session-regression.yml'
+  workflow_dispatch:
+jobs:
+  account-session:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate JavaScript syntax
+        run: |
+          node --check app1.js
+          node --check commercial-billing.js
+          node --check account-storage-diagnostic.js
+      - name: Run local account-session regression tests
+        run: node --test tests/account-session-regression.test.cjs
