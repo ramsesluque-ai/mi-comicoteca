@@ -36,7 +36,11 @@
    const query='?select=user_id,local_id,metadata&user_id=eq.'+encodeURIComponent(uid)+'&order=local_id.asc&limit='+PAGE+(last===null?'':'&local_id=gt.'+encodeURIComponent(last));
    const request=()=>fetcher(base+'/rest/v1/user_comics'+query,{method:'GET',headers:{apikey:cfg.publishableKey,Authorization:'Bearer '+getAccountSession(uid).access_token},cache:'no-store'});
    let response=await request();
-   if(response.status===401){
+   if(response.status===401||response.status===403){
+    // Mid-scan JWT expiry must not abort a valid 16k-record restore.
+    // Refresh once, verify the SAME identity, and retry the exact GET only.
+    const refreshed=await root.CommercialBilling?.refreshSession?.();
+    assert(refreshed?.user?.id===uid,'No se pudo renovar el acceso a esta cuenta. Inicia sesión de nuevo.');
     const renewed=await verify();
     assert(renewed?.id===uid,'La sesión cambió mientras se leía la colección.');
     response=await request();
@@ -108,6 +112,10 @@
   el.append(heading,paragraph);
   if(allowRetry){
    const btn=document.createElement('button');btn.textContent='Reintentar carga de mi colección';btn.className='btn primary';btn.onclick=()=>location.reload();el.append(btn);
+   const login=document.createElement('button');login.className='btn';
+   login.textContent='Iniciar sesión de nuevo';
+   login.onclick=()=>root.CommercialBilling?.show?.();
+   el.append(login);
   }
  }
  async function bootstrap({database,dbName,uid,cfg,fetcher=fetch,verify=()=>root.CommercialBilling?.currentUser(),onState=showMessage,hasher}={}){
