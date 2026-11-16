@@ -3,7 +3,8 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const {compare}=require('../sync-v2-manual-plan.js');
-const uid='test-user-a', other='test-user-b';
+// Stable synthetic UUIDs satisfy production identity validation; never real account IDs.
+const uid='11111111-1111-4111-8111-111111111111', other='22222222-2222-4222-8222-222222222222';
 const session={user:{id:uid},access_token:'fake-jwt'};
 const cfg={url:'https://example.invalid',publishableKey:'fake-public-key'};
 const record=id=>({id,title:'Issue '+id});
