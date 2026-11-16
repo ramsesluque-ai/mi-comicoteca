@@ -97,9 +97,10 @@
   if(!el){
    el=document.createElement('section');el.id='mc-catalog-startup-status';
    el.setAttribute('role','status');el.setAttribute('aria-live','polite');
-   el.style.cssText='padding:24px;margin:18px auto;max-width:750px;border:1px solid #477890;border-radius:14px;background:#10253b;color:#fff;font:15px/1.5 system-ui';
-   const view=document.getElementById('view');
-   (view||document.body).appendChild(el);
+   // Keep the recovery message visible even if another module re-renders #view.
+   // The account modal has z-index 100000, so it remains accessible.
+   el.style.cssText='position:fixed;inset:0;z-index:99998;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;border:0;background:#071625;box-sizing:border-box;color:#fff;font:16px/1.5 system-ui;text-align:center';
+   document.body.appendChild(el);
   }
   el.replaceChildren();
   const heading=document.createElement('h2');heading.textContent=title;
