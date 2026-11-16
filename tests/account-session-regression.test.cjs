@@ -78,7 +78,7 @@ test('unexpected account identity during token refresh is rejected',async()=>{
 });
 test('deployment HTML references new account and diagnostic versions',()=>{
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
- for(const marker of ['app1.js?v=20261116-persistent-account','commercial-billing.js?v=20261116-session-refresh','account-storage-diagnostic.js?v=20261116-empty-recovery'])assert.ok(html.includes(marker),marker);
+ for(const marker of ['app1.js?v=20261116-persistent-account','commercial-billing.js?v=20261116-singleflight-auth','account-storage-diagnostic.js?v=20261116-empty-recovery2'])assert.ok(html.includes(marker),marker);
 });
 
 test('simultaneous membership and collection checks refresh once',async()=>{
