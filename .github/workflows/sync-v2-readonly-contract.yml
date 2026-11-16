@@ -5,6 +5,9 @@ on:
     paths:
       - 'sync-v2-*.js'
       - 'manual-sync-v2-button.js'
+      - 'index.html'
+      - 'sync.js'
+      - 'cloud-collection-sync.js'
       - 'tests/sync-v2-*.cjs'
       - 'tests/sync-v2-*.js'
       - '.github/workflows/sync-v2-readonly-contract.yml'
@@ -32,3 +35,6 @@ jobs:
           node --test tests/sync-v2-production-guard.test.cjs
           node --test tests/sync-v2-cover-transport.test.cjs
           node --test tests/sync-v2-cover-isolation.test.cjs
+          node --test tests/sync-v2-two-session-retry-harness.cjs
+          node --test tests/sync-v2-private-cover-transport-isolation.test.cjs
+          node --test tests/sync-v2-16523-scale.test.cjs
