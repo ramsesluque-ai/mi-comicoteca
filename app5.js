@@ -151,4 +151,22 @@ function contactoView(){
 async function render(){let html='';if(current==='dashboard')html=await (window.PbiDashboard&&typeof window.PbiDashboard.view==='function'?window.PbiDashboard.view():dashboard());if(current==='catalog')html=await catalogView(false);if(current==='wishlist')html=await catalogView(true);if(current==='series')html=await seriesView();if(current==='master')html=await masterView();if(current==='purchases')html=await purchasesView();if(current==='quality')html=await quality();if(current==='stats')html=await stats();if(current==='backup')html=await backupView();if(current==='contacto')html=contactoView();$('#view').innerHTML=html;if(current==='catalog')await renderCat(false);if(current==='wishlist')await renderCat(true);if(current==='series')await renderSeries();if(current==='master'&&(await allStore('master')).length)await renderMaster()}
 window.onclick=e=>{if(e.target.id==='modal')closeModal()};window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;$('#installBtn').classList.remove('hidden')});$('#installBtn').onclick=async()=>{if(deferredInstall){deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;$('#installBtn').classList.add('hidden')}};
 function startupFailure(stage,e){console.error('[COMICTECA startup:'+stage+']',e);const view=document.querySelector('#view')||document.body;const msg=stage==='storage'?'No se ha podido acceder al almacenamiento local en este navegador. Tus datos no se han borrado. Cierra otras pestañas de COMICTECA y vuelve a intentarlo.':'La aplicación no ha podido completar el arranque. Tus datos locales no se han borrado.';view.innerHTML=`<div class="card" style="margin:24px;max-width:760px"><h2>No se pudo iniciar COMICTECA</h2><p>${msg}</p><p class="muted">Detalle técnico: ${String(e&&e.message||e||'Error desconocido').replace(/[<>&]/g,s=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[s]))}</p><button class="btn primary" onclick="location.reload()">Reintentar</button></div>`}
-(async()=>{try{await openDB()}catch(e){startupFailure('storage',e);return}if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(e=>console.warn('[COMICTECA service worker]',e));try{await render()}catch(e){startupFailure('render',e)}})();
+(async()=>{
+ try{await openDB()}catch(e){startupFailure('storage',e);return}
+ if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(e=>console.warn('[COMICTECA service worker]',e));
+ try{
+  // Wait for all production modules to load before choosing between a genuinely
+  // new collection and the account's existing cloud collection.
+  if(!MC_IMPORT_TEST&&MC_ACCOUNT_ID){
+   if(document.readyState==='loading')await new Promise(resolve=>document.addEventListener('DOMContentLoaded',resolve,{once:true}));
+   if(!window.MCCatalogBootstrap?.bootstrap)throw Error('La comprobación segura del catálogo no está disponible. No se mostrará una colección vacía.');
+   window.MC_CATALOG_BOOTSTRAP=await window.MCCatalogBootstrap.bootstrap({
+    database:db,dbName:DBN,uid:MC_ACCOUNT_ID,cfg:window.MI_COMICOTECA_CLOUD
+   });
+  }
+  await render();
+ }catch(e){
+  if(document.getElementById('mc-catalog-startup-status')){console.error('[COMICTECA catalog startup]',e);return;}
+  startupFailure('render',e);
+ }
+})();
