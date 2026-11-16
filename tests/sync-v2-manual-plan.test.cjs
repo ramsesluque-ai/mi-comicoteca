@@ -24,6 +24,13 @@ function service(remote,{badUser=false,malformed=false,repeatPage=false,unauthen
 function cloud(rows){return rows.map(r=>({user_id:uid,local_id:'comics:'+r.id,metadata:{kind:'comics',record:r}})).sort((a,b)=>a.local_id.localeCompare(b.local_id,'en'))}
 (async()=>{
  assert.equal(localIndex(local).size,16523);
+ // A malformed endpoint must fail before the access token is sent anywhere.
+ for(const url of ['http://example.supabase.co','https://example.supabase.co/evil','https://example.supabase.co?redirect=1','javascript:alert(1)']){
+   let calls=0;
+   await assert.rejects(compare({session,cfg:{...cfg,url},localRows:[],fetcher:async()=>{calls++;throw Error('network should not run')}}),/Endpoint cloud/);
+   assert.equal(calls,0,'Unsafe URL triggered network request');
+ }
+ await assert.rejects(compare({session:{...session,user:{id:'invalid'}},cfg,localRows:[],fetcher:async()=>{throw Error('network should not run')}}),/Identificador de usuario/);
  assert.deepEqual(canonical({b:1,a:{d:2,c:3}}),canonical({a:{c:3,d:2},b:1}));
  assert.throws(()=>localIndex([{id:'same'},{id:'same'}]),/duplicados/);
  const whole=service(cloud(local)),r=await compare({session,cfg,localRows:local,fetcher:whole.fetcher});
