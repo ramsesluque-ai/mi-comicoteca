@@ -146,8 +146,9 @@ test('published page includes bootstrap before DOMContentLoaded and updated work
  const sw=fs.readFileSync(path.join(__dirname,'..','sw.js'),'utf8');
  assert.match(index,/catalog-cloud-rehydrate\.js\?v=20261116-auth-badjwt403/);
  assert.match(app5,/MCCatalogBootstrap\.bootstrap/);
- assert.match(sw,/comicteca-v132-safe-catalog-bootstrap/);
+ assert.match(sw,/comicteca-v133-auth-badjwt403/);
  assert.match(index,/mi-comicteca-release.*20261116-auth-badjwt403/);
+ assert.match(index,/sync-v2-emergency-recovery\\.js\\?v=20261116-auth-badjwt403/);
 });
 
 test('403 caused by token expiry mid-page refreshes and continues same account',async()=>{
