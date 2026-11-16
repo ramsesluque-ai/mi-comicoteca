@@ -30,6 +30,9 @@
  async function compare({session,cfg,localRows,fetcher=fetch,onProgress=()=>{},signal,pageSize=250,maxPages=1000}){
    assert(session?.access_token&&session?.user?.id,'Inicia sesión para comparar tu catálogo');
    assert(cfg?.url&&cfg?.publishableKey,'Falta la configuración segura de Supabase');
+   // Reject malformed or non-TLS endpoints before attaching the bearer token.
+   assert(/^https:\/\/[^/?#]+(?:\/)?$/.test(String(cfg.url)),'Endpoint cloud no seguro o inválido');
+   assert(/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(String(session.user.id)),'Identificador de usuario inválido');
    assert(Number.isInteger(pageSize)&&pageSize>=1&&pageSize<=500,'Tamaño de página inválido');
    assert(Number.isInteger(maxPages)&&maxPages>=1,'Límite de páginas inválido');
    const uid=String(session.user.id),base=String(cfg.url).replace(/\/+$/,'');
