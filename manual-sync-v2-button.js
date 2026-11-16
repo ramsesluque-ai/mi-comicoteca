@@ -54,6 +54,16 @@
          '. No se ha sobrescrito, descargado, subido ni borrado ningún cómic. La sincronización real sigue bloqueada hasta validar el respaldo, la reconciliación y las pruebas en dos sesiones.';
      }
    }catch(e){if(panel.isConnected)diagnostic.textContent='Diagnóstico local no disponible: '+String(e.message||e)+'. Ningún dato modificado.'}})();
+   // CoverVault is a legacy shared CacheStorage namespace. Do not present its
+   // contents as belonging to the current account if the local DB identity
+   // differs or the session is absent. This is a diagnostic guard, not proof
+   // of ownership of individual cover binaries.
+   function assertCoverAccount(session){
+     const uid=session?.user?.id;
+     if(!uid||!session?.access_token)throw Error('Inicia sesión para auditar portadas privadas');
+     if(typeof DBN!=='string'||DBN!=='comicteca-user-'+uid)
+       throw Error('Base local y cuenta no coinciden: inventario de portadas bloqueado');
+   }
    // Portadas pertenecen a CacheStorage + Storage, no al JSON bibliográfico.
    // Compare only, never assume a matching filename proves image integrity.
    const covers=document.createElement('p');
@@ -62,7 +72,7 @@
    (async()=>{try{
      const raw=sessionStorage.getItem('mc_supabase_session_v1')||localStorage.getItem('mc_supabase_session_v1');
      const session=raw?JSON.parse(raw):null,cfg=window.MI_COMICOTECA_CLOUD||{};
-     if(!session?.access_token||!session?.user?.id)return;
+     assertCoverAccount(session);
      if(!window.MCSyncV2CoverInventory?.compare)throw Error('Módulo de portadas no disponible');
      const summary=await MCSyncV2CoverInventory.compare({session,cfg});
      if(panel.isConnected)covers.textContent='Portadas privadas (solo lectura): '+summary.local+' archivos locales; '+summary.remote+' en Supabase; '+summary.matched+' coinciden por nombre; '+summary.onlyLocal+' solo locales; '+summary.onlyRemote+' solo en nube. Falta verificar SHA-256 binario. Ninguna imagen modificada.';
@@ -77,6 +87,7 @@
      try{
        const raw=sessionStorage.getItem('mc_supabase_session_v1')||localStorage.getItem('mc_supabase_session_v1');
        const session=raw?JSON.parse(raw):null,cfg=window.MI_COMICOTECA_CLOUD||{};
+       assertCoverAccount(session);
        if(!window.MCSyncV2CoverInventory?.compareBytes)throw Error('Comprobación binaria no disponible');
        covers.textContent='Comparando bytes de portadas privadas (solo lectura)…';
        const result=await window.MCSyncV2CoverInventory.compareBytes({
