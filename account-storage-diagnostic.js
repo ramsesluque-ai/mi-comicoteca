@@ -8,8 +8,9 @@
  const SESSION='mc_supabase_session_v1';
  function account(){for(const s of [localStorage,sessionStorage]){try{const v=JSON.parse(s.getItem(SESSION)||'null');if(v?.user?.id&&v?.access_token)return v.user.id}catch(_){}}return null}
  async function inspect(){
-  // Automatic authenticated cloud recovery already owns the empty-catalog UI.
-  if(window.MC_CATALOG_BOOT_PENDING===true)return;
+  // Never cover the login/retry buttons with a second owner diagnostic.
+  // Account recovery already reports its own error with safe login actions.
+  if(window.MC_CATALOG_BOOT_PENDING===true||document.getElementById('mc-catalog-startup-status'))return;
   if(typeof DBN!=='string'||typeof allStore!=='function')return;
   const uid=account(),current=DBN;
   let count=null;try{count=(await allStore('comics')).length}catch(_){}
