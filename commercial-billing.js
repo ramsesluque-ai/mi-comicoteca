@@ -3,12 +3,57 @@
 (function(){
  const SESSION='mc_supabase_session_v1';
  const cfg=()=>window.MI_COMICOTECA_CLOUD||{};
- function getSession(){try{return JSON.parse(sessionStorage.getItem(SESSION)||'null')}catch{return null}}
- function setSession(s){if(s)sessionStorage.setItem(SESSION,JSON.stringify(s));else sessionStorage.removeItem(SESSION)}
+ // Persist a signed-in browser session across tabs/restarts; NEVER use the cached
+ // user ID as authorization. Supabase must verify the bearer token and membership.
+ function readSession(storage){try{return JSON.parse(storage.getItem(SESSION)||'null')}catch{return null}}
+ function validSession(s){return !!(s?.user?.id&&/^[0-9a-f-]{36}$/i.test(s.user.id)&&typeof s.access_token==='string'&&s.access_token.length>0)}
+ function getSession(){
+  const stored=readSession(localStorage),tab=readSession(sessionStorage);
+  const s=validSession(stored)?stored:validSession(tab)?tab:null;
+  if(!s)return null;
+  try{if(!validSession(tab)||tab.user.id!==s.user.id||tab.access_token!==s.access_token)sessionStorage.setItem(SESSION,JSON.stringify(s))}catch(_){}
+  try{if(!validSession(stored))localStorage.setItem(SESSION,JSON.stringify(s))}catch(_){}
+  return s;
+ }
+ function setSession(s){
+  if(s&&!validSession(s))throw Error('La respuesta de autenticación no contiene una sesión válida');
+  for(const storage of [sessionStorage,localStorage]){
+   try{if(s)storage.setItem(SESSION,JSON.stringify(s));else storage.removeItem(SESSION)}catch(_){}
+  }
+ }
+ // A sign-out or account switch in another tab must never leave the previous
+ // account's IndexedDB selected in this tab.
+ window.addEventListener('storage',e=>{
+  if(e.key!==SESSION)return;
+  const stored=readSession(localStorage),tab=readSession(sessionStorage);
+  if(stored?.user?.id!==tab?.user?.id){
+   try{sessionStorage.removeItem(SESSION)}catch(_){}
+   location.reload();
+  }else if(validSession(stored)){
+   try{sessionStorage.setItem(SESSION,JSON.stringify(stored))}catch(_){}
+  }
+ });
  async function auth(path,opt={}){const c=cfg(),h=new Headers(opt.headers||{});h.set('apikey',c.publishableKey);return fetch(c.url+path,{...opt,headers:h})}
  async function signIn(email,password){email=String(email||'').trim();password=String(password||'');if(!email||!password)throw Error('Introduce tu email y contraseña para entrar.');const r=await auth('/auth/v1/token?grant_type=password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});const j=await r.json().catch(()=>({}));if(!r.ok)throw Error(j.msg||j.message||j.error_description||'No se pudo iniciar sesión');setSession(j);location.reload();return j}
  async function signUp(email,password){email=String(email||'').trim();password=String(password||'');if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw Error('Introduce un correo electrónico válido antes de crear la cuenta.');if(password.length<6)throw Error('La contraseña debe tener al menos 6 caracteres.');const r=await auth('/auth/v1/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});const j=await r.json().catch(()=>({}));if(!r.ok)throw Error(j.msg||j.message||j.error_description||'No se pudo crear la cuenta');if(j.access_token){setSession(j);location.reload()}return j}
- async function currentUser(){const s=getSession();if(!s?.access_token)return null;const r=await auth('/auth/v1/user',{headers:{Authorization:'Bearer '+s.access_token}});if(!r.ok){setSession(null);return null}return r.json()}
+ async function currentUser(){
+  const s=getSession();if(!s?.access_token)return null;
+  const userRequest=token=>auth('/auth/v1/user',{headers:{Authorization:'Bearer '+token}});
+  let response=await userRequest(s.access_token);
+  if(response.status===401){
+   if(!s.refresh_token)throw Error('La sesión ha caducado. Entra de nuevo con tu cuenta; tu colección local se conserva.');
+   const refreshedResponse=await auth('/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh_token:s.refresh_token})});
+   if(!refreshedResponse.ok)throw Error('No se ha podido renovar la sesión. Inicia sesión de nuevo; no se ha borrado la colección.');
+   const refreshed=await refreshedResponse.json();
+   if(!validSession(refreshed)||refreshed.user.id!==s.user.id)throw Error('Renovación con identidad distinta: acceso bloqueado.');
+   setSession(refreshed);
+   response=await userRequest(refreshed.access_token);
+  }
+  if(!response.ok)throw Error('No se puede comprobar tu cuenta ahora mismo (HTTP '+response.status+'). Ningún dato local se ha eliminado.');
+  const user=await response.json();
+  if(user?.id!==s.user.id)throw Error('La identidad autenticada no coincide con la colección local.');
+  return user;
+ }
  async function checkout(){const c=cfg(),s=getSession();if(!s?.access_token)throw Error('Inicia sesión antes de suscribirte.');const r=await fetch(c.url+'/functions/v1/create-checkout-session',{method:'POST',headers:{apikey:c.publishableKey,Authorization:'Bearer '+s.access_token,'Content-Type':'application/json'},body:JSON.stringify({price_id:'price_1UWDPyPelYDWaNXHmtO8IZhJ',success_url:location.origin+location.pathname+'?checkout=success',cancel_url:location.origin+location.pathname+'?checkout=cancelled'})});const j=await r.json().catch(()=>({}));if(!r.ok)throw Error(j.error||j.message||'No se pudo abrir Stripe Checkout');if(!j.url)throw Error('Stripe no devolvió la URL de Checkout');if(j.livemode!==true)throw Error('Stripe no ha confirmado el modo real; operación detenida.');const checkoutUrl=new URL(j.url);if(checkoutUrl.protocol!=='https:'||!['checkout.stripe.com','checkout.stripe.dev'].includes(checkoutUrl.hostname))throw Error('Destino de pago no válido');location.assign(checkoutUrl.href)}
  async function membershipRequest(method='GET',payload){const c=cfg(),session=getSession();if(!session?.access_token)throw Error('Inicia sesión para gestionar la baja');const response=await fetch(c.url+'/functions/v1/manage-membership',{method,headers:{apikey:c.publishableKey,Authorization:'Bearer '+session.access_token,...(method==='POST'?{'Content-Type':'application/json'}:{})},...(method==='POST'?{body:JSON.stringify(payload)}:{})});const data=await response.json().catch(()=>({}));if(!response.ok)throw Error(data.error||'No se ha podido gestionar la membresía');return data}
  function modal(){let el=document.getElementById('commercialAccountModal');if(el)return el;el=document.createElement('div');el.id='commercialAccountModal';el.style.cssText='position:fixed;inset:0;background:#000c;z-index:100000;display:none;align-items:center;justify-content:center;padding:20px';el.innerHTML='<div style="max-width:520px;width:100%;background:#071321;border:1px solid #28445e;border-radius:18px;padding:24px;color:#fff;box-shadow:0 24px 70px #0008;max-height:calc(100dvh - 36px);overflow-y:auto;box-sizing:border-box"><h2 style="margin:0 0 8px">MI COMICTECA</h2><p style="color:#b9c7d5;margin-top:0">Cuenta y membresía · 9,99 € / mes</p><div id="cbLoggedOut"><input id="cbEmail" type="email" autocomplete="email" placeholder="Email" style="width:100%;box-sizing:border-box;margin:5px 0;padding:11px"><input id="cbPass" type="password" autocomplete="current-password" placeholder="Contraseña" style="width:100%;box-sizing:border-box;margin:5px 0;padding:11px"><button id="cbLogin" class="btn primary">Entrar</button> <button id="cbSignup" class="btn">Crear cuenta</button></div><div id="cbLoggedIn" style="display:none"><div id="cbUser" style="margin:12px 0;color:#b9c7d5"></div><button id="cbSubscribe" class="btn primary">Suscribirme · 9,99 €/mes</button> <button id="cbLogout" class="btn">Cerrar sesión</button> <button id="cbCancel" class="btn" type="button" style="display:none;color:#f9c2c2;border:1px solid #914b4b;background:#2b1a27">Darse de baja</button> <button id="cbResend" class="btn" type="button" style="display:none;background:#103c51;color:#ccf0fa;border:1px solid #22617d">Reenviar confirmación</button><div id="cbMemberInfo" style="font-size:12px;color:#b9c7d5;margin:10px 0 0"></div><div id="cbCancelPanel" style="display:none;margin-top:14px;padding:14px;background:#101e30;border:1px solid #354a62;border-radius:12px"><h3 style="font-size:16px;margin:0 0 8px">Solicitar baja de la membresía</h3><p style="color:#c7d5e4;font-size:13px;line-height:1.5">Se desactivará la renovación automática. Mantendrás el acceso hasta la fecha de finalización del periodo pagado. No se elimina tu colección ni se genera un reembolso automático.</p><div id="cbCancelDate" style="color:#7fe1f8;font-weight:700;font-size:13px;margin:10px 0"></div><label for="cbCancelReason" style="display:block;font-size:12px">Motivo (opcional)</label><select id="cbCancelReason" style="width:100%;background:#0a1523;color:#eff8ff;border:1px solid #49617c;border-radius:7px;padding:8px;margin:5px 0 12px"><option value="">Prefiero no indicarlo</option><option value="precio">Precio demasiado alto</option><option value="poco_uso">No la utilizo suficientemente</option><option value="faltan_funciones">Faltan funcionalidades</option><option value="problemas_tecnicos">Problemas técnicos</option><option value="complejidad">Me resulta complicada</option><option value="alternativa">Utilizo otra alternativa</option><option value="otros">Otro motivo</option></select><label for="cbCancelComment" style="display:block;font-size:12px">Comentario (opcional)</label><textarea id="cbCancelComment" maxlength="400" rows="2" placeholder="Ayúdanos a mejorar" style="box-sizing:border-box;width:100%;background:#0a1523;color:#eff8ff;border:1px solid #49617c;border-radius:7px;padding:8px;resize:vertical;margin:5px 0 12px"></textarea><label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;line-height:1.5"><input id="cbCancelConfirmCheck" type="checkbox" style="margin-top:4px"> <span>Confirmo que quiero darme de baja y detener las próximas renovaciones.</span></label><div style="display:flex;flex-wrap:wrap;gap:9px;margin-top:15px"><button id="cbConfirmCancellation" class="btn" type="button" disabled style="background:#842c3c;color:white;border-color:#a34b5b">Confirmar baja</button><button id="cbCancelBack" class="btn" type="button">Volver</button></div></div></div><div id="cbState" role="status" aria-live="polite" style="min-height:22px;margin:14px 0;color:#b9c7d5;line-height:1.55"></div><div style="font-size:12px;margin-bottom:12px;color:#b9c7d5">¿Necesitas ayuda? <a href="mailto:contacto@micomicteca.es?subject=Baja%20de%20membres%C3%ADa%20-%20MI%20COMICTECA" style="color:#77dcfa;text-decoration:underline">contacto@micomicteca.es</a></div><button id="cbClose" class="btn">Cerrar</button></div>';document.body.appendChild(el);
