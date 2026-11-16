@@ -102,3 +102,58 @@ test('simultaneous membership and collection checks refresh once',async()=>{
  assert.ok(users.every(user=>user.id===UID));
  assert.equal(refreshCalls,1);
 });
+
+test('Supabase 403 bad_jwt from an expired access token renews once',async()=>{
+ let refreshed=0,authCalls=0;
+ const responder=async(url,opt)=>{
+  if(url.includes('grant_type=refresh_token')){
+   refreshed++;
+   return {ok:true,status:200,json:async()=>session('NEW')};
+  }
+  if(url.endsWith('/auth/v1/user')){
+   authCalls++;
+   return opt.headers.get('Authorization')==='Bearer NEW'
+    ?{ok:true,status:200,json:async()=>({id:UID})}
+    :{ok:false,status:403,headers:{get:()=> 'bad_jwt'}};
+  }
+  throw Error('Unexpected endpoint');
+ };
+ const x=isolatedBilling({persisted:session('OLD'),responder});
+ const user=await x.api.currentUser();
+ assert.equal(user.id,UID);
+ assert.equal(refreshed,1);
+ assert.equal(authCalls,2);
+ assert.equal(JSON.parse(x.localStorage.getItem(KEY)).access_token,'NEW');
+});
+test('proactive token renewal avoids the 403 response entirely',async()=>{
+ let authCalls=0,oldTokenPresented=false,refreshCalls=0;
+ const expired={...session('OLD'),expires_at:Math.floor(Date.now()/1000)-60};
+ const responder=async(url,opt)=>{
+  if(url.includes('grant_type=refresh_token')){
+   refreshCalls++;
+   return {ok:true,status:200,json:async()=>({...session('NEW'),expires_at:Math.floor(Date.now()/1000)+3600})};
+  }
+  if(url.endsWith('/auth/v1/user')){
+   authCalls++;
+   oldTokenPresented=opt.headers.get('Authorization')==='Bearer OLD';
+   return {ok:true,status:200,json:async()=>({id:UID})};
+  }
+  throw Error('Unexpected endpoint');
+ };
+ const x=isolatedBilling({persisted:expired,responder});
+ const user=await x.api.currentUser();
+ assert.equal(user.id,UID);
+ assert.equal(authCalls,1);
+ assert.equal(refreshCalls,1);
+ assert.equal(oldTokenPresented,false);
+});
+test('a failed token renewal leaves the local identity/session intact for explicit sign-in',async()=>{
+ const responder=async(url,opt)=>{
+  if(url.includes('grant_type=refresh_token'))return {ok:false,status:400,json:async()=>({code:'refresh_token_not_found'})};
+  return {ok:false,status:403};
+ };
+ const x=isolatedBilling({persisted:session('OLD'),responder});
+ await assert.rejects(()=>x.api.currentUser(),/inicia sesión de nuevo/i);
+ assert.equal(JSON.parse(x.localStorage.getItem(KEY)).user.id,UID);
+ assert.equal(JSON.parse(x.sessionStorage.getItem(KEY)).user.id,UID);
+});
