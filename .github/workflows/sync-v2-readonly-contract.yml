@@ -1,0 +1,20 @@
+name: Sync V2 isolated read-only contract
+on:
+  push:
+    branches: [commercial-published]
+    paths:
+      - 'sync-v2-manual-plan.js'
+      - 'tests/sync-v2-fake-backend-readonly.test.cjs'
+      - '.github/workflows/sync-v2-readonly-contract.yml'
+  workflow_dispatch:
+jobs:
+  fake-backend:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/sync-v2-fake-backend-readonly.test.cjs
