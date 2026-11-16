@@ -7,6 +7,9 @@ on:
       # In particular owner-upload/receive and future harnesses cannot bypass CI.
       - 'sync-v2-*.js'
       - 'manual-sync-v2-button.js'
+      # Entrypoints can re-enable sync even when V2 modules are unchanged.
+      - 'index.html'
+      - 'sync.js'
       - 'cloud-collection-sync.js'
       - 'cloud-migration.js'
       - 'tests/sync-v2-*'
