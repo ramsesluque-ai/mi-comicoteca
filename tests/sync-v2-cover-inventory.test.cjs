@@ -11,9 +11,13 @@ function cache(local){
    return {keys:async()=>local.map(k=>({url:'https://mi-comicoteca.local/cover/'+encodeURIComponent(k)}))};
  }};
 }
-function list(names,{denied=false,badName=false,duplicate=false}={}){
+function list(names,{denied=false,badName=false,duplicate=false,wrongUser=false,expired=false}={}){
  const calls=[];
  return {calls,fetcher:async(url,init)=>{
+  if(url==='https://project.supabase.co/auth/v1/user'){
+   assert.equal(init.method,'GET');
+   return expired?{ok:false,status:401}:{ok:true,json:async()=>({id:wrongUser?'00000000-0000-4000-8000-000000000002':uid})};
+  }
   assert.equal(url,'https://project.supabase.co/storage/v1/object/list/user-covers');
   assert.equal(init.method,'POST'); // LIST endpoint, no object writes
   assert.equal(init.headers.Authorization,'Bearer test');
@@ -36,6 +40,8 @@ function list(names,{denied=false,badName=false,duplicate=false}={}){
  const summary=await compare({session,cfg,cacheStorage:cache(['one','two']),fetcher:r.fetcher,limit:2});
  assert.deepEqual([summary.local,summary.remote,summary.matched,summary.onlyLocal,summary.onlyRemote,summary.safeToWrite],[2,4,1,1,3,false]);
  assert.equal(r.calls.length,3);assert.equal(r.calls[0].offset,0);assert.equal(r.calls[1].offset,2);
+ await assert.rejects(compare({session,cfg,cacheStorage:cache(['one']),fetcher:list(['one'],{wrongUser:true}).fetcher}),/identidad autenticada no coincide/);
+ await assert.rejects(compare({session,cfg,cacheStorage:cache(['one']),fetcher:list(['one'],{expired:true}).fetcher}),/Sesión no verificada/);
  await assert.rejects(remoteKeys({session,cfg,fetcher:list(['one'],{denied:true}).fetcher}),/HTTP 403/);
  await assert.rejects(remoteKeys({session,cfg,fetcher:list(['one'],{badName:true}).fetcher}),/inválido/);
  const source=fs.readFileSync('sync-v2-cover-inventory.js','utf8');
