@@ -33,6 +33,16 @@ function cloud(rows){return rows.map(r=>({user_id:uid,local_id:'comics:'+r.id,me
  await assert.rejects(compare({session:{...session,user:{id:'invalid'}},cfg,localRows:[],fetcher:async()=>{throw Error('network should not run')}}),/Identificador de usuario/);
  assert.deepEqual(canonical({b:1,a:{d:2,c:3}}),canonical({a:{c:3,d:2},b:1}));
  assert.throws(()=>localIndex([{id:'same'},{id:'same'}]),/duplicados/);
+ assert.throws(()=>canonical({id:'x',field:undefined}),/no serializable/);
+ assert.throws(()=>canonical({id:'x',field:()=>1}),/no serializable/);
+ assert.throws(()=>canonical({id:'x',value:NaN}),/no finito/);
+ assert.throws(()=>canonical({id:'x',when:new Date('invalid')}),/Fecha local inválida/);
+ const circular={id:'x'};circular.self=circular;
+ assert.throws(()=>canonical(circular),/circular/);
+ assert.throws(()=>canonical({id:'x',values:[,1]}),/incompleto/);
+ assert.equal(canonical({id:'x',a:{value:1},b:{value:1}}),canonical({b:{value:1},a:{value:1},id:'x'}));
+ assert.equal(JSON.parse(canonical({id:'x',__proto__:null,constructor:'safe'})).constructor,'safe');
+
  const whole=service(cloud(local)),r=await compare({session,cfg,localRows:local,fetcher:whole.fetcher});
  assert.deepEqual([r.local,r.cloud,r.equal,r.different,r.onlyLocal,r.onlyCloud,r.tombstones,r.complete,r.safeToWrite],[16523,16523,16523,0,0,0,0,true,false]);
  assert(r.pages>60&&whole.history.every(x=>x.includes('/auth/v1/user')||x.includes('user_id=eq.')));
