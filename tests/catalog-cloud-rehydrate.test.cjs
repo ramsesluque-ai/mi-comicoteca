@@ -65,7 +65,7 @@ function initialize({cloud=[],sessionUid=uid,wasKnown=0,fetchOverride=null,verif
  const api=window.MCCatalogBootstrap;
  const verify=verifyOverride||(()=>Promise.resolve({id:sessionUid}));
  const run=(database,overrides={})=>api.bootstrap({database,dbName:'comicteca-user-'+sessionUid,uid:sessionUid,cfg:{url:'https://test.invalid',publishableKey:'public'},fetcher:fakeFetch,verify,onState:()=>{},...overrides});
- return {api,run,fetchCalls,localStorage,sessionStorage};
+ return {api,run,fetchCalls,localStorage,sessionStorage,window};
 }
 test('existing catalog is preserved and never replaced or fetched',async()=>{
  const d=fakeDb([{id:'local',title:'Locally edited'}]);
@@ -148,4 +148,36 @@ test('published page includes bootstrap before DOMContentLoaded and updated work
  assert.match(app5,/MCCatalogBootstrap\.bootstrap/);
  assert.match(sw,/comicteca-v132-safe-catalog-bootstrap/);
  assert.match(index,/mi-comicteca-release.*20261116-safe-catalog-bootstrap2/);
+});
+
+test('403 caused by token expiry mid-page refreshes and continues same account',async()=>{
+ const cloud=[record('a'),record('b')];
+ const d=fakeDb(),x=initialize({cloud,fetchOverride:async(url,options)=>{
+  const session=JSON.parse(x.localStorage.getItem(key));
+  if(session.access_token==='TOKEN')return {ok:false,status:403};
+  return {ok:true,status:200,json:async()=>cloud};
+ }});
+ let renewals=0;
+ x.window.CommercialBilling={refreshSession:async()=>{
+  renewals++;
+  const current=JSON.parse(x.localStorage.getItem(key));
+  current.access_token='NEW';
+  x.localStorage.setItem(key,JSON.stringify(current));
+  return current;
+ }};
+ const res=await x.run(d);
+ assert.equal(res.state,'restored');
+ assert.equal(res.count,2);
+ assert.equal(renewals,1);
+ assert.equal(x.fetchCalls.length,2);
+ assert.ok(d.rows.has('a'));
+ assert.ok(d.rows.has('b'));
+});
+test('a failed refresh on HTTP 403 never writes a partial local collection',async()=>{
+ const d=fakeDb();
+ const x=initialize({fetchOverride:async()=>({ok:false,status:403})});
+ x.window.CommercialBilling={refreshSession:async()=>null};
+ await assert.rejects(()=>x.run(d),/renovar el acceso/);
+ assert.equal(d.changes,0);
+ assert.equal(d.rows.size,0);
 });
