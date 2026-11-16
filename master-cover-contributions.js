@@ -33,12 +33,34 @@ window.mcProposeMasterCover=function(encoded){
  if(!identity_key)return alert('No se ha podido identificar esta ficha; revisa editorial, cabecera y número.');
  const modal=document.getElementById('modal');
  const title=String(x.title||x.catalogHeader||x.series||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- modal.innerHTML='<div class="modalbox"><div class="modalhead"><b>Portada y datos del cómic</b><button class="btn" id="mcContribBack">Cerrar</button></div><div class="modalbody"><div class="mc-contrib-record"><span class="mc-contrib-kicker">Ficha del Maestro</span><strong>'+title+'</strong><span class="mc-contrib-muted">'+(isbn?'ISBN '+isbn:'Editorial, serie y número identificados (sin ISBN)')+'</span></div><div class="mc-contrib-search"><div><b>Buscar datos y portada</b><p class="mc-contrib-muted">Consulta el Maestro y fuentes por ISBN exacto; verifica editorial, colección, año y número.</p></div><button class="btn primary" type="button" id="mcContribLookup">Buscar datos y portada</button></div><div id="mcContribLookupResults" class="mc-contrib-results" aria-live="polite"></div><details class="mc-contrib-upload"><summary>Añadir portada al Maestro compartido</summary><p class="mc-contrib-notice">Puedes adjuntar la portada sin completar la declaración de derechos. Para aportar una imagen debes identificar la base de derechos. La publicación compartida requiere verificación; las aportaciones de otros usuarios permanecen en revisión.</p><div class="mc-contrib-formgrid"><label>Imagen (JPG, PNG o WebP; máximo 5 MB)<input id="mcContribFile" type="file" accept="image/jpeg,image/png,image/webp"></label><label>Derechos de uso (obligatorio)<select id="mcContribRights"><option value="">Selecciona la autorización</option><option value="own_work">Soy autor o titular de los derechos</option><option value="licensed">Tengo permiso o licencia para compartirla públicamente</option><option value="public_domain">La imagen es de dominio público</option></select></label><label class="mc-wide">Justificación / licencia (obligatoria)<input id="mcContribNote" placeholder="Origen y permiso comprobable"></label></div><div class="mc-contrib-actions"><span id="mcContribStatus" role="status"></span><button class="btn primary" id="mcContribSend">Añadir portada</button></div></details></div></div>';
+ modal.innerHTML='<div class="modalbox"><div class="modalhead"><b>Portada y datos del cómic</b><button class="btn" id="mcContribBack">Cerrar</button></div><div class="modalbody"><div class="mc-contrib-record"><span class="mc-contrib-kicker">Ficha del Maestro</span><strong>'+title+'</strong><span class="mc-contrib-muted">'+(isbn?'ISBN '+isbn:'Editorial, serie y número identificados (sin ISBN)')+'</span></div><div class="mc-contrib-search"><div><b>2. Buscar datos y portada</b><p class="mc-contrib-muted">¿No tienes el archivo? Busca una portada para esta edición y verifica que coincida antes de seleccionarla.</p></div><button class="btn primary" type="button" id="mcContribLookup">Buscar datos y portada</button></div><div id="mcContribLookupResults" class="mc-contrib-results" aria-live="polite"></div><details class="mc-contrib-upload" open><summary>1. Adjuntar portada al Maestro</summary><p class="mc-contrib-notice">Puedes adjuntar la portada sin completar la declaración de derechos. Para aportar una imagen debes identificar la base de derechos. La publicación compartida requiere verificación; las aportaciones de otros usuarios permanecen en revisión.</p><div class="mc-contrib-formgrid"><label>Imagen (JPG, PNG o WebP; máximo 5 MB)<input id="mcContribFile" type="file" accept="image/jpeg,image/png,image/webp"></label><label>Derechos de uso (obligatorio)<select id="mcContribRights"><option value="">Selecciona la autorización</option><option value="own_work">Soy autor o titular de los derechos</option><option value="licensed">Tengo permiso o licencia para compartirla públicamente</option><option value="public_domain">La imagen es de dominio público</option></select></label><label class="mc-wide">Justificación / licencia (obligatoria)<input id="mcContribNote" placeholder="Origen y permiso comprobable"></label></div><div class="mc-contrib-actions"><span id="mcContribStatus" role="status"></span><button class="btn primary" id="mcContribSend">Añadir portada</button></div></details></div></div>';
  // Individual remote image selection: user validates the edition before submitting.
  const searchExtra=document.createElement('div');
  searchExtra.className='mc-contrib-direct';
- searchExtra.innerHTML='<label>URL directa de la imagen (opcional)<input id="mcContribRemoteUrl" type="url" placeholder="https://.../portada.jpg" autocomplete="off"></label><button class="btn" type="button" id="mcContribUseUrl">Previsualizar y seleccionar</button><p id="mcContribRemoteStatus" class="mc-contrib-muted" role="status"></p><img id="mcContribSelectedPreview" alt="Portada elegida" style="display:none;max-height:200px;max-width:150px;object-fit:contain;border-radius:10px">';
+ searchExtra.innerHTML='<label>También puedes pegar una URL de portada<input id="mcContribRemoteUrl" type="url" placeholder="https://.../portada.jpg" autocomplete="off"></label><button class="btn" type="button" id="mcContribUseUrl">Previsualizar portada</button><p id="mcContribRemoteStatus" class="mc-contrib-muted" role="status"></p><img id="mcContribSelectedPreview" alt="Portada elegida" style="display:none;max-height:200px;max-width:150px;object-fit:contain;border-radius:10px">';
  document.getElementById('mcContribLookupResults').after(searchExtra);
+ // Primary action first: make local file upload the visible default. Move the
+ // lookup and optional URL into a second card without recreating their nodes:
+ // existing event handlers, selected remote images and upload validations stay intact.
+ const contribBody=modal.querySelector('.modalbody');
+ const contribUpload=modal.querySelector('.mc-contrib-upload');
+ const contribSearch=modal.querySelector('.mc-contrib-search');
+ const contribResults=document.getElementById('mcContribLookupResults');
+ const contribLookupSection=document.createElement('section');
+ contribLookupSection.className='mc-contrib-lookup-section';
+ contribUpload.open=true;
+ contribBody.insertBefore(contribUpload,contribSearch);
+ contribBody.appendChild(contribLookupSection);
+ contribLookupSection.append(contribSearch,contribResults,searchExtra);
+ const contribFile=document.getElementById('mcContribFile');
+ const contribFileHint=document.createElement('small');
+ contribFileHint.className='mc-contrib-filehint';
+ contribFileHint.textContent='Selecciona una imagen JPG, PNG o WebP de hasta 5 MB.';
+ contribFile.after(contribFileHint);
+ contribFile.addEventListener('change',()=>{
+  const selected=contribFile.files?.[0];
+  contribFileHint.textContent=selected?'Archivo preparado: '+selected.name+' · '+(selected.size/1024/1024).toFixed(2)+' MB':'Selecciona una imagen JPG, PNG o WebP de hasta 5 MB.';
+ });
  let remoteChoice=null;
  async function chooseRemoteCover(url,source){
   const status=document.getElementById('mcContribRemoteStatus'),preview=document.getElementById('mcContribSelectedPreview');
@@ -69,12 +91,8 @@ window.mcProposeMasterCover=function(encoded){
   if(notice)notice.textContent='Adjunta una imagen JPG, PNG o WebP desde tu ordenador (máximo 5 MB) y pulsa Añadir portada. La publicación requiere que tengas autorización para compartirla.';
   modal.querySelector('.mc-contrib-upload').open=true;
  }
- const styleId='mc-master-upload-polish';
- if(!document.getElementById(styleId)){
-  const style=document.createElement('style');style.id=styleId;
-  style.textContent=`.mc-contrib-modal{width:min(760px,96vw);max-height:90vh;overflow:auto;border-radius:20px!important;background:var(--panel,#10243a)!important;box-shadow:0 24px 65px #0006!important}.mc-contrib-modal .modalhead{padding:18px 22px!important;border-bottom:1px solid #ffffff20}.mc-contrib-modal .modalbody{padding:20px 22px!important}.mc-contrib-record{display:grid;gap:6px;padding:16px 18px;border-radius:14px;background:#ffffff0b;border:1px solid #ffffff1a;margin-bottom:16px}.mc-contrib-search{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px;border-radius:14px;background:#ffffff09;margin:12px 0}.mc-contrib-upload{margin-top:18px;border:1px solid #ffffff26;border-radius:14px;padding:14px 16px;background:#ffffff08}.mc-contrib-upload summary{cursor:pointer;font-weight:700;padding:5px 0}.mc-contrib-formgrid{display:grid;grid-template-columns:1fr;gap:14px;margin:16px 0}.mc-contrib-formgrid label{display:grid;gap:8px;font-size:13px;font-weight:600}.mc-contrib-formgrid label[hidden]{display:none!important}.mc-contrib-formgrid input[type=file]{width:100%;box-sizing:border-box;padding:16px;border:1px dashed #4f9ed6;border-radius:12px;background:#ffffff0a;color:inherit}.mc-contrib-actions{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding-top:12px}.mc-contrib-status{flex:1;min-width:220px;overflow-wrap:anywhere;font-size:13px;line-height:1.5}.mc-contrib-modal .btn.primary{border-radius:10px;padding:10px 16px}.mc-contrib-direct{display:grid;gap:10px;padding:12px 0}.mc-contrib-direct input{width:100%;box-sizing:border-box}@media(max-width:600px){.mc-contrib-search{flex-direction:column;align-items:stretch}.mc-contrib-actions{align-items:stretch}.mc-contrib-actions button{width:100%}.mc-contrib-modal .modalbody{padding:14px!important}}`;
-  document.head.appendChild(style);
- }
+ // Shared platform stylesheet owns this dialog's presentation. Avoid inline
+ // overrides that previously made the form inconsistent with the app.
  const panel=modal.querySelector('.modalbox');panel?.classList.add('mc-contrib-modal');
  modal.querySelector('.modalhead b')?.classList.add('mc-contrib-title');
  modal.querySelectorAll('.modalbody label').forEach(label=>label.classList.add('mc-contrib-field','mc-wide'));
