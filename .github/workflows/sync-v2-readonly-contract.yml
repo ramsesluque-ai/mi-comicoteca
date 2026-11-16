@@ -4,7 +4,13 @@ on:
     branches: [commercial-published]
     paths:
       - 'sync-v2-manual-plan.js'
+      - 'sync-v2-reconcile.js'
+      - 'sync-v2-cover-transport.js'
+      - 'sync-v2-cover-integrity.js'
+      - 'sync-v2-cover-cache-bridge.js'
+      - 'manual-sync-v2-button.js'
       - 'tests/sync-v2-fake-backend-readonly.test.cjs'
+      - 'tests/sync-v2-two-device-cover-roundtrip.test.cjs'
       - '.github/workflows/sync-v2-readonly-contract.yml'
   workflow_dispatch:
 jobs:
@@ -17,4 +23,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test tests/sync-v2-fake-backend-readonly.test.cjs
+      - name: Verify isolated two-session fake backend
+        run: node --test tests/sync-v2-fake-backend-readonly.test.cjs
+      - name: Verify isolated two-device cover SHA-256 and conflict gate
+        run: node --test tests/sync-v2-two-device-cover-roundtrip.test.cjs
