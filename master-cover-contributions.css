@@ -55,3 +55,183 @@
 .mc-contrib-result span .btn{font-size:12px;min-height:36px;white-space:normal}
 .mc-contrib-result span a{font-size:12px;color:#78cbff}
 @media(max-width:640px){.mc-contrib-direct{grid-template-columns:1fr}}
+
+
+/* 2026-11-16 · MI COMICTECA · portada primero, búsqueda después.
+   Las acciones mantienen sus IDs y el flujo de derechos original. */
+.mc-contrib-modal{
+  width:min(94vw,760px);
+  max-width:760px;
+  max-height:min(90dvh,820px);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  border-radius:16px;
+  border:1px solid #315371;
+  background:#0a1d30;
+}
+.mc-contrib-modal .modalhead{
+  flex-shrink:0;
+  padding:15px 20px;
+  background:#0d2a46;
+}
+.mc-contrib-modal .modalbody{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  padding:16px 20px 22px;
+  min-height:0;
+  overflow-x:hidden;
+  overflow-y:auto;
+  max-height:none;
+}
+.mc-contrib-modal .mc-contrib-record{
+  padding:12px 15px;
+  margin:0;
+  background:#102b44;
+}
+.mc-contrib-modal .mc-contrib-upload,
+.mc-contrib-modal .mc-contrib-lookup-section{
+  display:grid;
+  gap:12px;
+  border:1px solid #315675;
+  border-radius:14px;
+  padding:17px;
+  background:#0e2942;
+  min-width:0;
+}
+.mc-contrib-modal .mc-contrib-upload{
+  border-color:#258da8;
+  box-shadow:inset 3px 0 0 #27c6d6;
+  margin:0;
+}
+.mc-contrib-modal .mc-contrib-upload summary{
+  display:list-item;
+  cursor:pointer;
+  font-size:16px;
+  line-height:1.4;
+  font-weight:800;
+  color:#f0f9ff;
+  padding:0;
+  margin:0;
+}
+.mc-contrib-modal .mc-contrib-upload[open] summary{margin-bottom:0}
+.mc-contrib-modal .mc-contrib-formgrid{
+  margin:0;
+  display:grid;
+  grid-template-columns:1fr;
+  gap:12px;
+}
+.mc-contrib-modal .mc-contrib-formgrid label[hidden]{display:none!important}
+.mc-contrib-modal .mc-contrib-field{font-size:13px}
+.mc-contrib-modal .mc-contrib-field input[type=file]{
+  display:block;
+  width:100%;
+  padding:14px;
+  min-height:66px;
+  border:1px dashed #55a8d3;
+  border-radius:11px;
+  color:#d4eaff;
+  background:#071a2c;
+  font-size:13px;
+  cursor:pointer;
+}
+.mc-contrib-modal input[type=file]::file-selector-button{
+  margin-right:12px;
+  padding:9px 13px;
+  border:1px solid #3694c3;
+  border-radius:8px;
+  background:#123a59;
+  color:#f4fbff;
+  font:inherit;
+  font-weight:700;
+  cursor:pointer;
+}
+.mc-contrib-filehint{
+  display:block;
+  color:#9fc9df;
+  font-size:12px;
+  font-weight:400;
+}
+.mc-contrib-modal .mc-contrib-notice{
+  margin:0;
+  padding:9px 12px;
+  color:#b9d3e3;
+  border:1px solid #294b64;
+  background:#0a2238;
+  border-radius:9px;
+  font-size:12px;
+}
+.mc-contrib-modal .mc-contrib-actions{
+  padding-top:0;
+  margin-top:0;
+  align-items:center;
+  justify-content:space-between;
+}
+.mc-contrib-modal .mc-contrib-actions .btn.primary{
+  min-height:42px;
+  padding:9px 16px;
+  font-weight:750;
+  background:#167bc6;
+  border-color:#2b97d9;
+  border-radius:9px;
+}
+.mc-contrib-modal .mc-contrib-status{
+  flex:1;
+  min-width:0;
+  overflow-wrap:anywhere;
+  color:#9de4f7;
+}
+.mc-contrib-modal .mc-contrib-lookup-section{
+  background:#0b2339;
+  border-color:#2d506d;
+}
+.mc-contrib-modal .mc-contrib-search{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+}
+.mc-contrib-modal .mc-contrib-search b{font-size:16px;color:#f0f9ff}
+.mc-contrib-modal .mc-contrib-search p{margin:5px 0 0}
+.mc-contrib-modal .mc-contrib-search .btn{
+  min-width:160px;
+  min-height:42px;
+  padding:9px 13px;
+  background:#173c5b;
+  border:1px solid #3274a5;
+  border-radius:9px;
+  white-space:normal;
+  font-weight:700;
+}
+.mc-contrib-modal .mc-contrib-results:empty{display:none}
+.mc-contrib-modal .mc-contrib-direct{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:10px;
+  align-items:end;
+  padding:12px 0 0;
+  border:0;
+  border-top:1px solid #274762;
+  border-radius:0;
+  background:transparent;
+}
+.mc-contrib-modal .mc-contrib-direct label{font-size:12px;font-weight:650}
+.mc-contrib-modal .mc-contrib-direct .btn{min-height:42px;border-radius:9px}
+.mc-contrib-modal .mc-contrib-direct input{background:#071a2c}
+@media(max-width:620px){
+  .mc-contrib-modal{width:min(96vw,760px);max-height:92dvh}
+  .mc-contrib-modal .modalhead{padding:12px 15px}
+  .mc-contrib-modal .modalbody{padding:12px;gap:12px}
+  .mc-contrib-modal .mc-contrib-upload,
+  .mc-contrib-modal .mc-contrib-lookup-section{padding:13px}
+  .mc-contrib-modal .mc-contrib-search{flex-direction:column;align-items:stretch}
+  .mc-contrib-modal .mc-contrib-search .btn{width:100%;min-width:0}
+  .mc-contrib-modal .mc-contrib-direct{grid-template-columns:1fr}
+  .mc-contrib-modal .mc-contrib-actions{align-items:stretch}
+  .mc-contrib-modal .mc-contrib-actions .btn{width:100%}
+}
