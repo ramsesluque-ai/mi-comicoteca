@@ -48,6 +48,9 @@ jobs:
           node tests/sync-v2-checkpoint.test.cjs
           node tests/sync-v2-restart-stale-baseline.test.cjs
           node tests/sync-v2-two-session-retry-harness.cjs
+          node tests/sync-v2-three-way-plan-regression.cjs
+          node tests/sync-v2-fake-backend-readonly.test.cjs
+          node tests/sync-v2-private-cover-transport-isolation.test.cjs
           node tests/sync-v2-isolated-two-device-regression.cjs
           node tests/sync-v2-cover-inventory.test.cjs
           node tests/sync-v2-cover-bytes.test.cjs
