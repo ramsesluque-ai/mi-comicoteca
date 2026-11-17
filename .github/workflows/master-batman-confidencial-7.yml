@@ -1,0 +1,48 @@
+name: Maestro Batman Confidencial — 7 números
+on:
+  push:
+    branches: [commercial-published]
+    paths:
+      - 'master-data/manual-additions.json'
+      - 'master-static.js'
+      - 'tests/master-batman-confidencial-seven.cjs'
+      - '.github/workflows/master-batman-confidencial-7.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  maestro-seven-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validar sintaxis y los 7 números desde el cargador real del Maestro
+        run: |
+          node --check master-static.js
+          node --check tests/master-batman-confidencial-seven.cjs
+          node tests/master-batman-confidencial-seven.cjs
+  cloudflare-assets-check:
+    needs: maestro-seven-regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verificar que Cloudflare Workers sirve los dos archivos modificados
+        env:
+          BASE_URL: https://mi-comicoteca.ramsesluque.workers.dev
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 10); do
+            echo "Comprobación de Cloudflare ${attempt}/10"
+            if curl -fsSL --max-time 15 -H 'Cache-Control: no-cache' "${BASE_URL}/master-data/manual-additions.json?verify=${GITHUB_SHA}" -o /tmp/mc-manual.json && \
+               curl -fsSL --max-time 15 -H 'Cache-Control: no-cache' "${BASE_URL}/master-static.js?verify=${GITHUB_SHA}" -o /tmp/mc-master.js && \
+               cmp -s master-data/manual-additions.json /tmp/mc-manual.json && \
+               cmp -s master-static.js /tmp/mc-master.js; then
+               echo "Cloudflare está sirviendo exactamente el catálogo ampliado y el cargador de esta revisión."
+               exit 0
+            fi
+            sleep 15
+          done
+          echo "No se pudo confirmar la versión exacta de ambos archivos en Cloudflare." >&2
+          exit 1
