@@ -71,4 +71,45 @@ async function run({rows=cloudRows,who=UID_A,failPage=false,foreign=false}={}){
  assert.equal(nonJson.result.safeToWrite,false);
  console.log('PASS comparison remains read-only');
 
+
+ // Fail closed before any network request for invalid local data or unsafe cloud origin.
+ for(const bad of [
+  [{id:1,title:'ok'},{id:1,title:'duplicate'}],
+  [{id:1,title:undefined}],
+  [{id:1,title:Infinity}],
+  [{id:1,title:BigInt(2)}],
+  [{id:1,items:Array(2)}]
+ ]){
+  const calls=[];
+  await assert.rejects(
+   ()=>compare({session,cfg,localRows:bad,fetcher:async()=>{calls.push(1);throw Error('unexpected network')}}),
+   /duplicados|serializable|finito|incompleto/
+  );
+  assert.equal(calls.length,0,'invalid local payload must fail before auth');
+ }
+ console.log('PASS malformed local records fail closed without network');
+ for(const url of ['http://fake.invalid','https://fake.invalid/path','https://fake.invalid?x=1']){
+  const calls=[];
+  await assert.rejects(
+   ()=>compare({session,cfg:{...cfg,url},localRows,fetcher:async()=>{calls.push(1);throw Error('unexpected network')}}),
+   /Endpoint cloud no seguro/
+  );
+  assert.equal(calls.length,0,'unsafe cloud origin must not receive bearer token');
+ }
+ console.log('PASS bearer token never sent to unsafe cloud origins');
+ const pagelimit=await (async()=>{
+  const calls=[];
+  const fetcher=async(url,opts)=>{
+   calls.push(opts.method);
+   if(url.endsWith('/auth/v1/user'))return {ok:true,json:async()=>({id:UID_A})};
+   return {ok:true,json:async()=>[cloudRows[0]]};
+  };
+  try{await compare({session,cfg,localRows,fetcher,pageSize:1,maxPages:1});}
+  catch(error){return {error,calls};}
+  throw Error('page limit unexpectedly accepted');
+ })();
+ assert.match(pagelimit.error.message,/límite de paginación/);
+ assert.deepEqual(pagelimit.calls,['GET','GET']);
+ console.log('PASS truncated keyset scan never authorizes completion');
+
 })().catch(e=>{console.error(e);process.exitCode=1});
