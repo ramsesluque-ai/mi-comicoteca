@@ -5,11 +5,12 @@
  * No local deletion, no upsert and no listing of other users' objects.
  */
 (function(root){
+ const safeEndpoint=url=>typeof url==='string'&&/^https:\/\/[^/?#]+\/?$/.test(url)&&!url.includes('@');
  const safeKey=k=>typeof k==='string'&&/^[a-zA-Z0-9_.-]{1,180}$/.test(k)&&k!=='.'&&k!=='..';
  function validate({session,cfg,key,integrity}){
    const uid=session?.user?.id;
    if(!uid||!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(uid)||!session?.access_token)throw Error('Sesión autenticada inválida');
-   if(!cfg?.url||!/^https:\/\//.test(cfg.url)||!cfg?.publishableKey)throw Error('Configuración cloud inválida');
+   if(!safeEndpoint(cfg?.url)||!cfg?.publishableKey)throw Error('Configuración cloud inválida');
    if(!safeKey(key))throw Error('Identificador de portada inválido');
    if(!integrity?.sha256||!integrity?.verifyPair)throw Error('Verificador SHA-256 no disponible');
    return uid;
@@ -18,7 +19,7 @@
    const uid=session?.user?.id;
    if(!uid||!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(uid)||!session?.access_token)
      throw Error('Sesión autenticada inválida');
-   if(!cfg?.url||!cfg.url.startsWith('https://')||!cfg?.publishableKey)
+   if(!safeEndpoint(cfg?.url)||!cfg?.publishableKey)
      throw Error('Configuración cloud inválida');
    const response=await fetchImpl(cfg.url.replace(/\/+$/,'')+'/auth/v1/user',{
      method:'GET',cache:'no-store',headers:{apikey:cfg.publishableKey,Authorization:'Bearer '+session.access_token}
