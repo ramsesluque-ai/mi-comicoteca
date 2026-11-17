@@ -36,7 +36,7 @@ async function uploadVerified(storage,uid,bytes){
  const a=await uploadVerified(storage,UID_A,original);
  assert.deepEqual(await storage.get(UID_A,a.path),original);
  console.log('PASS binary roundtrip PUT/GET SHA-256');
- assert.rejects(()=>storage.get(UID_B,a.path),/uid-scoped/);
+ await assert.rejects(()=>storage.get(UID_B,a.path),/uid-scoped/);
  console.log('PASS cross-account private path rejected');
  await assert.rejects(()=>storage.put(UID_A,a.path,Buffer.from('tamper'),{expectedHash:a.hash}),/SHA-256/);
  await assert.rejects(()=>storage.put(UID_A,a.path,original,{expectedHash:a.hash}),/collision/);
