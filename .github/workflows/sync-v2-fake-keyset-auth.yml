@@ -1,0 +1,21 @@
+name: Sync V2 fake authenticated keyset regression
+on:
+  push:
+    branches: [commercial-published]
+    paths:
+      - 'sync-v2-manual-plan.js'
+      - 'tests/sync-v2-fake-keyset-auth-regression.cjs'
+      - '.github/workflows/sync-v2-fake-keyset-auth.yml'
+  workflow_dispatch:
+jobs:
+  fake-keyset:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify isolated authenticated read-only pagination and fail-closed guards
+        run: node tests/sync-v2-fake-keyset-auth-regression.cjs
