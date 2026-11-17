@@ -31,6 +31,15 @@ async function uploadVerified(storage,uid,bytes){
  assert.equal(digest(fetched),hash,'GET verification SHA-256 mismatch');
  return {path,hash};
 }
+// Recovery is read-only when an immutable PUT succeeded but its verification GET failed.
+// Never retry by overwriting the object; verify the exact bytes already present.
+async function recoverVerified(storage,uid,bytes){
+ const hash=digest(bytes),path=uid+'/covers/'+hash+'.bin';
+ const remote=await storage.get(uid,path);
+ assert.equal(digest(remote),hash,'recovery GET SHA-256 mismatch');
+ assert.deepEqual(remote,bytes,'recovery binary mismatch');
+ return {path,hash};
+}
 (async()=>{
  const storage=new FakePrivateStorage();
  const original=Buffer.from([0,255,1,2,3,0,128,10]);
@@ -63,4 +72,12 @@ async function uploadVerified(storage,uid,bytes){
  assert.equal(digest(await storage.get(UID_A,retryPath)),retryHash);
  await assert.rejects(()=>uploadVerified(storage,UID_A,retryBytes),/immutable object collision/);
  console.log('PASS unverified immutable object cannot be silently overwritten on retry');
+ const recovered=await recoverVerified(storage,UID_A,retryBytes);
+ assert.deepEqual(recovered,{path:retryPath,hash:retryHash});
+ assert.deepEqual(await storage.get(UID_A,retryPath),retryBytes);
+ console.log('PASS retry recovery via read-only GET preserves immutable bytes');
+ await assert.rejects(()=>recoverVerified(storage,UID_B,retryBytes),/uid-scoped/);
+ storage.corruptNextGet=true;
+ await assert.rejects(()=>recoverVerified(storage,UID_A,retryBytes),/recovery GET SHA-256 mismatch/);
+ console.log('PASS recovery rejects cross-account reads and corrupted payloads');
 })().catch(e=>{console.error(e);process.exitCode=1});
