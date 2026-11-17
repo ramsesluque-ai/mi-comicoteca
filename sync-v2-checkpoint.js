@@ -24,8 +24,14 @@
    const ids=new Set();
    for(const r of rows){
      if(!r||typeof r!=='object'||Array.isArray(r)||r.id===null||r.id===undefined)throw Error('Ficha sin ID');
-     const id=String(r.id).trim();
-     if(!id||ids.has(id))throw Error('ID ausente o duplicado en baseline');
+     // IDs are immutable identity keys, not display labels: whitespace or
+     // object coercion could make two devices address different cloud rows.
+     const raw=r.id;
+     const valid=(typeof raw==='string'&&raw.length>0&&raw===raw.trim())||
+       (typeof raw==='number'&&Number.isSafeInteger(raw)&&raw>=0);
+     if(!valid)throw Error('ID estable inválido en baseline');
+     const id=String(raw);
+     if(ids.has(id))throw Error('ID ausente o duplicado en baseline');
      ids.add(id);
    }
    return rows;
