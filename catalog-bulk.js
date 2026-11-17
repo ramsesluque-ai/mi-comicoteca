@@ -16,6 +16,20 @@
     selected.clear();
     return html.replace('<div id="catbody"></div>',toolbar(wish)+'<div id="catbody"></div>');
   };
+  // Keep the bulk selection in sync with the checkboxes actually shown to the user.
+  // Only inspect the active view: the hidden card/list view may retain stale checks.
+  function reconcileVisibleSelection(){
+    const root=document.getElementById('catbody');
+    if(!root)return;
+    const scope=view==='list'?root.querySelector('.mc-catalog-list'):root.querySelector('.comic-grid');
+    if(!scope)return;
+    scope.querySelectorAll('[data-mc-select]').forEach(input=>{
+      const id=String(input.dataset.mcSelect||'');
+      if(!id)return;
+      if(input.checked)selected.add(id);
+      else selected.delete(id);
+    });
+  }
   function updateCount(){
     const count=document.getElementById('mc-selection-count');
     if(count)count.textContent=selected.size+' seleccionados';
@@ -28,6 +42,8 @@
     return '<div class="mc-catalog-list" role="table" aria-label="Listado de cómics">'+rows.map(x=>'<div class="mc-catalog-list-row" role="row"><input type="checkbox" data-mc-select="'+esc(x.id)+'" onclick="event.stopPropagation()" aria-label="Seleccionar '+esc(label(x))+'"><div class="mc-catalog-list-cover">'+img(x,'cover cardcover')+'</div><div class="mc-catalog-list-info"><strong>'+esc(x.catalogHeader||x.series||x.title||'Sin cabecera')+'</strong><small>'+esc([x.publisher,x.volume&&('Vol. '+x.volume),x.startYear,issueNumberLabel(x)].filter(Boolean).join(' · '))+'</small><small>'+esc(x.title||'')+'</small></div><div class="mc-catalog-list-status">'+statusPill(x.status)+'</div><button type="button" class="btn sm" data-mc-edit="'+esc(x.id)+'">Editar</button></div>').join('')+'</div>';
   }
   function openBulkDialog(wish){
+    reconcileVisibleSelection();
+    updateCount();
     const action=document.getElementById('mc-bulk-action')?.value;
     if(!action){toast('Elige una acción');return}
     if(!selected.size){toast('Selecciona al menos un cómic');return}
@@ -130,6 +146,10 @@
       root.addEventListener('click',event=>{
         const edit=event.target.closest?.('[data-mc-edit]');
         if(edit){event.preventDefault();event.stopPropagation();editComic(edit.dataset.mcEdit)}
+      });
+      root.addEventListener('click',event=>{
+        if(!event.target.closest?.('[data-mc-select]'))return;
+        queueMicrotask(()=>{reconcileVisibleSelection();updateCount()});
       });
       root.addEventListener('change',event=>{
         const input=event.target.closest?.('[data-mc-select]');
