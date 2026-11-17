@@ -1,0 +1,20 @@
+name: Sync V2 fake private cover contract
+on:
+  push:
+    branches: [commercial-published]
+    paths:
+      - 'tests/sync-v2-fake-private-covers-regression.cjs'
+      - '.github/workflows/sync-v2-fake-private-covers.yml'
+  workflow_dispatch:
+jobs:
+  fake-private-covers:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify synthetic isolated cover roundtrip and fail-closed guards
+        run: node tests/sync-v2-fake-private-covers-regression.cjs
