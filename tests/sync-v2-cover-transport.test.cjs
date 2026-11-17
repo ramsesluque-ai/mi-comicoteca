@@ -32,6 +32,22 @@ function fake(){
    return {ok:true,status:200,json:async()=>({id:uid})};
  };
  assert.equal(await transport.verifySession({session,cfg,fetchImpl:identityFetch}),uid);
+
+ // Reject malformed base URLs before a bearer token can leave the application.
+ // A valid Supabase endpoint is a bare HTTPS origin (optional trailing slash).
+ for(const url of [
+   'http://test.invalid','https://test.invalid/redirect',
+   'https://test.invalid?next=https://attacker.invalid',
+   'https://test.invalid#fragment','https://attacker.invalid@other.invalid',
+   'https://test.invalid/auth/v1/user'
+ ]){
+   let calls=0;
+   const forbidden=async()=>{calls++;throw Error('Token leaked to invalid endpoint')};
+   await assert.rejects(()=>transport.verifySession({session,cfg:{...cfg,url},fetchImpl:forbidden}),/Configuración cloud inválida/);
+   await assert.rejects(()=>transport.read({session,cfg:{...cfg,url},key:'safe',integrity,fetchImpl:forbidden}),/Configuración cloud inválida/);
+   assert.equal(calls,0,'Invalid endpoint must not receive authenticated requests: '+url);
+ }
+
  await assert.rejects(()=>transport.verifySession({session,cfg,fetchImpl:async()=>({ok:true,status:200,json:async()=>({id:'abcdefab-1234-1234-1234-abcdefabcdef'})})}),/no coincide/);
  await assert.rejects(()=>transport.verifySession({session,cfg,fetchImpl:async()=>({ok:false,status:403})}),/403/);
  await assert.rejects(()=>transport.verifySession({session,cfg,fetchImpl:async()=>({ok:false,status:503})}),/503/);
