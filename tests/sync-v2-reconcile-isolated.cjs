@@ -8,8 +8,9 @@ function digest(value) {
 function canonical(value) {
   if (value === null || typeof value === 'string' || typeof value === 'boolean') return value;
   if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (['bigint','undefined','function','symbol'].includes(typeof value)) throw Error('Unsupported value');
   if (Array.isArray(value)) {
-    if (Object.keys(value).length !== value.length) throw Error('Sparse array');
+    if (Object.keys(value).length !== value.length || !Array.from({length:value.length},(_,i)=>Object.hasOwn(value,i)).every(Boolean)) throw Error('Sparse array');
     return value.map(canonical);
   }
   if (!value || Object.getPrototypeOf(value) !== Object.prototype) throw Error('Invalid object');
@@ -45,7 +46,8 @@ function reconcile(local, remote, baseline) {
     const lh=fingerprint(left),rh=fingerprint(right),bh=fingerprint(base);
     // No baseline: never infer that absence means deletion.
     let action;
-    if (lh===rh) action='unchanged';
+    if (!left && !right && base) action='conflict-missing-both';
+    else if (lh===rh) action='unchanged';
     else if (!base) action='conflict-unbaselined';
     else if (lh===bh && rh!==bh) action='download-candidate';
     else if (rh===bh && lh!==bh) action='upload-candidate';
@@ -64,10 +66,12 @@ if (require.main===module) {
   assert.equal(reconcile([a],[b],[a])[0].action,'download-candidate');
   assert.equal(reconcile([b],[mk('a','other')],[a])[0].action,'conflict-concurrent');
   assert.equal(reconcile([b],[],[])[0].action,'conflict-unbaselined');
-  assert.equal(reconcile([],[],[a])[0].action,'unchanged');
+  assert.equal(reconcile([],[],[a])[0].action,'conflict-missing-both');
   assert.equal(reconcile([mk('a','old',{coverKey:'new'})],[a],[a])[0].action,'upload-candidate');
   assert.equal(reconcile([mk('a','old',{deleted:true})],[a],[a])[0].action,'upload-candidate');
   assert.throws(()=>reconcile([a,a],[],[]),/Duplicate/);
   assert.throws(()=>fingerprint({local_id:'a',value:Infinity}),/Invalid/);
-  console.log('V2 isolated reconciliation: 10 checks passed (no writes)');
+  assert.throws(()=>fingerprint({local_id:'a',value:undefined}),/Unsupported/);
+  assert.throws(()=>fingerprint({local_id:'a',value:[,1]}),/Sparse/);
+  console.log('V2 isolated reconciliation: 12 checks passed (no writes)');
 }
