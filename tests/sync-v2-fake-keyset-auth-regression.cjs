@@ -50,4 +50,25 @@ async function run({rows=cloudRows,who=UID_A,failPage=false,foreign=false}={}){
  const duplicate=await run({rows:[cloudRows[0],cloudRows[0]]});
  assert.match(duplicate.error.message,/duplicada|fuera de orden/);
  console.log('PASS duplicate cloud page fails closed');
+ const tombstoneRows=[
+  {user_id:UID_A,local_id:'comics:1',metadata:{kind:'comics',deleted:true}},
+  {user_id:UID_A,local_id:'comics:3',metadata:{kind:'comics',record:{id:3,title:'Three'}}}
+ ];
+ const tombstone=await run({rows:tombstoneRows});
+ assert.equal(tombstone.result.tombstones,1);
+ assert.equal(tombstone.result.onlyLocal,1);
+ assert.equal(tombstone.result.safeToWrite,false);
+ console.log('PASS explicit tombstone is counted but never authorizes deletion');
+ const fullPages=await run({rows:[cloudRows[0],cloudRows[1]]});
+ assert.equal(fullPages.result.complete,true);
+ assert.equal(fullPages.calls.length,3,'exact-full-page must fetch terminal empty page');
+ console.log('PASS exact page boundary requires terminal empty page');
+ const malformed=await run({rows:[{...cloudRows[0],metadata:{kind:'comics',record:{id:999,title:'wrong'}}}]});
+ assert.match(malformed.error.message,/identidad inconsistente/);
+ console.log('PASS cloud record ID mismatch fails closed');
+ const nonJson=await run();
+ assert.equal(nonJson.result.readOnly,true);
+ assert.equal(nonJson.result.safeToWrite,false);
+ console.log('PASS comparison remains read-only');
+
 })().catch(e=>{console.error(e);process.exitCode=1});
