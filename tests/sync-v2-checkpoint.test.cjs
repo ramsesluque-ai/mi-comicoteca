@@ -28,6 +28,12 @@ const r=(id,title,extra={})=>({id,publisher:'Editorial',series:'Serie',issue:id,
  const tampered=structuredClone(checkpoint);tampered.payload.rows[0].coverKey='';
  await assert.rejects(cp.verify({checkpoint:tampered,...opts}),/alterado/);
  await assert.rejects(cp.create({...opts,rows:[original[0],original[0]],remoteSnapshotHash:hash}),/duplicado/);
+ // Reject IDs that could change through coercion or whitespace normalization.
+ for(const badId of [' 1','1 ',{},[],true,-1,1.5,Number.MAX_SAFE_INTEGER+1]){
+   await assert.rejects(cp.digestRows([{...original[0],id:badId}],{cryptoImpl:webcrypto}),/ID estable inválido/);
+ }
+ await assert.rejects(cp.digestRows([{...original[0],id:'1'},{...original[0],id:1}],{cryptoImpl:webcrypto}),/duplicado/);
+ await assert.rejects(cp.plan({...opts,checkpoint,localRows:[{...original[0],id:' 1'}],remoteRows:original,remoteSnapshotHash:hash,reconciler:globalThis.MCReconcileV2}),/ID estable inválido/);
  const conflict=await cp.plan({...opts,checkpoint,localRows:[{...original[0],title:'Local'}],remoteRows:[{...original[0],title:'Remoto'}],remoteSnapshotHash:await cp.digestRows([{...original[0],title:'Remoto'}],{cryptoImpl:webcrypto}),reconciler:globalThis.MCReconcileV2});
  assert.equal(conflict.conflicts.length,1);
  assert.equal(conflict.upload.length+conflict.download.length+conflict.merged.length,0);
