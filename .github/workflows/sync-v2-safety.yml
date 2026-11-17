@@ -57,6 +57,8 @@ jobs:
           node tests/sync-v2-two-user-cover-backend.test.cjs
           node tests/sync-v2-16523-scale.test.cjs
           node tests/sync-v2-manual-plan.test.cjs
+          node tests/sync-v2-fake-keyset-auth-regression.cjs
+          node tests/sync-v2-fake-private-covers-regression.cjs
           node tests/sync-v2-fault-injection.test.cjs
           node tests/sync-v2-reconcile.test.cjs
           node tests/sync-v2-reconcile-isolated.cjs
