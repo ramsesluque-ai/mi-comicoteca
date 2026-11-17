@@ -48,6 +48,7 @@ function reconcile(local, remote, baseline) {
     let action;
     if (!left && !right && base) action='conflict-missing-both';
     else if (lh===rh) action='unchanged';
+    else if (base && (!left || !right)) action='conflict-implicit-deletion';
     else if (!base) action='conflict-unbaselined';
     else if (lh===bh && rh!==bh) action='download-candidate';
     else if (rh===bh && lh!==bh) action='upload-candidate';
@@ -67,11 +68,14 @@ if (require.main===module) {
   assert.equal(reconcile([b],[mk('a','other')],[a])[0].action,'conflict-concurrent');
   assert.equal(reconcile([b],[],[])[0].action,'conflict-unbaselined');
   assert.equal(reconcile([],[],[a])[0].action,'conflict-missing-both');
+  assert.equal(reconcile([], [a], [a])[0].action,'conflict-implicit-deletion');
+  assert.equal(reconcile([a], [], [a])[0].action,'conflict-implicit-deletion');
+  assert.equal(reconcile([mk('a','old',{deleted:true})],[a],[a])[0].action,'upload-candidate');
   assert.equal(reconcile([mk('a','old',{coverKey:'new'})],[a],[a])[0].action,'upload-candidate');
   assert.equal(reconcile([mk('a','old',{deleted:true})],[a],[a])[0].action,'upload-candidate');
   assert.throws(()=>reconcile([a,a],[],[]),/Duplicate/);
   assert.throws(()=>fingerprint({local_id:'a',value:Infinity}),/Invalid/);
   assert.throws(()=>fingerprint({local_id:'a',value:undefined}),/Unsupported/);
   assert.throws(()=>fingerprint({local_id:'a',value:[,1]}),/Sparse/);
-  console.log('V2 isolated reconciliation: 12 checks passed (no writes)');
+  console.log('V2 isolated reconciliation: 15 checks passed (no writes)');
 }
