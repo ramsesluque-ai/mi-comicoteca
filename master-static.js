@@ -5,7 +5,7 @@ const MCMasterUI={rows:[],publisher:'',collectionKey:'',loadedPublisher:'',activ
 let mcNovedadesArchivePromise=null;
 let mcManualAdditionsPromise=null;
 async function mcManualAdditions(){
- if(!mcManualAdditionsPromise)mcManualAdditionsPromise=fetch('master-data/manual-additions.json?v=20261112',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('No se pudo cargar ampliaciones del Maestro');return r.json()}).then(j=>Array.isArray(j.items)?j.items:[]).catch(e=>{console.warn(e);return[]});
+ if(!mcManualAdditionsPromise)mcManualAdditionsPromise=fetch('master-data/manual-additions.json?v=20261117-batman7',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('No se pudo cargar ampliaciones del Maestro');return r.json()}).then(j=>Array.isArray(j.items)?j.items:[]).catch(e=>{console.warn(e);return[]});
  return mcManualAdditionsPromise;
 }
 async function mcNovedadesArchive(){
@@ -13,11 +13,11 @@ async function mcNovedadesArchive(){
  return mcNovedadesArchivePromise;
 }
 async function mcMasterIndexWithArchive(){
- const base=await mcSEMasterIndex(),archive=await mcNovedadesArchive(),idx={...base,publishers:(base.publishers||[]).map(p=>({...p}))};
+ const base=await mcSEMasterIndex(),archive=await mcNovedadesArchive(),manual=await mcManualAdditions(),idx={...base,publishers:(base.publishers||[]).map(p=>({...p}))};
  const count=new Map();
- for(const r of archive)count.set(r.publisher,(count.get(r.publisher)||0)+1);
+ for(const r of [...archive,...manual])count.set(r.publisher,(count.get(r.publisher)||0)+1);
  for(const [name,n] of count){let p=idx.publishers.find(x=>x.publisher===name);if(!p){p={publisher:name,issues:0,series:0,chunks:[],priority:0};idx.publishers.push(p)}p.issues+=n}
- idx.totalIssues=base.totalIssues+archive.length;
+ idx.totalIssues=base.totalIssues+archive.length+manual.length;
  idx.totalPublishers=idx.publishers.length;
  return idx;
 }
