@@ -1,0 +1,24 @@
+name: Sync V2 baseline deletion guard
+on:
+  push:
+    branches: [commercial-published]
+    paths:
+      - 'sync-v2-baseline-plan.js'
+      - 'tests/sync-v2-double-missing.test.cjs'
+      - '.github/workflows/sync-v2-baseline-deletion-guard.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  baseline-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and deletion protection
+        run: |
+          node --check sync-v2-baseline-plan.js
+          node tests/sync-v2-double-missing.test.cjs
