@@ -6,7 +6,7 @@ const UID_A='11111111-1111-4111-8111-111111111111';
 const UID_B='22222222-2222-4222-8222-222222222222';
 const digest=b=>createHash('sha256').update(b).digest('hex');
 class FakePrivateStorage {
- constructor(){this.objects=new Map();this.failNextGet=false;this.failNextPut=false;}
+ constructor(){this.objects=new Map();this.failNextGet=false;this.failNextPut=false;this.corruptNextGet=false;}
  key(uid,path){assert.match(uid,/^[a-f0-9-]{36}$/);assert(path.startsWith(uid+'/covers/'),'uid-scoped path required');assert(!path.includes('..'));return path;}
  async put(uid,path,bytes,{expectedHash,overwrite=false}={}){
   const key=this.key(uid,path);
@@ -20,6 +20,7 @@ class FakePrivateStorage {
   if(this.failNextGet){this.failNextGet=false;throw Error('503 simulated GET');}
   const bytes=this.objects.get(key);
   if(!bytes)throw Error('404');
+  if(this.corruptNextGet){this.corruptNextGet=false;return Buffer.from('corrupted remote payload');}
   return Buffer.from(bytes);
  }
 }
@@ -52,4 +53,14 @@ async function uploadVerified(storage,uid,bytes){
  const same=await storage.get(UID_A,a.path);
  assert.equal(digest(same),a.hash);
  console.log('PASS original cover survives failed verification');
+ storage.corruptNextGet=true;
+ await assert.rejects(()=>uploadVerified(storage,UID_A,Buffer.from('checksum-check')),/GET verification SHA-256 mismatch/);
+ console.log('PASS silent remote corruption detected by binary checksum');
+ const retryBytes=Buffer.from('retry-after-unverified-write');
+ storage.failNextGet=true;
+ await assert.rejects(()=>uploadVerified(storage,UID_A,retryBytes),/503/);
+ const retryHash=digest(retryBytes),retryPath=UID_A+'/covers/'+retryHash+'.bin';
+ assert.equal(digest(await storage.get(UID_A,retryPath)),retryHash);
+ await assert.rejects(()=>uploadVerified(storage,UID_A,retryBytes),/immutable object collision/);
+ console.log('PASS unverified immutable object cannot be silently overwritten on retry');
 })().catch(e=>{console.error(e);process.exitCode=1});
