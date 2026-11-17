@@ -34,7 +34,7 @@ async function run({rows=cloudRows,who=UID_A,failPage=false,foreign=false}={}){
  assert.equal(ok.result.complete,true);
  assert.equal(ok.result.safeToWrite,false);
  assert.deepEqual([ok.result.local,ok.result.cloud,ok.result.equal,ok.result.onlyLocal,ok.result.onlyCloud,ok.result.otherKinds],[2,2,1,1,1,1]);
- assert.equal(ok.calls.length,4); // auth + two full pages + terminating empty page
+ assert.equal(ok.calls.length,3); // auth + full page + final partial page
  assert(ok.calls.every(x=>x.method==='GET'));
  console.log('PASS two-device-shaped keyset pages; no writes');
  const mismatch=await run({who:UID_B});
