@@ -112,4 +112,34 @@ async function run({rows=cloudRows,who=UID_A,failPage=false,foreign=false}={}){
  assert.deepEqual(pagelimit.calls,['GET','GET']);
  console.log('PASS truncated keyset scan never authorizes completion');
 
+
+// Malformed cloud responses must not be treated as an empty catalog.
+ for(const payload of [null,{},'not-an-array',Array(3).fill(cloudRows[0])]){
+  const calls=[];
+  const fetcher=async(url,opts)=>{
+   calls.push(opts.method);
+   if(url.endsWith('/auth/v1/user'))return {ok:true,json:async()=>({id:UID_A})};
+   return {ok:true,json:async()=>payload};
+  };
+  await assert.rejects(
+   ()=>compare({session,cfg,localRows,fetcher,pageSize:2}),
+   /página inválida/
+  );
+  assert.deepEqual(calls,['GET','GET']);
+ }
+ console.log('PASS malformed and oversized cloud pages fail closed');
+ // Aborted scans cannot be mistaken for complete inventory.
+ const controller=new AbortController();
+ controller.abort();
+ const aborted=await run();
+ assert.equal(aborted.result.safeToWrite,false);
+ await assert.rejects(
+  ()=>compare({session,cfg,localRows,signal:controller.signal,fetcher:async(url)=>{
+   if(url.endsWith('/auth/v1/user'))return {ok:true,json:async()=>({id:UID_A})};
+   throw Error('catalog must not be queried after abort');
+  }}),
+  /cancelada/
+ );
+ console.log('PASS cancelled comparison cannot authorize cloud writes');
+
 })().catch(e=>{console.error(e);process.exitCode=1});
