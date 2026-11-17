@@ -37,7 +37,13 @@
      out.conflicts.push({id,reason:'cover-reference-changed-since-baseline'});
      continue;
    }
-   if(lc===rc){if(lc!==null)out.identical.push(id);continue}
+   // Both sides missing a previously tracked record is NOT a confirmed deletion.
+   // Without a signed/explicit tombstone, never silently drop it from reconciliation.
+   if(lc===rc){
+    if(lc!==null)out.identical.push(id);
+    else if(bc!==null)out.conflicts.push({id,reason:'missing-on-both-sides-without-tombstone'});
+    continue;
+   }
    if(bc===null){out.untracked.push(id);continue}
    if(lc===null||rc===null){out.conflicts.push({id,reason:'missing-without-tombstone'});continue}
    // Cover references must never be propagated as ordinary bibliographic edits.
