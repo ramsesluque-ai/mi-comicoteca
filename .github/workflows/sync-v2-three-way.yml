@@ -1,0 +1,22 @@
+name: Sync V2 three-way isolated reconciliation
+on:
+  push:
+    branches: [commercial-published]
+    paths:
+      - 'sync-v2-manual-plan.js'
+      - 'tests/sync-v2-three-way-plan.cjs'
+      - 'tests/sync-v2-three-way-plan-regression.cjs'
+      - '.github/workflows/sync-v2-three-way.yml'
+  workflow_dispatch:
+jobs:
+  three-way:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fail-closed synthetic two-session baseline reconciliation
+        run: node tests/sync-v2-three-way-plan-regression.cjs
