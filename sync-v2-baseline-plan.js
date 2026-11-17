@@ -10,8 +10,10 @@
   if(!Array.isArray(rows))throw Error(side+': expected array');
   const m=new Map();
   for(const row of rows){
-   const id=String(row?.id??'').trim();
-   if(!id||m.has(id))throw Error(side+': missing or duplicate stable ID');
+   const rawId=row?.id;
+   if(!((typeof rawId==='string'&&rawId.trim()===rawId&&rawId.length>0)||(typeof rawId==='number'&&Number.isSafeInteger(rawId)&&rawId>=0)))throw Error(side+': invalid stable ID');
+   const id=String(rawId);
+   if(m.has(id))throw Error(side+': missing or duplicate stable ID');
    m.set(id,row);
   }
   return m;
