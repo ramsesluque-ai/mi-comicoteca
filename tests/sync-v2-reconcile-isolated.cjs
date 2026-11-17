@@ -5,21 +5,28 @@ const crypto = require('node:crypto');
 function digest(value) {
   return crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
 }
-function canonical(value) {
+function canonical(value, ancestors = new Set()) {
   if (value === null || typeof value === 'string' || typeof value === 'boolean') return value;
   if (typeof value === 'number' && Number.isFinite(value)) return value;
   if (['bigint','undefined','function','symbol'].includes(typeof value)) throw Error('Unsupported value');
   if (Array.isArray(value)) {
     if (Object.keys(value).length !== value.length || !Array.from({length:value.length},(_,i)=>Object.hasOwn(value,i)).every(Boolean)) throw Error('Sparse array');
-    return value.map(canonical);
+    if (ancestors.has(value)) throw Error('Circular reference');
+    ancestors.add(value);
+    try { return value.map(item => canonical(item, ancestors)); }
+    finally { ancestors.delete(value); }
   }
   if (!value || Object.getPrototypeOf(value) !== Object.prototype) throw Error('Invalid object');
-  const result = {};
-  for (const key of Object.keys(value).sort()) {
-    if (['__proto__','constructor','prototype'].includes(key)) throw Error('Unsafe key');
-    result[key] = canonical(value[key]);
-  }
-  return result;
+  if (ancestors.has(value)) throw Error('Circular reference');
+  ancestors.add(value);
+  try {
+    const result = {};
+    for (const key of Object.keys(value).sort()) {
+      if (['__proto__','constructor','prototype'].includes(key)) throw Error('Unsafe key');
+      result[key] = canonical(value[key], ancestors);
+    }
+    return result;
+  } finally { ancestors.delete(value); }
 }
 function fingerprint(record) {
   if (!record) return null;
@@ -77,5 +84,11 @@ if (require.main===module) {
   assert.throws(()=>fingerprint({local_id:'a',value:Infinity}),/Invalid/);
   assert.throws(()=>fingerprint({local_id:'a',value:undefined}),/Unsupported/);
   assert.throws(()=>fingerprint({local_id:'a',value:[,1]}),/Sparse/);
-  console.log('V2 isolated reconciliation: 15 checks passed (no writes)');
+  const cycle={}; cycle.self=cycle;
+  assert.throws(()=>fingerprint({local_id:'a',value:cycle}),/Circular reference/);
+  const arrayCycle=[]; arrayCycle.push(arrayCycle);
+  assert.throws(()=>fingerprint({local_id:'a',value:arrayCycle}),/Circular reference/);
+  const shared={value:1};
+  assert.equal(fingerprint({local_id:'a',x:shared,y:shared}),fingerprint({local_id:'a',x:{value:1},y:{value:1}}));
+  console.log('V2 isolated reconciliation: 18 checks passed (no writes)');
 }
