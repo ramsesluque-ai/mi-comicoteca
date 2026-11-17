@@ -1,0 +1,41 @@
+name: Sync V2 private cover transport exact Cloudflare asset
+on:
+  push:
+    branches: [commercial-published]
+    paths:
+      - 'sync-v2-cover-transport.js'
+      - 'tests/sync-v2-cover-transport.test.cjs'
+      - '.github/workflows/sync-v2-cover-transport-cloudflare.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-private-transport:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate isolated transport and security tests
+        run: |
+          node --check sync-v2-cover-transport.js
+          node tests/sync-v2-cover-transport.test.cjs
+      - name: Verify exact public static asset on Cloudflare Workers
+        env:
+          BASE_URL: https://mi-comicoteca.ramsesluque.workers.dev
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 10); do
+            echo "Cloudflare exact transport attempt ${attempt}/10"
+            if curl -fsSL --max-time 20 -H 'Cache-Control: no-cache' "${BASE_URL}/sync-v2-cover-transport.js?commit=${GITHUB_SHA}" -o /tmp/sync-v2-cover-transport.js && \
+               cmp -s sync-v2-cover-transport.js /tmp/sync-v2-cover-transport.js; then
+              echo "CLOUDFLARE_SYNC_V2_PRIVATE_TRANSPORT_EXACT_ASSET_VERIFIED ${GITHUB_SHA}"
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "Cloudflare transport bytes not verified" >&2
+          exit 1
