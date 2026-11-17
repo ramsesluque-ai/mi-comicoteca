@@ -1,0 +1,22 @@
+'use strict';
+const assert=require('node:assert/strict');
+const {plan}=require('./sync-v2-three-way-plan.cjs');
+const row=(id,title,extra={})=>({local_id:'comics:'+id,deleted:false,record:{id,title,...extra}});
+const tomb=id=>({local_id:'comics:'+id,deleted:true});
+const base=[row(1,'A'),row(2,'B'),row(3,'C'),row(4,'D'),row(5,'E'),row(6,'F')];
+const local=[row(1,'A'),row(2,'B'),row(3,'C local'),row(4,'D local'),row(5,'E'),tomb(6)];
+const cloud=[row(1,'A'),row(2,'B cloud'),row(3,'C'),row(4,'D cloud'),tomb(5),row(6,'F')];
+const result=plan({baseline:base,local,cloud});
+assert.equal(result.readOnly,true);assert.equal(result.safeToWrite,false);
+assert.deepEqual(result.proposals.map(p=>p.status),[
+ 'equal','candidate-download','candidate-upload','conflict','review-cloud-tombstone','review-local-tombstone']);
+console.log('PASS two-session three-way changes, explicit tombstones and conflicts');
+assert.equal(plan({baseline:[],local:[row(7,'new')],cloud:[]}).proposals[0].status,'review-no-baseline');
+assert.equal(plan({baseline:[row(1,'A')],local:[],cloud:[row(1,'A')]}).proposals[0].status,'review-missing-row');
+console.log('PASS missing baseline and missing row never inferred as deletion');
+assert.equal(plan({baseline:[row(1,'A',{coverKey:'a'})],local:[row(1,'A',{coverKey:'a'})],cloud:[row(1,'A',{coverKey:'b'})]}).proposals[0].status,'review-cover-reference');
+console.log('PASS coverKey change blocked for independent binary verification');
+assert.throws(()=>plan({baseline:[row(1,'A'),row(1,'B')],local:[],cloud:[]}),/duplicate/);
+assert.throws(()=>plan({baseline:[],local:[{local_id:'comics:2',deleted:false,record:{id:3}}],cloud:[]}),/ID mismatch/);
+assert.throws(()=>plan({baseline:[],local:[{local_id:'comics:2',record:{id:2}}],cloud:[]}),/tombstone/);
+console.log('PASS duplicate ID, ID mismatch and implicit deletion rejected');
