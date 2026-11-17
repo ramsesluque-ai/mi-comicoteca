@@ -31,4 +31,11 @@ const bothChanged=[{...a(1,'old'),coverKey:'private:new'}];
 assert.equal(plan({local:bothChanged,remote:bothChanged,baseline:base}).conflicts[0].reason,'cover-reference-changed-since-baseline','matching metadata cannot certify binary cover transfer');
 const protectedMixed=plan({local:[...bothChanged,a(2,'edited')],remote:[...bothChanged,a(2,'old')],baseline:[...base,a(2,'old')]});
 assert.deepEqual(protectedMixed.upload,[],'unverified cover change blocks unrelated upload batch');
-console.log('Sync V2 baseline safety: 23 assertions passed');
+
+// Reject IDs whose string coercion would silently alias unrelated records.
+for(const invalidId of [null,undefined,{},[],true,1.5,NaN,Infinity,-1,Number.MAX_SAFE_INTEGER+1,' 1 ','']) {
+ assert.throws(()=>plan({local:[{...a(1,'old'),id:invalidId}],remote:[],baseline:[]}),/invalid stable ID/);
+}
+assert.throws(()=>plan({local:[a(1,'old'),{...a(1,'old'),id:'1'}],remote:[],baseline:[]}),/duplicate stable ID/);
+assert.deepEqual(plan({local:[{...a(1,'old'),id:'comics:1'}],remote:[],baseline:[]}).untracked,['comics:1']);
+console.log('Sync V2 baseline safety: ID validation and reconciliation assertions passed');
