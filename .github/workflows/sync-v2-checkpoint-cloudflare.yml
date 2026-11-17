@@ -1,0 +1,35 @@
+name: Sync V2 checkpoint Cloudflare exact asset
+on:
+  push:
+    branches: [commercial-published]
+    paths:
+      - 'sync-v2-checkpoint.js'
+      - 'tests/sync-v2-checkpoint.test.cjs'
+      - '.github/workflows/sync-v2-checkpoint-cloudflare.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-checkpoint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify local checkpoint safety
+        run: |
+          node --check sync-v2-checkpoint.js
+          node tests/sync-v2-checkpoint.test.cjs
+      - name: Verify exact checkpoint bytes on Cloudflare Workers
+        env:
+          BASE_URL: https://mi-comicoteca.ramsesluque.workers.dev
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 12); do
+            if curl -fsSL --max-time 20 -H 'Cache-Control: no-cache' "${BASE_URL}/sync-v2-checkpoint.js?probe=${GITHUB_SHA}" -o /tmp/checkpoint.js && cmp -s sync-v2-checkpoint.js /tmp/checkpoint.js; then
+              echo "CLOUDFLARE_CHECKPOINT_EXACT_BYTES_VERIFIED ${GITHUB_SHA}"
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "Cloudflare did not serve the exact checkpoint bytes of this revision" >&2
+          exit 1
