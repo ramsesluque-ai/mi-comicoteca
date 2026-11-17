@@ -76,7 +76,9 @@ async function recoverVerified(storage,uid,bytes){
  assert.deepEqual(recovered,{path:retryPath,hash:retryHash});
  assert.deepEqual(await storage.get(UID_A,retryPath),retryBytes);
  console.log('PASS retry recovery via read-only GET preserves immutable bytes');
- await assert.rejects(()=>recoverVerified(storage,UID_B,retryBytes),/uid-scoped/);
+ await assert.rejects(()=>recoverVerified(storage,UID_B,retryBytes),/404/);
+ assert.equal(storage.objects.has(UID_B+'/covers/'+retryHash+'.bin'),false,'other user has no matching private object');
+ await assert.rejects(()=>storage.get(UID_B,retryPath),/uid-scoped/);
  storage.corruptNextGet=true;
  await assert.rejects(()=>recoverVerified(storage,UID_A,retryBytes),/recovery GET SHA-256 mismatch/);
  console.log('PASS recovery rejects cross-account reads and corrupted payloads');
