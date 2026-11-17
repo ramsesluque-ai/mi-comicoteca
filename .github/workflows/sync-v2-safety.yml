@@ -59,6 +59,7 @@ jobs:
           node tests/sync-v2-manual-plan.test.cjs
           node tests/sync-v2-fault-injection.test.cjs
           node tests/sync-v2-reconcile.test.cjs
+          node tests/sync-v2-reconcile-isolated.cjs
           node tests/sync-v2-tombstone-readonly.test.cjs
           node tests/sync-v2-diagnostic.test.cjs
       - name: Confirm legacy V1 is fail-closed
