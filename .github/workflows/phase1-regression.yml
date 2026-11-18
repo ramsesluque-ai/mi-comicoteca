@@ -34,7 +34,8 @@ jobs:
             assert(html.includes(file),'Not loaded by HTML: '+file);
           }
           const bulk=fs.readFileSync('catalog-bulk.js','utf8');
-          assert(bulk.includes('input.addEventListener(\'click\',event=>event.stopPropagation())'),'Checkbox must not open comic card');
+          assert(/input\.addEventListener\('click',event=>\{[\s\S]*?event\.stopPropagation\(\)/.test(bulk),'Checkbox click must stop card navigation');
+          assert(!bulk.includes('setInterval('),'Bulk selection must not be reset by DOM polling');
           assert(bulk.includes("root.addEventListener('change',event=>"),'Selection change must update bulk counter');
           assert(bulk.includes('grid.hidden=true'),'List mode must hide card grid');
           assert(bulk.includes('openBulkDialog(currentWish)'),'Bulk actions must open confirmation');
