@@ -35,7 +35,7 @@ function backend(owner,{injectForeign=false,failPage=false}={}){
   if(failPage)return response({error:'network'},503);
   const id=new URL(url).searchParams.get('user_id');
   assert.equal(id,'eq.'+owner);
-  const records=injectForeign?[{user_id:owner===u1?u2:u1,local_id:'comics:A',metadata:{kind:'comics',record:A}}}]:[{user_id:owner,local_id:'comics:A',metadata:{kind:'comics',record:A}}}];
+  const records=injectForeign?[{user_id:owner===u1?u2:u1,local_id:'comics:A',metadata:{kind:'comics',record:A}}]:[{user_id:owner,local_id:'comics:A',metadata:{kind:'comics',record:A}}];
   return response(records);
  };
  return {fetcher,requests};
