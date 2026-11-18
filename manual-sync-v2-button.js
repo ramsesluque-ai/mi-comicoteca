@@ -75,7 +75,14 @@
      assertCoverAccount(session);
      if(!window.MCSyncV2CoverInventory?.compare)throw Error('Módulo de portadas no disponible');
      const summary=await MCSyncV2CoverInventory.compare({session,cfg});
-     if(panel.isConnected)covers.textContent='Portadas privadas (solo lectura): '+summary.local+' archivos locales; '+summary.remote+' en Supabase; '+summary.matched+' coinciden por nombre; '+summary.onlyLocal+' solo locales; '+summary.onlyRemote+' solo en nube. Falta verificar SHA-256 binario. Ninguna imagen modificada.';
+     // The deployed renderer still reads the legacy CoverVault cache. A private
+     // per-user V2 cache may also exist; count it separately without moving bytes.
+     let privateCount='no disponible';
+     if(window.MCSyncV2PrivateCoverBridge?.cacheName&&window.caches?.open){
+       const privateCache=await caches.open(window.MCSyncV2PrivateCoverBridge.cacheName(session.user.id));
+       privateCount=String((await privateCache.keys()).length);
+     }
+     if(panel.isConnected)covers.textContent='Portadas (solo lectura): CoverVault de este navegador: '+summary.local+'; caché privada V2: '+privateCount+'; Storage privado: '+summary.remote+'; coinciden por nombre CoverVault/Storage: '+summary.matched+'; solo en CoverVault: '+summary.onlyLocal+'; solo en Storage: '+summary.onlyRemote+'. ATENCIÓN: la caché privada V2 todavía no alimenta el visor de fichas; ninguna imagen se ha transferido. La coincidencia por nombre NO acredita SHA-256.';
    }catch(e){if(panel.isConnected)covers.textContent='Portadas: no se pudo completar la comprobación ('+String(e.message||e)+'). Sin escrituras.'}})();
    // Explicit SHA-256 check; never upload, install or overwrite a cover.
    const coverAudit=document.createElement('button');
