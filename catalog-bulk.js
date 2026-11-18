@@ -21,7 +21,7 @@
   function reconcileVisibleSelection(){
     const root=document.getElementById('catbody');
     if(!root)return;
-    const scope=view==='list'?root.querySelector('.mc-catalog-list'):root.querySelector('.comic-grid');
+    const scope=view==='list'?root.querySelector('.mc-catalog-list'):root.querySelector('.record-grid');
     if(!scope)return;
     scope.querySelectorAll('[data-mc-select]').forEach(input=>{
       const id=String(input.dataset.mcSelect||'');
@@ -34,7 +34,7 @@
     const count=document.getElementById('mc-selection-count');
     if(count)count.textContent=selected.size+' seleccionados';
     document.querySelectorAll('#catbody [data-mc-select]').forEach(el=>{el.checked=selected.has(el.dataset.mcSelect)});
-    const scope=view==='list'?document.querySelector('#catbody .mc-catalog-list'):document.querySelector('#catbody .comic-grid');
+    const scope=view==='list'?document.querySelector('#catbody .mc-catalog-list'):document.querySelector('#catbody .record-grid');
     const all=[...(scope?.querySelectorAll('[data-mc-select]')||[])];
     const selectPage=document.getElementById('mc-select-page');
     if(selectPage){selectPage.checked=!!all.length&&all.every(x=>x.checked);selectPage.indeterminate=all.some(x=>x.checked)&&!selectPage.checked}
@@ -99,7 +99,7 @@
   function showView(){
     const root=document.getElementById('catbody');
     if(!root)return;
-    const grid=root.querySelector('.comic-grid');
+    const grid=root.querySelector('.record-grid');
     const list=root.querySelector('.mc-catalog-list');
     if(view==='list'){
       if(grid)grid.hidden=true;
@@ -119,7 +119,7 @@
       button.setAttribute('aria-pressed',String(active));
       button.classList.toggle('active',active);
     });
-    root.querySelectorAll('[data-mc-select]').forEach(input=>{input.checked=selected.has(input.dataset.mcSelect)});
+    root.querySelectorAll('[data-mc-select]').forEach(input=>{input.checked=selected.has(input.dataset.mcSelect);input.closest('.selectable')?.classList.toggle('selected',input.checked)});
     updateCount();
     window.CoverVault?.hydrate?.(root);
   }
@@ -164,30 +164,26 @@
     if(!root)return out;
     const visible=await getVisible(wish);
     currentRows=visible.slice((page-1)*PAGE,page*PAGE);
-    root.querySelectorAll('.comic-grid .comic-card').forEach((card,i)=>{
-      const row=currentRows[i];if(!row)return;
-      const input=document.createElement('input');
-      input.type='checkbox';
-      input.className='mc-card-select';
-      input.dataset.mcSelect=String(row.id);
-      // Card click handlers must not consume or revert native checkbox state.
-      // Keep the selection keyed by the rendered row ID across card/list switches.
-      input.checked=selected.has(String(row.id));
-      input.addEventListener('click',event=>{
-        event.stopPropagation();
-        const id=String(input.dataset.mcSelect);
-        if(input.checked)selected.add(id);else selected.delete(id);
-        updateCount();
-      });
+    // app6 renders .record-grid > .record-card with an EXISTING native checkbox.
+    // Never prepend a second checkbox: that produced two competing selection systems.
+    const cards=[...root.querySelectorAll('.record-grid .record-card')];
+    const ids=Array.isArray(mcVisible)?mcVisible:[];
+    cards.forEach((card,i)=>{
+      const id=ids[i];if(id===undefined||id===null)return;
+      const input=card.querySelector('label.pick input[type="checkbox"]');
+      if(!input)return;
+      input.removeAttribute('onchange'); // legacy mcPick uses a separate Set
+      input.dataset.mcSelect=String(id);
+      input.checked=selected.has(String(id));
+      input.addEventListener('click',event=>event.stopPropagation());
       input.addEventListener('change',event=>{
         event.stopPropagation();
-        const id=String(input.dataset.mcSelect);
-        if(input.checked)selected.add(id);else selected.delete(id);
+        if(input.checked)selected.add(String(id));else selected.delete(String(id));
+        card.classList.toggle('selected',input.checked);
         updateCount();
       });
-      input.setAttribute('aria-label','Seleccionar '+label(row));
-      card.prepend(input);
     });
+    currentRows=visible.filter(row=>ids.some(id=>String(id)===String(row.id)));
     bindCatalogControls();
     showView();
     return out;
