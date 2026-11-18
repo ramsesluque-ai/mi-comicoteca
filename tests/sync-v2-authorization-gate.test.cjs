@@ -1,0 +1,17 @@
+'use strict';
+const assert=require('node:assert/strict');
+const {authorize}=require('../sync-v2-authorization-gate.js');
+const row={id:'a',title:'Demo'};
+const plan={conflicts:[],upload:[],download:[],merged:[]};
+const backup={verified:true,sha256:'a'.repeat(64)};
+const tests={twoSessionE2E:true,rlsIsolation:true,retryAndFaults:true};
+const clean={plan,baseline:[row],local:[row],remote:[row],backup,tests};
+assert.equal(authorize(clean).safeToWrite,false);
+assert.deepEqual(authorize(clean).reasons,['production-write-gate-disabled']);
+assert.ok(authorize({...clean,baseline:[]}).reasons.includes('unacknowledged-baseline'));
+assert.ok(authorize({...clean,backup:{verified:false}}).reasons.includes('unverified-backup'));
+assert.ok(authorize({...clean,tests:{}}).reasons.includes('missing-e2e-evidence'));
+assert.ok(authorize({...clean,plan:{...plan,conflicts:[{id:'a'}]}}).reasons.includes('unresolved-conflicts'));
+assert.ok(authorize({...clean,local:[{...row,coverKey:'private/x'}]}).reasons.includes('unverified-private-covers'));
+assert.ok(authorize({...clean,local:[{...row,coverKey:'private/x'}],coverProofs:{binarySha256Verified:true,authenticatedGetVerified:true,uidIsolationVerified:true}}).reasons.includes('production-write-gate-disabled'));
+console.log('Sync V2 final authorization gate: 7 checks passed; writes always disabled');
