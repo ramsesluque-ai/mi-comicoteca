@@ -5,6 +5,7 @@ on:
     paths:
       - 'sync-v2-baseline-plan.js'
       - 'tests/sync-v2-double-missing.test.cjs'
+      - 'tests/sync-v2-baseline-plan.test.cjs'
       - '.github/workflows/sync-v2-baseline-deletion-guard.yml'
   workflow_dispatch:
 permissions:
@@ -22,3 +23,4 @@ jobs:
         run: |
           node --check sync-v2-baseline-plan.js
           node tests/sync-v2-double-missing.test.cjs
+          node tests/sync-v2-baseline-plan.test.cjs
