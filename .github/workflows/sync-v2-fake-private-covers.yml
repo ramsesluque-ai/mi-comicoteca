@@ -22,6 +22,7 @@ on:
       - 'sync-v2-cover-cache-bridge.js'
       - 'sync-v2-cover-transport.js'
       - 'sync-v2-reconcile.js'
+      - 'sync-v2-manual-plan.js'
       - '.github/workflows/sync-v2-fake-private-covers.yml'
   workflow_dispatch:
 jobs:
