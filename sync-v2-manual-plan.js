@@ -22,7 +22,15 @@
      }
      if(typeof Blob!=='undefined'&&v instanceof Blob)throw Error('Portada binaria local: requiere respaldo independiente');
      if(ancestors.has(v))throw Error('Referencia circular en ficha local');
-     if(Object.getPrototypeOf(v)!==Object.prototype&&Object.getPrototypeOf(v)!==null&&!Array.isArray(v))
+     // Accept plain objects from another JS realm (e.g. an isolated test VM),
+     // but reject class instances, custom prototypes and exotic host objects.
+     const proto=Object.getPrototypeOf(v);
+     const plain=proto===null||proto===Object.prototype||
+       (Object.prototype.toString.call(v)==='[object Object]'&&
+        Object.getPrototypeOf(proto)===null&&
+        Object.prototype.hasOwnProperty.call(proto,'constructor')&&
+        typeof proto.constructor==='function'&&proto.constructor.name==='Object');
+     if(!Array.isArray(v)&&!plain)
        throw Error('Objeto local no serializable: comparación bloqueada');
      ancestors.add(v);
      try{
