@@ -42,6 +42,7 @@ jobs:
         run: |
           node sync-v2-transport-guard.test.cjs
           node tests/sync-v2-production-guard.test.cjs
+          node tests/sync-v2-owner-write-gate-vm.test.cjs
           node tests/sync-v2-two-device-isolated.test.js
           node tests/sync-v2-two-device-cover-roundtrip.test.cjs
           node tests/sync-v2-baseline-plan.test.cjs
