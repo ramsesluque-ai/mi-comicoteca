@@ -32,6 +32,13 @@
         typeof proto.constructor==='function'&&proto.constructor.name==='Object');
      if(!Array.isArray(v)&&!plain)
        throw Error('Objeto local no serializable: comparación bloqueada');
+     // Accessor properties can execute arbitrary code during a read-only comparison.
+     // Reject them and symbol keys instead of silently hashing an incomplete record.
+     assert(Reflect.ownKeys(v).every(k=>typeof k==='string'),'Ficha con propiedades Symbol: comparación bloqueada');
+     for(const k of Object.getOwnPropertyNames(v)){
+       const d=Object.getOwnPropertyDescriptor(v,k);
+       assert(d&&Object.hasOwn(d,'value'),'Ficha con getter/setter: comparación bloqueada');
+     }
      ancestors.add(v);
      try{
        if(Array.isArray(v)){
