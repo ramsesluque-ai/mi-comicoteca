@@ -38,6 +38,24 @@
     const selectPage=document.getElementById('mc-select-page');
     if(selectPage){selectPage.checked=!!all.length&&all.every(x=>x.checked);selectPage.indeterminate=all.some(x=>x.checked)&&!selectPage.checked}
   }
+  // Defensive DOM reconciliation: some legacy catalog scripts replace card nodes
+  // or consume checkbox events. Keep the displayed count faithful to native checked
+  // state even if a change event is lost. No writes to comic records.
+  function syncVisibleCount(){
+    const root=document.getElementById('catbody');
+    const scope=view==='list'?root?.querySelector('.mc-catalog-list'):root?.querySelector('.comic-grid');
+    if(!scope||!document.getElementById('mc-selection-count'))return;
+    const inputs=[...scope.querySelectorAll('input[type="checkbox"][data-mc-select]')];
+    if(!inputs.length)return;
+    let mismatch=false;
+    for(const input of inputs){
+      const id=String(input.dataset.mcSelect||'');
+      if(id&&input.checked!==selected.has(id)){mismatch=true;break}
+    }
+    if(mismatch){reconcileVisibleSelection();updateCount()}
+  }
+  // One low-frequency guard for the entire catalog, never one timer per card.
+  setInterval(()=>{if(document.visibilityState!=='hidden')syncVisibleCount()},350);
   function listHTML(rows){
     return '<div class="mc-catalog-list" role="table" aria-label="Listado de cómics">'+rows.map(x=>'<div class="mc-catalog-list-row" role="row"><input type="checkbox" data-mc-select="'+esc(x.id)+'" onclick="event.stopPropagation()" aria-label="Seleccionar '+esc(label(x))+'"><div class="mc-catalog-list-cover">'+img(x,'cover cardcover')+'</div><div class="mc-catalog-list-info"><strong>'+esc(x.catalogHeader||x.series||x.title||'Sin cabecera')+'</strong><small>'+esc([x.publisher,x.volume&&('Vol. '+x.volume),x.startYear,issueNumberLabel(x)].filter(Boolean).join(' · '))+'</small><small>'+esc(x.title||'')+'</small></div><div class="mc-catalog-list-status">'+statusPill(x.status)+'</div><button type="button" class="btn sm" data-mc-edit="'+esc(x.id)+'">Editar</button></div>').join('')+'</div>';
   }
