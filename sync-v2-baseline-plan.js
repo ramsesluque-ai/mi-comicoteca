@@ -5,6 +5,8 @@
  */
 (function(root){
  const canon=v=>JSON.stringify(sort(v));
+ // Treat all known cover pointers and integrity manifests as protected fields.
+ const COVER_FIELDS=['coverKey','coverUrl','coverSourceUrl','coverUrls','coverHash','coverSha256','coverSHA256','coverDigest','coverMime','coverSize'];
  function sort(v){if(Array.isArray(v))return v.map(sort);if(v&&typeof v==='object'){const o={};for(const k of Object.keys(v).sort())if(v[k]!==undefined)o[k]=sort(v[k]);return o}return v}
  function index(rows,side){
   if(!Array.isArray(rows))throw Error(side+': expected array');
@@ -32,7 +34,7 @@
    if(deleted.has(id)){out.deletionsBlocked.push(id);continue}
    // Matching metadata on both devices does not prove the binary cover was copied.
    // Even identical cover references changed since baseline require a separate SHA-256 audit.
-   if(bv&&lv&&rv&&['coverKey','coverUrl','coverSourceUrl','coverUrls'].some(field=>
+   if(bv&&lv&&rv&&COVER_FIELDS.some(field=>
      canon(lv[field]??null)===canon(rv[field]??null)&&canon(lv[field]??null)!==canon(bv[field]??null))){
      out.conflicts.push({id,reason:'cover-reference-changed-since-baseline'});
      continue;
@@ -49,7 +51,7 @@
    // Cover references must never be propagated as ordinary bibliographic edits.
    // A changed coverKey/coverUrl requires a separately verified private binary
    // transfer; otherwise a merge could silently orphan a user's local image.
-   if(['coverKey','coverUrl','coverSourceUrl','coverUrls'].some(field=>canon(lv[field]??null)!==canon(rv[field]??null))){
+   if(COVER_FIELDS.some(field=>canon(lv[field]??null)!==canon(rv[field]??null))){
     out.conflicts.push({id,reason:'cover-reference-changed'});
     continue;
    }
