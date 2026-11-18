@@ -1,0 +1,42 @@
+name: Sync V2 private cover concurrency and Cloudflare asset
+on:
+  push:
+    branches: [commercial-published]
+    paths:
+      - 'sync-v2-cover-cache-bridge.js'
+      - 'tests/sync-v2-private-cover-concurrency.test.cjs'
+      - '.github/workflows/sync-v2-cover-concurrency.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          node --check sync-v2-cover-cache-bridge.js
+          node tests/sync-v2-private-cover-concurrency.test.cjs
+          node tests/sync-v2-cover-cache-bridge.test.cjs
+          node tests/sync-v2-cover-transport.test.cjs
+  cloudflare-asset:
+    needs: isolated-regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare exact bridge bytes served by Cloudflare Workers
+        env:
+          BASE_URL: https://mi-comicoteca.ramsesluque.workers.dev
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 12); do
+            if curl -fsSL --max-time 20 -H 'Cache-Control: no-cache' "${BASE_URL}/sync-v2-cover-cache-bridge.js?verify=${GITHUB_SHA}" -o /tmp/cover-bridge.js && cmp -s sync-v2-cover-cache-bridge.js /tmp/cover-bridge.js; then
+              echo "Exact private bridge bytes verified in Cloudflare Workers."
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "Cloudflare asset not yet verified" >&2
+          exit 1
