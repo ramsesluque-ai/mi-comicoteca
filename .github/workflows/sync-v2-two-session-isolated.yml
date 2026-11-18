@@ -1,0 +1,20 @@
+name: Sync V2 isolated two-session contract
+on:
+  push:
+    branches: [commercial-published]
+    paths:
+      - 'tests/sync-v2-two-session-isolated.test.mjs'
+      - '.github/workflows/sync-v2-two-session-isolated.yml'
+  workflow_dispatch:
+jobs:
+  isolated-two-session:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test two sessions, retries and private binary covers
+        run: node --test tests/sync-v2-two-session-isolated.test.mjs
