@@ -47,6 +47,20 @@
    const item=await cache.match(cacheUrl(key));
    return item?item.blob():null;
  }
+ // Read a private cached image only when its manifest digest is independently known.
+ // This never falls back to the shared legacy CoverVault or guesses ownership.
+ async function localVerified(options){
+   if(!validHash(options?.expectedSha256))throw Error('SHA-256 esperado obligatorio para leer portada privada');
+   const blob=await local(options);
+   if(!blob)return {status:'missing',blob:null};
+   const deps=dependencies(options);
+   if(!(blob instanceof Blob)||!blob.size||blob.size>5*1024*1024||
+      !['image/jpeg','image/png','image/webp'].includes(blob.type))
+     throw Error('Portada privada local inválida');
+   const checked=await deps.integrity.verifyExpected(blob,options.expectedSha256);
+   if(!checked.equal)throw Error('Portada privada local alterada: no mostrar ni transferir');
+   return {status:'verified',blob,sha256:checked.actualSha256};
+ }
  async function installIfAbsentUnlocked({session,cfg,key,blob,expectedSha256,cacheStorage,integrity,transport,fetchImpl}){
    const uid=await verifiedOwner({session,cfg,key,fetchImpl});
    const deps=dependencies({cacheStorage,integrity,transport});
@@ -104,7 +118,7 @@
    if(remote.status==='missing')return {status:'missing'};
    return installIfAbsent({session,cfg,key,blob:remote.blob,expectedSha256,cacheStorage:deps.cacheStorage,integrity:deps.integrity,transport:deps.transport,fetchImpl});
  }
- const api={cacheName,cacheUrl,verifiedOwner,local,installIfAbsent,upload,download};
+ const api={cacheName,cacheUrl,verifiedOwner,local,localVerified,installIfAbsent,upload,download};
  root.MCSyncV2PrivateCoverBridge=api;
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
