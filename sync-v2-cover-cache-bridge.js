@@ -9,6 +9,10 @@
 (function(root){
  const CACHE_PREFIX='mi-comicoteca-private-covers-v2-';
  const URL_PREFIX='https://mi-comicoteca.local/cover/';
+ // Serialize create-only installation per owner/key within this runtime.
+ // Without this guard two simultaneous downloads can both observe a missing
+ // cache entry and the later put() can overwrite different bytes.
+ const installLocks=new Map();
  const safeKey=k=>typeof k==='string'&&/^[a-zA-Z0-9_.-]{1,180}$/.test(k)&&k!=='.'&&k!=='..';
  const validHash=h=>typeof h==='string'&&/^[a-f0-9]{64}$/i.test(h);
  function identity(session,cfg,key){
@@ -43,7 +47,7 @@
    const item=await cache.match(cacheUrl(key));
    return item?item.blob():null;
  }
- async function installIfAbsent({session,cfg,key,blob,expectedSha256,cacheStorage,integrity,transport,fetchImpl}){
+ async function installIfAbsentUnlocked({session,cfg,key,blob,expectedSha256,cacheStorage,integrity,transport,fetchImpl}){
    const uid=await verifiedOwner({session,cfg,key,fetchImpl});
    const deps=dependencies({cacheStorage,integrity,transport});
    if(!validHash(expectedSha256))throw Error('SHA-256 esperado obligatorio');
@@ -64,6 +68,21 @@
    const check=await deps.integrity.verifyExpected(await installed.blob(),expectedSha256);
    if(!check.equal)throw Error('SHA-256 incorrecto tras guardar portada privada');
    return {status:'downloaded-and-verified',sha256:check.actualSha256};
+ }
+ async function installIfAbsent(options){
+   const uid=identity(options?.session,options?.cfg,options?.key).toLowerCase();
+   const lockKey=uid+':'+options.key;
+   const prior=installLocks.get(lockKey)||Promise.resolve();
+   let release;
+   const gate=new Promise(resolve=>{release=resolve});
+   const tail=prior.then(()=>gate);
+   installLocks.set(lockKey,tail);
+   await prior;
+   try{return await installIfAbsentUnlocked(options)}
+   finally{
+     release();
+     if(installLocks.get(lockKey)===tail)installLocks.delete(lockKey);
+   }
  }
  async function upload({session,cfg,key,expectedSha256,cacheStorage,integrity,transport,fetchImpl}){
    const uid=await verifiedOwner({session,cfg,key,fetchImpl});
