@@ -42,6 +42,7 @@
     return '<div class="mc-catalog-list" role="table" aria-label="Listado de cómics">'+rows.map(x=>'<div class="mc-catalog-list-row" role="row"><input type="checkbox" data-mc-select="'+esc(x.id)+'" onclick="event.stopPropagation()" aria-label="Seleccionar '+esc(label(x))+'"><div class="mc-catalog-list-cover">'+img(x,'cover cardcover')+'</div><div class="mc-catalog-list-info"><strong>'+esc(x.catalogHeader||x.series||x.title||'Sin cabecera')+'</strong><small>'+esc([x.publisher,x.volume&&('Vol. '+x.volume),x.startYear,issueNumberLabel(x)].filter(Boolean).join(' · '))+'</small><small>'+esc(x.title||'')+'</small></div><div class="mc-catalog-list-status">'+statusPill(x.status)+'</div><button type="button" class="btn sm" data-mc-edit="'+esc(x.id)+'">Editar</button></div>').join('')+'</div>';
   }
   function openBulkDialog(wish){
+    // Read the visible native checkbox state at Apply time as a final safeguard.
     reconcileVisibleSelection();
     updateCount();
     const action=document.getElementById('mc-bulk-action')?.value;
@@ -155,7 +156,7 @@
         const id=input.dataset.mcSelect;
         if(input.checked)selected.add(id);else selected.delete(id);
         updateCount();
-      });
+      },true); // Capture phase: other card handlers cannot swallow selection changes.
     }
   }
   renderCat=async function(wish=false){
@@ -172,6 +173,12 @@
       input.className='mc-card-select';
       input.dataset.mcSelect=String(row.id);
       input.addEventListener('click',event=>event.stopPropagation());
+      // Direct listener is resilient to legacy card handlers stopping propagation.
+      input.addEventListener('change',()=>{
+        const id=String(input.dataset.mcSelect);
+        if(input.checked)selected.add(id);else selected.delete(id);
+        updateCount();
+      });
       input.setAttribute('aria-label','Seleccionar '+label(row));
       card.prepend(input);
     });
