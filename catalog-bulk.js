@@ -34,34 +34,16 @@
     const count=document.getElementById('mc-selection-count');
     if(count)count.textContent=selected.size+' seleccionados';
     document.querySelectorAll('#catbody [data-mc-select]').forEach(el=>{el.checked=selected.has(el.dataset.mcSelect)});
-    const all=[...document.querySelectorAll('#catbody [data-mc-select]')];
+    const scope=view==='list'?document.querySelector('#catbody .mc-catalog-list'):document.querySelector('#catbody .comic-grid');
+    const all=[...(scope?.querySelectorAll('[data-mc-select]')||[])];
     const selectPage=document.getElementById('mc-select-page');
     if(selectPage){selectPage.checked=!!all.length&&all.every(x=>x.checked);selectPage.indeterminate=all.some(x=>x.checked)&&!selectPage.checked}
   }
-  // Defensive DOM reconciliation: some legacy catalog scripts replace card nodes
-  // or consume checkbox events. Keep the displayed count faithful to native checked
-  // state even if a change event is lost. No writes to comic records.
-  function syncVisibleCount(){
-    const root=document.getElementById('catbody');
-    const scope=view==='list'?root?.querySelector('.mc-catalog-list'):root?.querySelector('.comic-grid');
-    if(!scope||!document.getElementById('mc-selection-count'))return;
-    const inputs=[...scope.querySelectorAll('input[type="checkbox"][data-mc-select]')];
-    if(!inputs.length)return;
-    let mismatch=false;
-    for(const input of inputs){
-      const id=String(input.dataset.mcSelect||'');
-      if(id&&input.checked!==selected.has(id)){mismatch=true;break}
-    }
-    if(mismatch){reconcileVisibleSelection();updateCount()}
-  }
-  // One low-frequency guard for the entire catalog, never one timer per card.
-  setInterval(()=>{if(document.visibilityState!=='hidden')syncVisibleCount()},350);
   function listHTML(rows){
     return '<div class="mc-catalog-list" role="table" aria-label="Listado de cómics">'+rows.map(x=>'<div class="mc-catalog-list-row" role="row"><input type="checkbox" data-mc-select="'+esc(x.id)+'" onclick="event.stopPropagation()" aria-label="Seleccionar '+esc(label(x))+'"><div class="mc-catalog-list-cover">'+img(x,'cover cardcover')+'</div><div class="mc-catalog-list-info"><strong>'+esc(x.catalogHeader||x.series||x.title||'Sin cabecera')+'</strong><small>'+esc([x.publisher,x.volume&&('Vol. '+x.volume),x.startYear,issueNumberLabel(x)].filter(Boolean).join(' · '))+'</small><small>'+esc(x.title||'')+'</small></div><div class="mc-catalog-list-status">'+statusPill(x.status)+'</div><button type="button" class="btn sm" data-mc-edit="'+esc(x.id)+'">Editar</button></div>').join('')+'</div>';
   }
   function openBulkDialog(wish){
-    // Read the visible native checkbox state at Apply time as a final safeguard.
-    reconcileVisibleSelection();
+    // Selection is stored by stable comic ID, not inferred from stale card DOM.
     updateCount();
     const action=document.getElementById('mc-bulk-action')?.value;
     if(!action){toast('Elige una acción');return}
@@ -166,8 +148,6 @@
         const edit=event.target.closest?.('[data-mc-edit]');
         if(edit){event.preventDefault();event.stopPropagation();editComic(edit.dataset.mcEdit)}
       });
-      // Checkbox change is the single source of truth. A click microtask can run
-      // before the browser dispatches change and reset the checked state to false.
       root.addEventListener('change',event=>{
         const input=event.target.closest?.('[data-mc-select]');
         if(!input)return;
@@ -190,9 +170,17 @@
       input.type='checkbox';
       input.className='mc-card-select';
       input.dataset.mcSelect=String(row.id);
-      input.addEventListener('click',event=>event.stopPropagation());
-      // Direct listener is resilient to legacy card handlers stopping propagation.
-      input.addEventListener('change',()=>{
+      // Card click handlers must not consume or revert native checkbox state.
+      // Keep the selection keyed by the rendered row ID across card/list switches.
+      input.checked=selected.has(String(row.id));
+      input.addEventListener('click',event=>{
+        event.stopPropagation();
+        const id=String(input.dataset.mcSelect);
+        if(input.checked)selected.add(id);else selected.delete(id);
+        updateCount();
+      });
+      input.addEventListener('change',event=>{
+        event.stopPropagation();
         const id=String(input.dataset.mcSelect);
         if(input.checked)selected.add(id);else selected.delete(id);
         updateCount();
