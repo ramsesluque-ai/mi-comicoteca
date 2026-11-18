@@ -15,7 +15,7 @@
    const uid=session?.user?.id;
    if(!uid||!/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(uid)||!session?.access_token)
      throw Error('Sesión privada inválida');
-   if(!cfg?.url||!/^https:\/\//.test(cfg.url)||!cfg.publishableKey)
+   if(typeof cfg?.url!=='string'||!/^https:\/\/[^/?#@]+\/?$/.test(cfg.url)||!cfg.publishableKey)
      throw Error('Configuración privada inválida');
    if(!safeKey(key))throw Error('Clave privada inválida');
    return uid;
