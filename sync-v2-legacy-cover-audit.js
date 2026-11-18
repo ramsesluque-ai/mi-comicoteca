@@ -24,7 +24,24 @@
    }
    return {found,missing,readOnly:true,ownershipVerified:false,safeToTransfer:false};
  }
- const api={inspect};
+ // Compare the legacy binaries against an explicit, independently obtained
+ // manifest. Never infer ownership from the shared cache or matching filenames.
+ // A digest match is evidence of equal bytes, NOT authorization to transfer.
+ async function compareManifest({cacheStorage=root.caches,manifest=[],integrity=root.MCSyncV2CoverIntegrity}={}){
+   if(!Array.isArray(manifest)||manifest.length>1000||
+      manifest.some(x=>!x||!safeKey(x.key)||typeof x.sha256!=='string'||!/^[a-f0-9]{64}$/i.test(x.sha256))||
+      new Set(manifest.map(x=>x.key)).size!==manifest.length)
+     throw Error('Manifiesto SHA-256 inválido');
+   const scanned=await inspect({cacheStorage,keys:manifest.map(x=>x.key),integrity});
+   const expected=new Map(manifest.map(x=>[x.key,x.sha256.toLowerCase()]));
+   const identical=[],different=[];
+   for(const item of scanned.found){
+     (item.sha256.toLowerCase()===expected.get(item.key)?identical:different).push(item.key);
+   }
+   return {identical,different,missing:scanned.missing,readOnly:true,
+     ownershipVerified:false,safeToTransfer:false};
+ }
+ const api={inspect,compareManifest};
  root.MCSyncV2LegacyCoverAudit=api;
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
