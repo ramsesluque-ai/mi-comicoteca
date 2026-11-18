@@ -8,16 +8,37 @@
  const hex=bytes=>Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
  const uidOK=x=>typeof x==='string'&&/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(x);
  function stable(value){
-   if(Array.isArray(value))return value.map(stable);
-   if(value&&typeof value==='object'){
-     const out={};for(const key of Object.keys(value).sort()){
-       if(value[key]===undefined||typeof value[key]==='function')throw Error('Campo no serializable');
-       out[key]=stable(value[key]);
+   // Fail closed: JSON.stringify silently drops undefined, sparse array slots,
+   // symbols and custom objects. Such a digest must never authorize a merge.
+   const ancestors=new Set();
+   function visit(v){
+     if(v===undefined||typeof v==='function'||typeof v==='symbol'||typeof v==='bigint')
+       throw Error('Campo de baseline no serializable');
+     if(typeof v==='number'&&!Number.isFinite(v))throw Error('Número no finito');
+     if(v===null||typeof v!=='object')return v;
+     if(v instanceof Date){
+       if(!Number.isFinite(v.getTime()))throw Error('Fecha inválida en baseline');
+       return v.toISOString();
      }
-     return out;
+     if(typeof Blob!=='undefined'&&v instanceof Blob)
+       throw Error('Portada binaria requiere respaldo independiente');
+     if(ancestors.has(v))throw Error('Referencia circular en baseline');
+     if(Object.getPrototypeOf(v)!==Object.prototype&&Object.getPrototypeOf(v)!==null&&!Array.isArray(v))
+       throw Error('Objeto de baseline no serializable');
+     ancestors.add(v);
+     try{
+       if(Array.isArray(v)){
+         if(Array.from({length:v.length},(_,i)=>Object.hasOwn(v,i)).some(present=>!present))
+           throw Error('Array incompleto en baseline');
+         return v.map(visit);
+       }
+       const out={};
+       for(const key of Object.keys(v).sort())
+         Object.defineProperty(out,key,{value:visit(v[key]),enumerable:true,writable:true,configurable:true});
+       return out;
+     }finally{ancestors.delete(v)}
    }
-   if(typeof value==='number'&&!Number.isFinite(value))throw Error('Número no finito');
-   return value;
+   return visit(value);
  }
  function rowsValid(rows){
    if(!Array.isArray(rows))throw Error('Catálogo base inválido');
