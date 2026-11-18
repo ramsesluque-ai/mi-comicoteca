@@ -1,0 +1,44 @@
+name: Sync V2 strict checkpoint and Cloudflare release
+on:
+  push:
+    branches: [commercial-published]
+    paths:
+      - 'sync-v2-checkpoint.js'
+      - 'tests/sync-v2-checkpoint-strict-json.test.cjs'
+      - '.github/workflows/sync-v2-checkpoint-strict-release.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  checkpoint-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run strict baseline and existing checkpoint regressions
+        run: |
+          node --check sync-v2-checkpoint.js
+          node tests/sync-v2-checkpoint-strict-json.test.cjs
+          node tests/sync-v2-checkpoint.test.cjs
+          node tests/sync-v2-production-guard.test.cjs
+  cloudflare-exact:
+    needs: checkpoint-regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify deployed checkpoint bytes match commercial-published
+        shell: bash
+        env:
+          BASE_URL: https://mi-comicoteca.ramsesluque.workers.dev
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 12); do
+            if curl -fsSL --max-time 20 -H 'Cache-Control: no-cache' "${BASE_URL}/sync-v2-checkpoint.js?release=${GITHUB_SHA}" -o /tmp/deployed-checkpoint.js && cmp -s sync-v2-checkpoint.js /tmp/deployed-checkpoint.js; then
+              echo 'Cloudflare checkpoint bytes exactly match repository'
+              exit 0
+            fi
+            sleep 15
+          done
+          echo 'Exact Cloudflare checkpoint deployment not verified' >&2
+          exit 1
