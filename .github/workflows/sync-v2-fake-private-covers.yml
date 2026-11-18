@@ -3,6 +3,11 @@ on:
   push:
     branches: [commercial-published]
     paths:
+      - 'tests/sync-v2-two-session-offline.cjs'
+      - 'tests/sync-v2-two-session-retry-harness.cjs'
+      - 'tests/sync-v2-16523-scale.test.cjs'
+      - 'tests/sync-v2-restart-stale-baseline.test.cjs'
+      - 'tests/sync-v2-production-guard.test.cjs'
       - 'tests/sync-v2-cover-bytes.test.cjs'
       - 'tests/sync-v2-cover-integrity.test.cjs'
       - 'tests/sync-v2-cover-inventory.test.cjs'
@@ -31,6 +36,11 @@ jobs:
           node-version: '22'
       - name: Verify synthetic isolated cover roundtrip and fail-closed guards
         run: |
+          node tests/sync-v2-two-session-offline.cjs
+          node tests/sync-v2-two-session-retry-harness.cjs
+          node tests/sync-v2-16523-scale.test.cjs
+          node tests/sync-v2-restart-stale-baseline.test.cjs
+          node tests/sync-v2-production-guard.test.cjs
           node tests/sync-v2-cover-bytes.test.cjs
           node tests/sync-v2-cover-integrity.test.cjs
           node tests/sync-v2-cover-inventory.test.cjs
