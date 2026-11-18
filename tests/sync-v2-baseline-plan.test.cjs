@@ -39,3 +39,9 @@ for(const invalidId of [null,undefined,{},[],true,1.5,NaN,Infinity,-1,Number.MAX
 assert.throws(()=>plan({local:[a(1,'old'),{...a(1,'old'),id:'1'}],remote:[],baseline:[]}),/duplicate stable ID/);
 assert.deepEqual(plan({local:[{...a(1,'old'),id:'comics:1'}],remote:[],baseline:[]}).untracked,['comics:1']);
 console.log('Sync V2 baseline safety: ID validation and reconciliation assertions passed');
+
+for(const field of ['coverHash','coverSha256','coverSHA256','coverDigest','coverMime','coverSize']){
+ const changed={...a(1,'old'),[field]:field==='coverSize'?123:'changed'};
+ assert.equal(plan({local:[changed],remote:base,baseline:base}).conflicts[0].reason,'cover-reference-changed',field+' cannot be merged as ordinary metadata');
+ assert.equal(plan({local:[changed],remote:[changed],baseline:base}).conflicts[0].reason,'cover-reference-changed-since-baseline',field+' matching manifests do not verify binary transfer');
+}
