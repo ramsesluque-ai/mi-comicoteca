@@ -4,6 +4,13 @@ on:
     branches: [commercial-published]
     paths:
       - 'tests/sync-v2-fake-private-covers-regression.cjs'
+      - 'tests/sync-v2-two-device-cover-roundtrip.test.cjs'
+      - 'tests/sync-v2-two-user-cover-backend.test.cjs'
+      - 'tests/sync-v2-cover-cache-bridge.test.cjs'
+      - 'tests/sync-v2-private-cover-transport-isolation.test.cjs'
+      - 'sync-v2-cover-cache-bridge.js'
+      - 'sync-v2-cover-transport.js'
+      - 'sync-v2-reconcile.js'
       - '.github/workflows/sync-v2-fake-private-covers.yml'
   workflow_dispatch:
 jobs:
@@ -17,4 +24,9 @@ jobs:
         with:
           node-version: '22'
       - name: Verify synthetic isolated cover roundtrip and fail-closed guards
-        run: node tests/sync-v2-fake-private-covers-regression.cjs
+        run: |
+          node tests/sync-v2-fake-private-covers-regression.cjs
+          node tests/sync-v2-two-device-cover-roundtrip.test.cjs
+          node tests/sync-v2-two-user-cover-backend.test.cjs
+          node tests/sync-v2-cover-cache-bridge.test.cjs
+          node tests/sync-v2-private-cover-transport-isolation.test.cjs
