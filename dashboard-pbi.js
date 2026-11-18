@@ -9,7 +9,7 @@
   function monthKey(v){const s=String(v||'');return /^\d{4}-\d{2}/.test(s)?s.slice(0,7):'';}
   function safeParam(value){return encodeURIComponent(value).replace(/'/g,'%27');}
   function bars(items,kind,limit=9){const a=items.slice(0,limit),mx=Math.max(1,...a.map(x=>x[1]));return a.map(([k,v])=>`<button class="pbi-bar-row" onclick="PbiDashboard.filter('${kind}','${safeParam(k)}')"><span class="pbi-label" title="${esc(k)}">${esc(k)}</span><span class="pbi-track"><i style="width:${Math.max(4,100*v/mx)}%"></i></span><b>${fmt(v)}</b></button>`).join('')+(items.length>limit?`<details class="pbi-all-groups"><summary>Ver los ${fmt(items.length)} grupos</summary>${bars(items.slice(limit),kind,items.length)}</details>`:'');}
-  function collectionProgress(items){return items.slice(0,10).map(x=>{const pct=x.total?Math.min(100,Math.round(100*(x.total-x.missing)/x.total)):0,s=x.sample||{};return `<button class="pbi-progress-row" onclick="PbiDashboard.openCollection('${safeParam(x.key)}')"><span><b>${esc(s.catalogHeader||s.series||'Colección')}</b><small>${esc([s.publisher,s.volume,s.stage,s.startYear].filter(Boolean).join(' · '))}</small></span><span class="pbi-progress ${pct>=100?'pbi-complete':pct>=75?'pbi-high':pct>=50?'pbi-medium':pct>=25?'pbi-low':'pbi-critical'}"><i style="width:${pct}%"></i></span><strong>${fmt(x.missing)} por conseguir · ${pct}%${x.accredited?'':'*'}</strong></button>`}).join('');}
+  function collectionProgress(items){return items.slice(0,10).map(x=>{const pct=x.total?Math.min(100,Math.round(100*(x.total-x.missing)/x.total)):0,s=x.sample||{};return `<button class="pbi-progress-row" onclick="PbiDashboard.openCollection('${safeParam(x.key)}')"><span><b>${esc(s.catalogHeader||s.series||'Colección')}</b><small>${esc([s.publisher,s.volume,s.stage,s.startYear].filter(Boolean).join(' · '))}</small></span><span class="pbi-progress ${pct>=100?'pbi-complete':pct>=75?'pbi-high':pct>=50?'pbi-medium':pct>=25?'pbi-low':'pbi-critical'}"><i style="width:${pct}%"></i></span><strong>${fmt(x.missing)} por conseguir · ${pct}%</strong></button>`}).join('');}
   function qualityCard(label,value,total,action){const pct=total?Math.round(value*100/total):0;return `<button class="pbi-quality" onclick="${action}"><span>${label}</span><b>${fmt(value)}</b><small>${pct}% del catálogo</small><i><em style="width:${pct}%"></em></i></button>`;}
   function monthBars(purchases){const m={};purchases.forEach(x=>{const k=monthKey(x.date);if(k)m[k]=(m[k]||0)+num(x.price)+num(x.shipping)});const a=Object.entries(m).sort((a,b)=>a[0].localeCompare(b[0])).slice(-12),mx=Math.max(1,...a.map(x=>x[1]));return `<div class="pbi-months">${a.map(([k,v])=>`<div title="${k}: ${money(v)}"><i style="height:${Math.max(5,100*v/mx)}%"></i><small>${k.slice(5)}</small></div>`).join('')||'<span class="muted">Sin compras fechadas</span>'}</div>`;}
   // Dashboard compatibility only: legacy catalog records store their historic
@@ -92,13 +92,27 @@
       };
     });
     const classifiedOwned=classifiedRows.filter(x=>x.status==='In Collection');
-    const collections={};
+    // Personal collection progress: only wishlist issues are missing.
+    // The shared Maestro is NOT the user's purchase checklist.
+    const collections=new Map();
     const issueKey=x=>String(x.issueNr??x.issue??x.number??'').trim();
-    const masterIssues={};
-    master.forEach(x=>{const k=ckey(x),n=issueKey(x);if(n){if(!masterIssues[k])masterIssues[k]=new Set();masterIssues[k].add(n);}});
-    rows.forEach(x=>{if(!['In Collection','On Wish List'].includes(x.status))return;const k=ckey(x);if(!collections[k])collections[k]={key:k,sample:x,owned:new Set(),personal:new Set(),have:0,total:0,personalTotal:0};collections[k].personalTotal++;const n=issueKey(x);if(n){collections[k].personal.add(n);if(x.status==='In Collection')collections[k].owned.add(n);}});
-    Object.values(collections).forEach(x=>{const expected=masterIssues[x.key];x.have=x.owned.size;x.accredited=Boolean(expected?.size);x.total=expected?.size||x.personalTotal;x.missing=expected?.size?[...expected].filter(n=>!x.owned.has(n)).length:Math.max(0,x.personalTotal-x.have);});
-    const cs=Object.values(collections),known=cs.filter(x=>x.accredited),complete=cs.filter(x=>x.missing===0).length,incomplete=cs.length-complete,unknown=cs.length-known.length,pct=cs.length?Math.round(100*complete/cs.length):0;
+    rows.forEach((x,index)=>{
+      if(!['In Collection','On Wish List'].includes(x.status))return;
+      const key=ckey(x);
+      if(!collections.has(key))collections.set(key,{key,sample:x,owned:new Set(),wishlist:new Set()});
+      const item=collections.get(key);
+      const number=issueKey(x);
+      // Use a stable record identity when no issue number is present.
+      const identity=number?'n:'+number:'id:'+String(x.id??index);
+      if(x.status==='In Collection')item.owned.add(identity);
+      else item.wishlist.add(identity);
+    });
+    const cs=[...collections.values()].map(x=>{
+      const missing=[...x.wishlist].filter(id=>!x.owned.has(id)).length;
+      return {...x,have:x.owned.size,missing,total:x.owned.size+missing};
+    });
+    const complete=cs.filter(x=>x.missing===0).length,incomplete=cs.length-complete;
+    const pct=cs.length?Math.round(100*complete/cs.length):0;
     const estimated=inc.reduce((s,x)=>s+num(x.estimated),0),now=new Date(),mk=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'),monthPurchases=purchases.filter(x=>monthKey(x.date)===mk),monthSpend=monthPurchases.reduce((s,x)=>s+num(x.price)+num(x.shipping),0);
     const pubs=countBy(inc,x=>x.publisher),characters=countBy(classifiedOwned,characterName),universes=countBy(classifiedOwned,universeName),authors=countMulti(classifiedOwned,['writer','writers','script','author','authors','artist','artists','penciller']),decades=countBy(inc,x=>yearBand(x.startYear||x.year));
     const recent=[...purchases].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).slice(0,6),progress=cs.filter(x=>x.missing>0).sort((a,b)=>a.missing-b.missing||b.have-a.have||String(a.key).localeCompare(String(b.key)));
@@ -107,7 +121,7 @@
       <div class="pbi-kpis">
         <button onclick="PbiDashboard.goto('catalog','In Collection')"><span>En colección</span><b>${fmt(inc.length)}</b><small>Cómics registrados</small></button>
         <button onclick="PbiDashboard.goto('wishlist')"><span>Wishlist</span><b>${fmt(wish.length)}</b><small>Pendientes / deseados</small></button>
-        <button onclick="PbiDashboard.goto('series')"><span>Colecciones</span><b>${fmt(cs.length)}</b><small>${fmt(complete)} completas · ${fmt(incomplete)} incompletas · ${fmt(unknown)} con total provisional</small></button>
+        <button onclick="PbiDashboard.goto('series')"><span>Colecciones</span><b>${fmt(cs.length)}</b><small>${fmt(complete)} completas · ${fmt(incomplete)} incompletas · ${fmt(incomplete)} con números en wishlist</small></button>
         <button onclick="PbiDashboard.goto('series')"><span>Completitud</span><b>${fmt(complete)} / ${fmt(cs.length)}</b><small>${pct}% del total · ${fmt(unknown)} con total provisional</small></button>
         <div><span>Valor estimado</span><b>${money(estimated)}</b><small>Valor registrado</small></div>
         <button onclick="PbiDashboard.goto('purchases')"><span>Compras del mes</span><b>${fmt(monthPurchases.length)}</b><small>${money(monthSpend)} este mes</small></button>
@@ -121,7 +135,7 @@
         <section class="pbi-panel"><div class="pbi-title"><b>Décadas</b><span>Año de inicio</span></div>${bars(decades,'decade')||'<div class="muted">Sin datos</div>'}</section>
         <section class="pbi-panel"><div class="pbi-title"><b>Evolución de compras</b><span>Gasto · últimos 12 meses</span></div>${monthBars(purchases)}<button class="btn sm" onclick="PbiDashboard.goto('purchases')">Abrir compras</button></section>
         <section class="pbi-panel"><div class="pbi-title"><b>Calidad del catálogo</b><span>Pendientes de completar</span></div><div class="pbi-quality-grid">${qualityCard('Sin portada',noCover,inc.length,"PbiDashboard.goto('covers')")}${qualityCard('Sin ISBN',noIsbn,inc.length,"PbiDashboard.goto('quality')")}${qualityCard('Calidad baja',lowQuality,inc.length,"PbiDashboard.goto('quality')")}</div></section>
-        <section class="pbi-panel pbi-wide"><div class="pbi-title"><b>Colecciones más próximas a completar</b><span>Ordenadas por números pendientes: 1, 2, 3… · * total provisional</span></div><div class="pbi-progress-list">${collectionProgress(progress)||'<div class="muted">No hay colecciones incompletas con total acreditado</div>'}</div></section>
+        <section class="pbi-panel pbi-wide"><div class="pbi-title"><b>Colecciones más próximas a completar</b><span>Números pendientes según tu wishlist · 1, 2, 3…</span></div><div class="pbi-progress-list">${collectionProgress(progress)||'<div class="muted">No hay colecciones con números pendientes en wishlist</div>'}</div></section>
         <section class="pbi-panel"><div class="pbi-title"><b>Últimas compras</b><span>${fmt(purchases.length)} registradas</span></div><div class="pbi-purchases">${recent.map(x=>`<div><span>${esc([x.publisher,x.series,x.issue&&('#'+x.issue)].filter(Boolean).join(' · ')||'Compra')}</span><b>${money(num(x.price)+num(x.shipping))}</b><small>${esc(x.date||'Sin fecha')}</small></div>`).join('')||'<div class="muted">Sin compras registradas</div>'}</div></section>
       </div>
     </div>`;
