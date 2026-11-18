@@ -102,6 +102,26 @@ function caches(){
  assert.equal(impersonated.namespaces.size,0);
  assert.equal(requests.length,reqBefore+1);
  assert(requests.at(-1).url.endsWith('/auth/v1/user'));
+ // Reject attacker-controlled URL suffixes BEFORE sending the bearer token.
+ // The bridge used to accept https://host/path and https://host?query,
+ // unlike the hardened private transport. No request or cache access is allowed.
+ const beforeBadEndpoints=requests.length,cacheBeforeBadEndpoints=caches();
+ for(const url of [
+   'https://fake-private.test/evil',
+   'https://fake-private.test?token=leak',
+   'https://fake-private.test/#fragment',
+   'https://attacker@fake-private.test',
+   'https://fake-private.test:443/auth/v1/user?redirect=evil',
+   'http://fake-private.test',
+   'https://fake-private.test\\\\@attacker.test'
+ ]){
+   await assert.rejects(bridge.upload({
+     ...opts(uidA,'cover-01',cacheBeforeBadEndpoints,digest),
+     cfg:{...cfg,url}
+   }),/Configuración privada inválida/);
+ }
+ assert.equal(requests.length,beforeBadEndpoints,'Invalid endpoints must never receive a bearer token');
+ assert.equal(cacheBeforeBadEndpoints.namespaces.size,0,'Invalid endpoints must not open private cache');
  // Malformed object keys are rejected before any authenticated request.
  const beforeBadKey=requests.length;
  for(const key of ['../escape','folder/cover','..','', 'bad?query']){
