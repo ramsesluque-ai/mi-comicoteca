@@ -63,3 +63,31 @@ test('private binary cover GET verifies SHA-256 and prevents cross-user reads/ov
   await assert.rejects(api.uploadCover('user-a','user-b/foreign',bytes,sha(bytes)), /RLS_DENIED/);
   await assert.rejects(api.uploadCover('user-a','user-a/bad',bytes,'0'.repeat(64)), /HASH_MISMATCH/);
 });
+
+test('identical cover retries are idempotent and cannot alter stored binary', async () => {
+  const api = new FakePrivateBackend();
+  const original = Buffer.from([0, 255, 0, 128, 42]);
+  const path = 'user-a/cover-2.bin';
+  await api.uploadCover('user-a', path, original, sha(original));
+  original[0] = 99; // Caller mutation must not affect the stored bytes.
+  const expected = Buffer.from([0, 255, 0, 128, 42]);
+  await api.uploadCover('user-a', path, expected, sha(expected));
+  assert.equal(api.covers.size, 1);
+  assert.deepEqual(await api.downloadCover('user-a', path), expected);
+  const downloaded = await api.downloadCover('user-a', path);
+  downloaded[1] = 1;
+  assert.deepEqual(await api.downloadCover('user-a', path), expected);
+});
+test('same local_id and cover filename remain isolated across two user namespaces', async () => {
+  const api = new FakePrivateBackend();
+  const a = Buffer.from([0, 1, 2]), b = Buffer.from([3, 4, 5]);
+  await api.putRow('user-a', {local_id:'shared-id', title:'A'}, 0);
+  await api.putRow('user-b', {local_id:'shared-id', title:'B'}, 0);
+  await api.uploadCover('user-a','user-a/shared-id/cover.bin',a,sha(a));
+  await api.uploadCover('user-b','user-b/shared-id/cover.bin',b,sha(b));
+  assert.equal((await api.getRow('user-a','shared-id')).title, 'A');
+  assert.equal((await api.getRow('user-b','shared-id')).title, 'B');
+  assert.deepEqual(await api.downloadCover('user-a','user-a/shared-id/cover.bin'),a);
+  assert.deepEqual(await api.downloadCover('user-b','user-b/shared-id/cover.bin'),b);
+  await assert.rejects(api.downloadCover('user-a','user-b/shared-id/cover.bin'), /RLS_DENIED/);
+});
