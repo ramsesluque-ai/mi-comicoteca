@@ -111,7 +111,7 @@ test('duplicate keyset, missing and mismatched IDs fail closed',async()=>{
  }
 });
 test('tombstones are never resurrected',async()=>{
- const cloud=[record('live'),{...record('deleted'),metadata:{kind:'comics',deleted:true,record:{id:'deleted'}}}];
+ const cloud=[{...record('deleted'),metadata:{kind:'comics',deleted:true,record:{id:'deleted'}}},record('live')];
  const d=fakeDb(),x=initialize({cloud});
  const result=await x.run(d);
  assert.equal(result.count,1);
