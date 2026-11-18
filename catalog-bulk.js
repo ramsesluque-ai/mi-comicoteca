@@ -147,10 +147,8 @@
         const edit=event.target.closest?.('[data-mc-edit]');
         if(edit){event.preventDefault();event.stopPropagation();editComic(edit.dataset.mcEdit)}
       });
-      root.addEventListener('click',event=>{
-        if(!event.target.closest?.('[data-mc-select]'))return;
-        queueMicrotask(()=>{reconcileVisibleSelection();updateCount()});
-      });
+      // Checkbox change is the single source of truth. A click microtask can run
+      // before the browser dispatches change and reset the checked state to false.
       root.addEventListener('change',event=>{
         const input=event.target.closest?.('[data-mc-select]');
         if(!input)return;
