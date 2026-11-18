@@ -45,3 +45,11 @@ for(const field of ['coverHash','coverSha256','coverSHA256','coverDigest','cover
  assert.equal(plan({local:[changed],remote:base,baseline:base}).conflicts[0].reason,'cover-reference-changed',field+' cannot be merged as ordinary metadata');
  assert.equal(plan({local:[changed],remote:[changed],baseline:base}).conflicts[0].reason,'cover-reference-changed-since-baseline',field+' matching manifests do not verify binary transfer');
 }
+
+const matchingUntracked=plan({local:[a('shared-new','same')],remote:[a('shared-new','same')],baseline:[]});
+assert.deepEqual(matchingUntracked.untracked,['shared-new'],'matching rows without a baseline cannot be certified as reconciled');
+assert.deepEqual(matchingUntracked.identical,[],'untracked matching rows must not appear as baseline-verified');
+const mixedMatchingUntracked=plan({local:[a(1,'local'),a(2,'same')],remote:[a(1,'old'),a(2,'same')],baseline:[a(1,'old')]});
+assert.deepEqual(mixedMatchingUntracked.untracked,['2']);
+assert.deepEqual(mixedMatchingUntracked.upload,[],'matching untracked rows must block unrelated proposed uploads');
+assert.equal(mixedMatchingUntracked.safeToExecute,false);
