@@ -5,6 +5,7 @@ on:
     paths:
       - 'sync-v2-cover-transport.js'
       - 'tests/sync-v2-cover-transport.test.cjs'
+      - 'sync-v2-cover-transport-isolated.test.cjs'
       - '.github/workflows/sync-v2-cover-transport-cloudflare.yml'
   workflow_dispatch:
 permissions:
@@ -22,6 +23,7 @@ jobs:
         run: |
           node --check sync-v2-cover-transport.js
           node tests/sync-v2-cover-transport.test.cjs
+          node sync-v2-cover-transport-isolated.test.cjs
       - name: Verify exact public static asset on Cloudflare Workers
         env:
           BASE_URL: https://mi-comicoteca.ramsesluque.workers.dev
