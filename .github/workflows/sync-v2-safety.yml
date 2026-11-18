@@ -56,6 +56,7 @@ jobs:
           node tests/sync-v2-cover-bytes.test.cjs
           node tests/sync-v2-cover-integrity.test.cjs
           node tests/sync-v2-cover-transport.test.cjs
+          node tests/sync-v2-private-cover-failclosed.test.cjs
           node tests/sync-v2-cover-isolation.test.cjs
           node tests/sync-v2-cover-cache-bridge.test.cjs
           node tests/sync-v2-two-user-cover-backend.test.cjs
