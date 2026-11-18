@@ -49,3 +49,18 @@
 .pbi-series-link{display:flex;width:100%;align-items:center;text-align:left;background:transparent;border:0;color:inherit;cursor:pointer;border-radius:6px}.pbi-series-link:hover,.pbi-series-link:focus-visible{background:rgba(76,164,255,.13);color:#9ed9ff;outline-offset:2px}.pbi-series-link b{white-space:nowrap}
 
 .pbi-series-link span small{display:block;font-size:.75rem;opacity:.72;margin-top:3px;white-space:normal}
+
+/* Dashboard: semáforo coherente por porcentaje de completitud y magnitud. */
+.pbi-progress-row{grid-template-columns:minmax(180px,1.7fr) minmax(110px,2fr) minmax(145px,auto)}
+.pbi-progress-row strong{white-space:nowrap;font-size:12px}
+.pbi-progress.pbi-complete i{background:#20b87a}
+.pbi-progress.pbi-high i{background:#63c65b}
+.pbi-progress.pbi-medium i{background:#e2b441}
+.pbi-progress.pbi-low i{background:#ee8b3b}
+.pbi-progress.pbi-critical i{background:#e65d60}
+.pbi-bar-row:nth-of-type(5n+1) .pbi-track i{background:linear-gradient(90deg,#1688ff,#56b7ff)}
+.pbi-bar-row:nth-of-type(5n+2) .pbi-track i{background:linear-gradient(90deg,#15a69d,#57d2bc)}
+.pbi-bar-row:nth-of-type(5n+3) .pbi-track i{background:linear-gradient(90deg,#a47be7,#d3a8fa)}
+.pbi-bar-row:nth-of-type(5n+4) .pbi-track i{background:linear-gradient(90deg,#dc9740,#f4c56a)}
+.pbi-bar-row:nth-of-type(5n) .pbi-track i{background:linear-gradient(90deg,#db6a89,#f49ba5)}
+@media(max-width:760px){.pbi-progress-row{grid-template-columns:minmax(0,1fr) auto}.pbi-progress-row strong{grid-column:2;grid-row:1}.pbi-progress{grid-column:1/-1;grid-row:2}}
