@@ -38,7 +38,9 @@
    const uid=validate({session,cfg,key,integrity});
    const res=await fetchImpl(cfg.url.replace(/\/+$/,'')+path(uid,key),{method:'GET',cache:'no-store',headers:{apikey:cfg.publishableKey,Authorization:'Bearer '+session.access_token}});
    if(res.status===404)return null;
-   if(!res.ok)throw Error('No se pudo recuperar portada ('+res.status+')');
+   // A 200/206 response is required: a redirect or unexpected successful status
+   // is not proof that the private Storage object was retrieved completely.
+   if(res.status!==200)throw Error('GET de portada no íntegro o no autorizado ('+res.status+')');
    const blob=await res.blob();
    assertCover(blob);
    await integrity.sha256(blob);
