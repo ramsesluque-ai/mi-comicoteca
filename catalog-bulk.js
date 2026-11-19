@@ -102,7 +102,7 @@
     const grid=root.querySelector('.record-grid');
     const list=root.querySelector('.mc-catalog-list');
     if(view==='list'){
-      if(grid)grid.hidden=true;
+      if(grid){grid.hidden=true;grid.style.display='none';}
       if(!list){
         const host=document.createElement('div');
         host.innerHTML=listHTML(currentRows);
@@ -110,7 +110,7 @@
         (grid||root.firstElementChild)?.before(created);
       }
     }else{
-      if(grid)grid.hidden=false;
+      if(grid){grid.hidden=false;grid.style.removeProperty('display');}
       if(list)list.remove();
     }
     root.classList.toggle('mc-list-mode',view==='list');
