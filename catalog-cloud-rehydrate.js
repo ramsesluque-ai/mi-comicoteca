@@ -187,6 +187,32 @@
    coversRestored:false,writeAllowed:false};
  }
 
- root.MCCatalogBootstrap={bootstrap,scanCloud,restoreAtomically,verifiedSnapshot,previewOwnerReplacement};
+
+ // User-initiated, independently verifiable backup. Never remove local records.
+ // Return a Blob as well, so a caller can offer an explicit download.
+ async function createVerifiedLocalBackup({database,dbName,uid,hasher=crypto.subtle.digest.bind(crypto.subtle)}={}){
+  assert(database&&uid&&dbName==='comicteca-user-'+uid,'La cuenta no coincide con IndexedDB.');
+  const records=await new Promise((resolve,reject)=>{
+   const tx=database.transaction('comics','readonly');
+   const request=tx.objectStore('comics').getAll();
+   request.onsuccess=()=>resolve(request.result);
+   request.onerror=()=>reject(request.error||Error('No se pudo leer IndexedDB.'));
+  });
+  const backup={format:'mi-comicteca-local-comics-backup-v1',uid,createdAt:new Date().toISOString(),records};
+  const content=JSON.stringify(backup);
+  assert(content&&content.length>0,'No se pudo serializar el respaldo.');
+  const bytes=new TextEncoder().encode(content);
+  const digest=async data=>Array.from(new Uint8Array(await hasher('SHA-256',data)),x=>x.toString(16).padStart(2,'0')).join('');
+  const originalHash=await digest(bytes);
+  const blob=new Blob([bytes],{type:'application/json'});
+  const readback=new Uint8Array(await blob.arrayBuffer());
+  assert(readback.length===bytes.length&&await digest(readback)===originalHash,'Falló la verificación del respaldo.');
+  const decoded=JSON.parse(new TextDecoder().decode(readback));
+  assert(decoded.uid===uid&&decoded.records.length===records.length,'El respaldo no coincide con la colección.');
+  return {blob,sha256:originalHash,count:records.length,bytes:bytes.length,
+   filename:'mi-comicteca-respaldo-local-'+new Date().toISOString().slice(0,10)+'.json'};
+ }
+
+ root.MCCatalogBootstrap={bootstrap,scanCloud,restoreAtomically,verifiedSnapshot,previewOwnerReplacement,createVerifiedLocalBackup};
  if(typeof module!=='undefined'&&module.exports)module.exports=root.MCCatalogBootstrap;
 })(typeof window!=='undefined'?window:globalThis);
