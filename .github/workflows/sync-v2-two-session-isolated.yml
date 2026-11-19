@@ -2,13 +2,6 @@ name: Sync V2 isolated two-session contract
 on:
   push:
     branches: [commercial-published]
-    paths:
-      - 'tests/sync-v2-two-session-isolated.test.mjs'
-      - 'tests/sync-v2-two-device-private-covers-harness.cjs'
-      - 'tests/sync-v2-missing-baseline-contract.cjs'
-      - 'tests/sync-v2-keyset-retry-isolation.cjs'
-      - 'tests/sync-v2-reconciliation-contract.cjs'
-      - '.github/workflows/sync-v2-two-session-isolated.yml'
   workflow_dispatch:
 jobs:
   isolated-two-session:
