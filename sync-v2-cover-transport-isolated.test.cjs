@@ -2,7 +2,7 @@
 // Isolated two-session fake Storage tests. No Supabase credentials, no production writes.
 const assert=require('node:assert/strict');
 const {webcrypto}=require('node:crypto');
-globalThis.crypto=webcrypto;
+if(!globalThis.crypto?.subtle)Object.defineProperty(globalThis,'crypto',{value:webcrypto,configurable:true});
 const integrity=require('./sync-v2-cover-integrity.js');
 const transport=require('./sync-v2-cover-transport.js');
 const uidA='11111111-1111-4111-8111-111111111111';
