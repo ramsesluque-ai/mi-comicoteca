@@ -51,7 +51,7 @@ async function run({rows=cloudRows,who=UID_A,failPage=false,foreign=false}={}){
  assert.match(duplicate.error.message,/duplicada|fuera de orden/);
  console.log('PASS duplicate cloud page fails closed');
  const tombstoneRows=[
-  {user_id:UID_A,local_id:'comics:1',metadata:{kind:'comics',deleted:true}},
+  {user_id:UID_A,local_id:'comics:1',metadata:{kind:'comics',deleted:true,deletedAt:'2026-11-19T20:00:00.000Z'}},
   {user_id:UID_A,local_id:'comics:3',metadata:{kind:'comics',record:{id:3,title:'Three'}}}
  ];
  const tombstone=await run({rows:tombstoneRows});
