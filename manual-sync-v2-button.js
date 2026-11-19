@@ -110,13 +110,25 @@
    };
    const backup=document.createElement('button');backup.type='button';backup.textContent='Respaldar fichas locales (JSON + SHA-256; sin portadas)';backup.style.cssText='padding:9px 12px;margin:10px 8px 0 0;border-radius:8px;cursor:pointer;background:#16678a;color:white;border:1px solid #73b9d1';
    backup.onclick=async()=>{backup.disabled=true;backup.textContent='Preparando respaldo…';try{
+     const rawSession=sessionStorage.getItem('mc_supabase_session_v1')||localStorage.getItem('mc_supabase_session_v1');
+     const currentSession=rawSession?JSON.parse(rawSession):null;
+     if(!currentSession?.user?.id||!currentSession?.access_token||typeof DBN!=='string'||DBN!=='comicteca-user-'+currentSession.user.id)
+       throw Error('La cuenta y la base IndexedDB no coinciden. Respaldo bloqueado para evitar mezclar usuarios.');
+     const backupUid=currentSession.user.id;
      if(typeof allStore!=='function')throw Error('Almacén local no disponible');
      const comics=await allStore('comics');if(!Array.isArray(comics))throw Error('Lectura local incompleta');
      const ids=new Set();for(const c of comics){const id=String(c.id||'');if(!id||ids.has(id))throw Error('ID local ausente o duplicado; respaldo cancelado');ids.add(id)}
-     const payload=JSON.stringify({format:'mi-comicoteca-local-backup-v1',exportedAt:new Date().toISOString(),count:comics.length,comics});
+     const payload=JSON.stringify({format:'mi-comicoteca-local-backup-v1',accountId:backupUid,exportedAt:new Date().toISOString(),count:comics.length,comics});
      if(!window.crypto?.subtle)throw Error('SHA-256 no disponible en este navegador');
      const bytes=new TextEncoder().encode(payload),digest=await crypto.subtle.digest('SHA-256',bytes);
      const sha=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
+     const proofBlob=new Blob([bytes],{type:'application/json'});
+     const proofBytes=await proofBlob.arrayBuffer();
+     const proofDigest=await crypto.subtle.digest('SHA-256',proofBytes);
+     const proofSha=Array.from(new Uint8Array(proofDigest),b=>b.toString(16).padStart(2,'0')).join('');
+     if(proofSha!==sha)throw Error('El respaldo no superó la verificación binaria previa a la descarga');
+     const sessionAfter=sessionStorage.getItem('mc_supabase_session_v1')||localStorage.getItem('mc_supabase_session_v1');
+     if(JSON.parse(sessionAfter||'null')?.user?.id!==backupUid)throw Error('La cuenta cambió durante el respaldo');
      const name='mi-comicoteca-respaldo-'+new Date().toISOString().replace(/[:.]/g,'-');
      function download(data,filename,type){const blob=new Blob([data],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)}
      download(payload,name+'.json','application/json');download(sha+'  '+name+'.json\n',name+'.sha256','text/plain');
