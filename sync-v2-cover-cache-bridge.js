@@ -106,6 +106,9 @@
    const item=await cache.match(cacheUrl(key));
    if(!item)throw Error('La portada privada no está en la caché de este usuario');
    const blob=await item.blob();
+   if(!(blob instanceof Blob)||!blob.size||blob.size>5*1024*1024||
+      !['image/jpeg','image/png','image/webp'].includes(blob.type))
+     throw Error('Portada privada local inválida: subida bloqueada');
    const check=await deps.integrity.verifyExpected(blob,expectedSha256);
    if(!check.equal)throw Error('SHA-256 local distinto del manifiesto: subida bloqueada');
    return deps.transport.verifiedCopyIfAbsent({session,cfg,key,blob,integrity:deps.integrity,fetchImpl});
