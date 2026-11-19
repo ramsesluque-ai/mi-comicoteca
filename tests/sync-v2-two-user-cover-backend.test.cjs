@@ -66,7 +66,7 @@ const args=(uid,key,blob)=>({session:session(uid),cfg,key,blob,fetchImpl:fakeFet
  await assert.rejects(transport.copyIfAbsent({...args(uidA,raceKey,cover),fetchImpl:raceFetch}),/SHA-256 distinto/);
 
  // Concurrent create with identical bytes must be accepted only after GET verification.
- for(const status of [400,409]){
+ for(const status of [409]){
    const key='race-identical-'+status;
    let postCount=0;
    const concurrentFetch=async(url,options)=>{
@@ -82,6 +82,16 @@ const args=(uid,key,blob)=>({session:session(uid),cfg,key,blob,fetchImpl:fakeFet
    assert.equal(postCount,1);
    assert.equal(await sha(await transport.read(args(uidA,key))),await sha(cover));
  }
+ // HTTP 400 must fail closed even if the fake server exposes an object afterwards.
+ const badKey='race-bad-request';
+ const badFetch=async(url,options)=>{
+   if(options.method==='POST'&&url.endsWith('/'+badKey)){
+     objects.set(uidA+'/'+badKey,{bytes:Buffer.from(await options.body.arrayBuffer()),type:options.body.type});
+     return {ok:false,status:400};
+   }
+   return fakeFetch(url,options);
+ };
+ await assert.rejects(transport.copyIfAbsent({...args(uidA,badKey,cover),fetchImpl:badFetch}),/400/);
  // A lost network response after persistence must be reconciled via GET, not a second POST.
  const lostKey='lost-network-response';
  let lostPosts=0;
