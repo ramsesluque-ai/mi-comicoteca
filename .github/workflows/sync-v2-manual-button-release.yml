@@ -1,0 +1,39 @@
+name: Sync V2 manual button exact Cloudflare safety
+on:
+  push:
+    branches: [commercial-published]
+    paths:
+      - 'manual-sync-v2-button.js'
+      - 'tests/sync-v2-production-guard.test.cjs'
+      - '.github/workflows/sync-v2-manual-button-release.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Ensure the manual button cannot write or activate legacy sync
+        run: |
+          node --check manual-sync-v2-button.js
+          node tests/sync-v2-production-guard.test.cjs
+      - name: Confirm exact deployed Cloudflare button bytes
+        env:
+          BASE_URL: https://mi-comicoteca.ramsesluque.workers.dev
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 12); do
+            if curl -fsSL --max-time 20 -H 'Cache-Control: no-cache' "$BASE_URL/manual-sync-v2-button.js?sha=$GITHUB_SHA" -o /tmp/manual-sync-v2-button.js && cmp -s manual-sync-v2-button.js /tmp/manual-sync-v2-button.js; then
+              echo "CLOUDFLARE_MANUAL_SYNC_EXACT_ASSET_VERIFIED $GITHUB_SHA"
+              exit 0
+            fi
+            echo "Awaiting exact Cloudflare asset ($attempt/12)"
+            sleep 15
+          done
+          echo 'Exact deployed manual sync asset not verified' >&2
+          exit 1
