@@ -5,6 +5,9 @@ on:
     paths:
       - 'tests/sync-v2-two-session-isolated.test.mjs'
       - 'tests/sync-v2-two-device-private-covers-harness.cjs'
+      - 'tests/sync-v2-missing-baseline-contract.cjs'
+      - 'tests/sync-v2-keyset-retry-isolation.cjs'
+      - 'tests/sync-v2-reconciliation-contract.cjs'
       - '.github/workflows/sync-v2-two-session-isolated.yml'
   workflow_dispatch:
 jobs:
@@ -21,3 +24,6 @@ jobs:
         run: |
           node --test tests/sync-v2-two-session-isolated.test.mjs
           node tests/sync-v2-two-device-private-covers-harness.cjs
+          node tests/sync-v2-missing-baseline-contract.cjs
+          node tests/sync-v2-keyset-retry-isolation.cjs
+          node tests/sync-v2-reconciliation-contract.cjs
