@@ -118,6 +118,17 @@
      if(batch.length<pageSize){complete=true;break}
    }
    assert(complete,'La lectura de la nube no ha terminado: límite de paginación');
+   // A 16k-row scan can outlive a JWT rotation or a user switch. Verify the
+   // original token's owner again before presenting the result as authenticated.
+   const whoAfter=await fetcher(base+'/auth/v1/user',{method:'GET',headers,cache:'no-store',signal});
+   assert(whoAfter.ok,'La sesión caducó durante la comparación (HTTP '+whoAfter.status+'); resultado no fiable');
+   const verifiedAfter=await whoAfter.json();
+   assert(String(verifiedAfter?.id||'')===uid,'La cuenta cambió durante la comparación; resultado descartado');
+   // Owner recovery baseline: never misrepresent an RLS-filtered or truncated
+   // cloud read as a complete copy of the archived 16,523 original comics.
+   if(uid==='0bcbe06d-263d-4ac1-a516-355d27d417f1')
+     assert(stats.cloud>=16523,'La lectura de la colección original devolvió menos de 16.523 fichas; comparación incompleta');
+
    stats.onlyLocal=local.size-matched.size;
    stats.complete=true;
    // Differences are candidates to REVIEW, not permission to write/delete.
