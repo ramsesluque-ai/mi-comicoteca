@@ -10,13 +10,14 @@ function reconcile(base, local, remote) {
   for (const id of ids) {
     const b=base.get(id), l=local.get(id), r=remote.get(id);
     const same=(a,c)=>sha(a??null)===sha(c??null);
-    const lc=!same(b,l), rc=!same(b,r);
+    // A missing row is unknown, not a deletion. Only an explicit tombstone changes state.
+    const lc=l!==undefined && !same(b,l), rc=r!==undefined && !same(b,r);
     let action='unchanged';
     if(lc&&rc) action=same(l,r)?'converged':'conflict';
     else if(lc) action='local-changed';
     else if(rc) action='remote-changed';
     // Missing records are not deletions. Only explicit tombstones may delete.
-    if((l===undefined||r===undefined)&&b!==undefined && action!=='unchanged') action='conflict';
+    if((l===undefined||r===undefined)&&b!==undefined && action!=='unchanged' && !(l?.deleted===true && same(b,r)) && !(r?.deleted===true && same(b,l))) action='conflict';
     if(action==='local-changed' && l?.deleted!==true && r===undefined && b!==undefined) action='conflict';
     if(action==='remote-changed' && r?.deleted!==true && l===undefined && b!==undefined) action='conflict';
     plan.push({id,action,localCoverKey:l?.coverKey,remoteCoverKey:r?.coverKey});
