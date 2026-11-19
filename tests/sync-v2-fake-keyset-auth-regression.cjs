@@ -34,7 +34,7 @@ async function run({rows=cloudRows,who=UID_A,failPage=false,foreign=false}={}){
  assert.equal(ok.result.complete,true);
  assert.equal(ok.result.safeToWrite,false);
  assert.deepEqual([ok.result.local,ok.result.cloud,ok.result.equal,ok.result.onlyLocal,ok.result.onlyCloud,ok.result.otherKinds],[2,2,1,1,1,1]);
- assert.equal(ok.calls.length,3); // auth + full page + final partial page
+ assert.equal(ok.calls.length,4); // auth before + full page + final partial page + auth after
  assert(ok.calls.every(x=>x.method==='GET'));
  console.log('PASS two-device-shaped keyset pages; no writes');
  const mismatch=await run({who:UID_B});
@@ -61,7 +61,7 @@ async function run({rows=cloudRows,who=UID_A,failPage=false,foreign=false}={}){
  console.log('PASS explicit tombstone is counted but never authorizes deletion');
  const fullPages=await run({rows:[cloudRows[0],cloudRows[1]]});
  assert.equal(fullPages.result.complete,true);
- assert.equal(fullPages.calls.length,3,'exact-full-page must fetch terminal empty page');
+ assert.equal(fullPages.calls.length,4,'exact-full-page must fetch terminal empty page and reverify auth');
  console.log('PASS exact page boundary requires terminal empty page');
  const malformed=await run({rows:[{...cloudRows[0],metadata:{kind:'comics',record:{id:999,title:'wrong'}}}]});
  assert.match(malformed.error.message,/identidad inconsistente/);
