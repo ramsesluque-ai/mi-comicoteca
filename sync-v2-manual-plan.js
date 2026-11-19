@@ -99,6 +99,13 @@
        const m=row.metadata||{},id=key.slice('comics:'.length);
        assert(id&&m.kind==='comics','La clave de una ficha no coincide con su tipo');
        if(m.deleted===true){
+         // Reject malformed deletion evidence rather than reporting it as a valid
+         // tombstone. A deleted flag alone cannot authorize later reconciliation.
+         const deletedAt=m.deletedAt??m.record?.deletedAt;
+         assert(typeof deletedAt==='string'&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(deletedAt)&&
+           Number.isFinite(Date.parse(deletedAt))&&new Date(deletedAt).toISOString().slice(0,19)===deletedAt.slice(0,19),
+           'Tombstone cloud sin fecha UTC válida: comparación bloqueada');
+         assert(!m.record||String(m.record.id)===id,'Tombstone con identidad inconsistente');
          // A cloud tombstone is NOT an upload candidate. Count its local ID as
          // seen, but never interpret its absence as permission to delete.
          stats.tombstones++;
