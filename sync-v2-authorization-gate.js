@@ -12,10 +12,24 @@
   if(!Array.isArray(baseline)||!Array.isArray(local)||!Array.isArray(remote))
    reasons.push('missing-snapshots');
   else {
-   const ids=rows=>new Set(rows.map(r=>String(r?.id??'')));
+   // Reject duplicate, malformed and cross-snapshot IDs before considering a write.
+   // A Set alone hides duplicates and could make a truncated/ambiguous snapshot
+   // appear acknowledged by the baseline.
+   const ids=rows=>{
+    const seen=new Set();let invalid=false;
+    for(const row of rows){
+     const id=row?.id;
+     if(id===null||id===undefined||String(id).trim()===''||seen.has(String(id)))invalid=true;
+     seen.add(String(id));
+    }
+    return {seen,invalid};
+   };
    const b=ids(baseline),l=ids(local),r=ids(remote);
-   if([...new Set([...l,...r])].some(id=>!id||!b.has(id)))
+   if(b.invalid||l.invalid||r.invalid)reasons.push('invalid-or-duplicate-record-id');
+   if([...new Set([...l.seen,...r.seen])].some(id=>!b.seen.has(id)))
     reasons.push('unacknowledged-baseline');
+   if([...b.seen].some(id=>!l.seen.has(id)||!r.seen.has(id)))
+    reasons.push('incomplete-snapshot-without-tombstone');
   }
   if(backup?.verified!==true||typeof backup.sha256!=='string'||!/^[a-f0-9]{64}$/i.test(backup.sha256))
    reasons.push('unverified-backup');
