@@ -48,7 +48,12 @@ test('duplicate keys fail closed',async()=>{
  await assert.rejects(compare({session,cfg,localRows:[],fetcher:backend({rows:[row,row]})}),/duplicada|orden/);
 });
 test('tombstone is not silently downloaded or deleted',async()=>{
- const rows=[{user_id:uid,local_id:'comics:1',metadata:{kind:'comics',deleted:true}}];
+ const rows=[{user_id:uid,local_id:'comics:1',metadata:{kind:'comics',deleted:true,deletedAt:'2026-11-19T18:00:00Z'}}];
  const result=await compare({session,cfg,localRows:[record(1)],fetcher:backend({rows})});
  assert.equal(result.tombstones,1);assert.equal(result.onlyLocal,0);assert.equal(result.safeToWrite,false);
+});
+
+test('malformed tombstone blocks read-only comparison without writes',async()=>{
+ const rows=[{user_id:uid,local_id:'comics:1',metadata:{kind:'comics',deleted:true,deletedAt:'2026-02-30T00:00:00Z'}}];
+ await assert.rejects(compare({session,cfg,localRows:[record(1)],fetcher:backend({rows})}),/fecha UTC válida/);
 });
