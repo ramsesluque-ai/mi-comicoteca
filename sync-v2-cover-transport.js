@@ -87,7 +87,7 @@
      return {status:'uploaded-network-error-verified',sha256:expected};
    }
    // Concurrent creation can yield 400/409; re-read and verify, never blindly accept.
-   if(!res.ok&&res.status!==400&&res.status!==409){
+   // HTTP 400 is not proof of a concurrent duplicate: it can also mean invalid\n   // input or an RLS/storage policy denial. Only 409 is a known conflict.\n   // Fail closed on 400 rather than treating a later GET as authorization.\n   if(!res.ok&&res.status!==409){
      // A timeout/5xx may occur AFTER Storage persisted the object. Never blindly retry POST.
      if(res.status>=500){
        let uncertain;
