@@ -44,12 +44,15 @@
          }
        });
        if(!panel.isConnected)return;
+       // A partial local collection must not be mistaken for a completed restore.
+       // This is only a preview: never trigger cloud writes or local inserts here.
+       if(result.onlyCloud>0)title.textContent='Colección local parcial — recuperación bloqueada hasta verificación';
        diagnostic.textContent='Comparación completada y cuenta verificada. Local: '+result.local.toLocaleString('es-ES')+
          '; nube: '+result.cloud.toLocaleString('es-ES')+
          '; idénticas: '+result.equal.toLocaleString('es-ES')+
          '; diferentes (requieren resolver conflictos): '+result.different.toLocaleString('es-ES')+
          '; solo locales: '+result.onlyLocal.toLocaleString('es-ES')+
-         '; solo en nube: '+result.onlyCloud.toLocaleString('es-ES')+
+         '; solo en nube (pendientes de recuperar, NO descargadas): '+result.onlyCloud.toLocaleString('es-ES')+
          '; eliminaciones explícitas: '+result.tombstones.toLocaleString('es-ES')+
          '. No se ha sobrescrito, descargado, subido ni borrado ningún cómic. La sincronización real sigue bloqueada hasta validar el respaldo, la reconciliación y las pruebas en dos sesiones.';
      }
