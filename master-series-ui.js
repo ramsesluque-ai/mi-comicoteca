@@ -128,11 +128,17 @@ async function openPersonalReference(encoded){
  const key=decodeURIComponent(encoded);
  const rows=(await allStore('comics')).filter(x=>ckey(x)===key).sort((a,b)=>num(a.issueNr??a.issue)-num(b.issueNr??b.issue));
  if(!rows.length){toast('No se encontraron las fichas personales');return;}
- const sample=rows[0];
- const modal=document.getElementById('modal');if(!modal)return;
- modal.innerHTML='<div class="modalbox"><div class="modalhead"><div><b>'+esc(mcMasterGroupLabel(sample))+'</b><div class="muted small">'+rows.length+' referencias de tu catálogo · Pendientes de verificar en Maestro</div></div><button class="btn" onclick="closeModal()">Cerrar</button></div><div class="modalbody"><div class="notice">Estas fichas proceden de tu catálogo personal, no del Maestro verificado. Se muestran para consulta sin incorporarlas ni modificarlas.</div><div class="issue-grid master-issues">'+rows.map(x=>'<article class="issue-card master-issue">'+img(x,'cover issuecover')+'<div class="issue-body"><div class="issue-no">'+esc(String(x.issueNr??x.issue??'').trim()||'Nº sin informar')+'</div><div class="issue-title">'+esc(x.title||x.subtitle||'Título no informado')+'</div>'+(x.isbn?'<div class="muted small">ISBN '+esc(x.isbn)+'</div>':'')+(typeof masterBibliography==='function'?masterBibliography(x):'')+'<div class="issue-actions"><span class="pill in">En tu catálogo</span></div></div></article>').join('')+'</div></div></div>';
+ const sample=rows[0],modal=document.getElementById('modal');if(!modal)return;
+ // Mirror the verified Maestro modal's visual structure. Personal-only rows are
+ // NOT promoted into MCMasterUI.activeIssueRows or the shared Maestro.
+ modal.innerHTML='<div class="modalbox"><div class="modalhead"><div><b>'+esc([sample.publisher,mcMasterGroupLabel(sample)].filter(Boolean).join(' · '))+'</b><div class="muted small">'+rows.length.toLocaleString('es-ES')+' números personales · '+rows.length.toLocaleString('es-ES')+' registros pendientes de verificar en Maestro</div></div><button class="btn" onclick="closeModal()">Cerrar</button></div><div class="modalbody"><div class="issue-grid master-issues">'+rows.map(x=>{
+   const raw=String(x.issueNr??x.issue??'').trim();
+   const issueLabel=!raw||raw==='0'||raw==='-1'?'Número sin informar':(typeof issueNumberLabel==='function'?issueNumberLabel(x):'#'+raw);
+   return '<article class="issue-card master-issue">'+img(x,'cover issuecover')+'<div class="issue-body"><div class="issue-no">'+esc(issueLabel)+'</div><div class="issue-title">'+esc(x.title||x.catalogHeader||x.series||'Sin título específico')+'</div>'+(x.publicationDate&&!/^(?:-1|0|null|undefined|nan)$/i.test(String(x.publicationDate).trim())?'<div class="muted small">'+esc(x.publicationDate)+'</div>':'')+(x.isbn&&!/^(?:-1|0|null|undefined|nan)$/i.test(String(x.isbn).trim())?'<div class="muted small">ISBN '+esc(x.isbn)+'</div>':'')+'<div class="issue-actions"><span class="pill in">Ya añadido</span></div></div></article>';
+ }).join('')+'</div><p class="muted small">Referencias de tu catálogo personal aún no verificadas en el Maestro. No se publican ni modifican.</p></div></div>';
  modal.classList.remove('hidden');
 }
+
 function pager(total,pages){return '<div class="pager"><span>'+total.toLocaleString('es-ES')+' resultados · Página '+state.page+'/'+pages+'</span><span><button class="btn sm" data-master-page="-1" '+(state.page<=1?'disabled':'')+'>Anterior</button> <button class="btn sm" data-master-page="1" '+(state.page>=pages?'disabled':'')+'>Siguiente</button></span></div>'}
 function bind(){
  const pub=document.getElementById('mpub');if(pub)pub.onchange=()=>{state.publisher=pub.value;state.header='';state.volume='';state.stage='';state.year='';state.page=1;renderMaster()};
