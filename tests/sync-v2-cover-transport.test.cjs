@@ -113,6 +113,16 @@ function fake(){
   return race.fetchImpl(url,opts);
  };
  assert.equal((await transport.copyIfAbsent({...args,fetchImpl:fetchRace})).status,'concurrent-identical');
+ // Storage 400 may indicate RLS denial or malformed input, not a duplicate.
+ // Even if a concurrent object becomes readable, never classify HTTP 400 as success.
+ const rejected400=fake();let first400=true;let post400=0;
+ const ambiguous400=async(url,opts)=>{
+  if(opts.method==='GET'&&first400){first400=false;return {ok:false,status:404}}
+  if(opts.method==='POST'){post400++;rejected400.storage.set(url,opts.body);return {ok:false,status:400}}
+  return rejected400.fetchImpl(url,opts);
+ };
+ await assert.rejects(()=>transport.copyIfAbsent({...args,key:'ambiguous-400',fetchImpl:ambiguous400}),/Subida rechazada \(400\)/);
+ assert.equal(post400,1,'No retry after ambiguous HTTP 400');
  // Ambiguous 503: Storage may have persisted the image before response was lost.
  const persisted=fake();
  const responseLost=async(url,opts)=>{
