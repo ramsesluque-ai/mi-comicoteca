@@ -14,4 +14,18 @@ assert.ok(authorize({...clean,tests:{}}).reasons.includes('missing-e2e-evidence'
 assert.ok(authorize({...clean,plan:{...plan,conflicts:[{id:'a'}]}}).reasons.includes('unresolved-conflicts'));
 assert.ok(authorize({...clean,local:[{...row,coverKey:'private/x'}]}).reasons.includes('unverified-private-covers'));
 assert.ok(authorize({...clean,local:[{...row,coverKey:'private/x'}],coverProofs:{binarySha256Verified:true,authenticatedGetVerified:true,uidIsolationVerified:true}}).reasons.includes('production-write-gate-disabled'));
-console.log('Sync V2 final authorization gate: 7 checks passed; writes always disabled');
+// Regressions: partial local snapshots and ambiguous IDs must never be
+// interpreted as deletions or as permission to reconcile owner data.
+assert.ok(authorize({...clean,local:[]}).reasons.includes('incomplete-snapshot-without-tombstone'));
+assert.ok(authorize({...clean,remote:[]}).reasons.includes('incomplete-snapshot-without-tombstone'));
+assert.ok(authorize({...clean,local:[row,row]}).reasons.includes('invalid-or-duplicate-record-id'));
+assert.ok(authorize({...clean,remote:[{id:''}]}).reasons.includes('invalid-or-duplicate-record-id'));
+assert.ok(authorize({...clean,baseline:[row,row]}).reasons.includes('invalid-or-duplicate-record-id'));
+assert.ok(authorize({...clean,local:[row,{id:'new',title:'Unknown'}]}).reasons.includes('unacknowledged-baseline'));
+assert.ok(authorize({...clean,backup:{verified:true,sha256:'not-a-hash'}}).reasons.includes('unverified-backup'));
+assert.ok(authorize({...clean,local:[{...row,coverUrl:'https://example.invalid/cover.jpg'}]}).reasons.includes('unverified-private-covers'));
+assert.ok(authorize({...clean,local:[{...row,coverUrls:['cover1']}]}).reasons.includes('unverified-private-covers'));
+assert.ok(authorize({...clean,local:[{...row,coverSourceUrl:'cover2'}]}).reasons.includes('unverified-private-covers'));
+assert.equal(Object.isFrozen(authorize(clean)),true);
+assert.equal(Object.isFrozen(authorize(clean).reasons),true);
+console.log('Sync V2 final authorization gate: 19 checks passed; writes always disabled');
