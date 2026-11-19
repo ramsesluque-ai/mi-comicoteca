@@ -122,6 +122,17 @@ renderMaster=async function(){
  }
  bind();
 };
+// Personal-only candidates are NOT verified Maestro issues. Keep their provenance
+// explicit and use the Maestro issue layout rather than the personal collection modal.
+async function openPersonalReference(encoded){
+ const key=decodeURIComponent(encoded);
+ const rows=(await allStore('comics')).filter(x=>ckey(x)===key).sort((a,b)=>num(a.issueNr??a.issue)-num(b.issueNr??b.issue));
+ if(!rows.length){toast('No se encontraron las fichas personales');return;}
+ const sample=rows[0];
+ const modal=document.getElementById('modal');if(!modal)return;
+ modal.innerHTML='<div class="modalbox"><div class="modalhead"><div><b>'+esc(mcMasterGroupLabel(sample))+'</b><div class="muted small">'+rows.length+' referencias de tu catálogo · Pendientes de verificar en Maestro</div></div><button class="btn" onclick="closeModal()">Cerrar</button></div><div class="modalbody"><div class="notice">Estas fichas proceden de tu catálogo personal, no del Maestro verificado. Se muestran para consulta sin incorporarlas ni modificarlas.</div><div class="issue-grid master-issues">'+rows.map(x=>'<article class="issue-card master-issue">'+img(x,'cover issuecover')+'<div class="issue-body"><div class="issue-no">'+esc(String(x.issueNr??x.issue??'').trim()||'Nº sin informar')+'</div><div class="issue-title">'+esc(x.title||x.subtitle||'Título no informado')+'</div>'+(x.isbn?'<div class="muted small">ISBN '+esc(x.isbn)+'</div>':'')+(typeof masterBibliography==='function'?masterBibliography(x):'')+'<div class="issue-actions"><span class="pill in">En tu catálogo</span></div></div></article>').join('')+'</div></div></div>';
+ modal.classList.remove('hidden');
+}
 function pager(total,pages){return '<div class="pager"><span>'+total.toLocaleString('es-ES')+' resultados · Página '+state.page+'/'+pages+'</span><span><button class="btn sm" data-master-page="-1" '+(state.page<=1?'disabled':'')+'>Anterior</button> <button class="btn sm" data-master-page="1" '+(state.page>=pages?'disabled':'')+'>Siguiente</button></span></div>'}
 function bind(){
  const pub=document.getElementById('mpub');if(pub)pub.onchange=()=>{state.publisher=pub.value;state.header='';state.volume='';state.stage='';state.year='';state.page=1;renderMaster()};
@@ -129,7 +140,7 @@ function bind(){
  // Filters use stable inline onchange handlers; do not replace them here.
  document.querySelectorAll('[data-master-publisher]').forEach(el=>el.onclick=()=>{state.publisher=el.dataset.masterPublisher;state.header='';state.volume='';state.stage='';state.year='';state.page=1;pub.value=state.publisher;renderMaster()});
  document.querySelectorAll('[data-master-page]').forEach(el=>el.onclick=()=>{state.page+=Number(el.dataset.masterPage);renderMaster()});
- document.querySelectorAll('[data-master-personal]').forEach(el=>{const open=()=>openSeries(el.dataset.masterPersonal);el.onclick=open;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open()}}});
+ document.querySelectorAll('[data-master-personal]').forEach(el=>{const open=()=>openPersonalReference(el.dataset.masterPersonal);el.onclick=open;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open()}}});
  document.querySelectorAll('[data-master-series]').forEach(el=>{const open=()=>openMasterCollection(el.dataset.masterSeries);el.onclick=open;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open()}}});
 }
 })();
