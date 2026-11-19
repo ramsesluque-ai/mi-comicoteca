@@ -156,6 +156,37 @@
    throw e;
   }
  }
- root.MCCatalogBootstrap={bootstrap,scanCloud,restoreAtomically,verifiedSnapshot};
+
+ // Explicit recovery plan for a partial local catalog. This function NEVER writes.
+ // The original browser records must be backed up outside IndexedDB before a
+ // future replacement can be considered; an in-memory hash is not a backup.
+ async function previewOwnerReplacement({database,dbName,uid,cfg,fetcher=fetch,verify=()=>root.CommercialBilling?.currentUser(),hasher}={}){
+  assert(database&&uid&&dbName==='comicteca-user-'+uid,'La base local no coincide con la cuenta.');
+  const local=await new Promise((resolve,reject)=>{
+   const tx=database.transaction('comics','readonly');
+   const req=tx.objectStore('comics').getAll();
+   req.onsuccess=()=>resolve(req.result);
+   req.onerror=()=>reject(req.error||Error('No se pudo leer el catálogo local.'));
+  });
+  const cloud=await scanCloud({uid,cfg,fetcher,verify});
+  assert(cloud.rows.length>0,'La nube no ha devuelto fichas; recuperación bloqueada.');
+  const owner='0bcbe06d-263d-4ac1-a516-355d27d417f1';
+  if(uid===owner)assert(cloud.rows.length>=16523,'Lectura incompleta del catálogo del propietario.');
+  const ids=new Set();
+  for(const row of cloud.rows){
+   const id=String(row?.id??'');
+   assert(id&&!ids.has(id),'ID remoto duplicado o vacío; recuperación bloqueada.');
+   ids.add(id);
+  }
+  const localBackup={accountId:uid,createdAt:new Date().toISOString(),records:local};
+  const localProof=await verifiedSnapshot(localBackup.records,hasher);
+  const remoteProof=await verifiedSnapshot(cloud.rows,hasher);
+  // Do not mutate the local store or remote service. Binary covers are NOT restored.
+  return {status:'preview-only',localCount:local.length,cloudCount:cloud.rows.length,
+   localBackup,localSha256:localProof.sha,remoteSha256:remoteProof.sha,
+   coversRestored:false,writeAllowed:false};
+ }
+
+ root.MCCatalogBootstrap={bootstrap,scanCloud,restoreAtomically,verifiedSnapshot,previewOwnerReplacement};
  if(typeof module!=='undefined'&&module.exports)module.exports=root.MCCatalogBootstrap;
 })(typeof window!=='undefined'?window:globalThis);
