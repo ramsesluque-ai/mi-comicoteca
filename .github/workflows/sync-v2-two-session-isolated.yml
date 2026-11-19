@@ -4,6 +4,7 @@ on:
     branches: [commercial-published]
     paths:
       - 'tests/sync-v2-two-session-isolated.test.mjs'
+      - 'tests/sync-v2-two-device-private-covers-harness.cjs'
       - '.github/workflows/sync-v2-two-session-isolated.yml'
   workflow_dispatch:
 jobs:
@@ -17,4 +18,6 @@ jobs:
         with:
           node-version: '22'
       - name: Test two sessions, retries and private binary covers
-        run: node --test tests/sync-v2-two-session-isolated.test.mjs
+        run: |
+          node --test tests/sync-v2-two-session-isolated.test.mjs
+          node tests/sync-v2-two-device-private-covers-harness.cjs
