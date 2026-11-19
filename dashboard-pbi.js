@@ -122,7 +122,7 @@
         <button onclick="PbiDashboard.goto('catalog','In Collection')"><span>En colección</span><b>${fmt(inc.length)}</b><small>Cómics registrados</small></button>
         <button onclick="PbiDashboard.goto('wishlist')"><span>Wishlist</span><b>${fmt(wish.length)}</b><small>Pendientes / deseados</small></button>
         <button onclick="PbiDashboard.goto('series')"><span>Colecciones</span><b>${fmt(cs.length)}</b><small>${fmt(complete)} completas · ${fmt(incomplete)} incompletas · ${fmt(incomplete)} con números en wishlist</small></button>
-        <button onclick="PbiDashboard.goto('series')"><span>Completitud</span><b>${fmt(complete)} / ${fmt(cs.length)}</b><small>${pct}% del total · ${fmt(unknown)} con total provisional</small></button>
+        <button onclick="PbiDashboard.goto('series')"><span>Completitud</span><b>${fmt(complete)} / ${fmt(cs.length)}</b><small>${pct}% de colecciones sin números pendientes en wishlist</small></button>
         <div><span>Valor estimado</span><b>${money(estimated)}</b><small>Valor registrado</small></div>
         <button onclick="PbiDashboard.goto('purchases')"><span>Compras del mes</span><b>${fmt(monthPurchases.length)}</b><small>${money(monthSpend)} este mes</small></button>
       </div>
