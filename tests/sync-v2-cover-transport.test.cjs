@@ -52,6 +52,11 @@ function fake(){
  await assert.rejects(()=>transport.verifySession({session,cfg,fetchImpl:async()=>({ok:false,status:403})}),/403/);
  await assert.rejects(()=>transport.verifySession({session,cfg,fetchImpl:async()=>({ok:false,status:503})}),/503/);
  await assert.rejects(()=>transport.verifySession({session:{user:{id:uid}},cfg,fetchImpl:identityFetch}),/Sesión/);
+ // Partial content or unexpected successful GET must never be installed as a cover.
+ for(const status of [206,204,302]){
+   await assert.rejects(()=>transport.read({session,cfg,key:'partial',integrity,fetchImpl:async()=>({ok:status===206||status===204,status,blob:async()=>blob('truncated')})}),/GET de portada no íntegro/);
+ }
+
  // New write gate must authenticate against /auth/v1/user BEFORE any Storage POST.
  const gated=fake();
  const gatedFetch=async(url,opts)=>url.endsWith('/auth/v1/user')?identityFetch(url,opts):gated.fetchImpl(url,opts);
