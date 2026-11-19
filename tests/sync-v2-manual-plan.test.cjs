@@ -52,7 +52,7 @@ function cloud(rows){return rows.map(r=>({user_id:uid,local_id:'comics:'+r.id,me
  const addition=make(18000);
  changedRemote.push(...cloud([addition]));changedRemote.sort((a,b)=>a.local_id.localeCompare(b.local_id,'en'));
  changedRemote[1].metadata.record={...changedRemote[1].metadata.record,title:'Cambio en nube'};
- changedRemote[3].metadata={kind:'comics',deleted:true};
+ changedRemote[3].metadata={kind:'comics',deleted:true,deletedAt:'2026-11-13T00:00:00Z',record:{id:changedRemote[3].local_id.slice(7)}};
  const state=service(changedRemote);
  const diff=await compare({session,cfg,localRows:edited,fetcher:state.fetcher});
  // The remote tombstone is matched, not a candidate for re-upload.
@@ -66,6 +66,11 @@ function cloud(rows){return rows.map(r=>({user_id:uid,local_id:'comics:'+r.id,me
    const svc=service(cloud(local),opts);
    await assert.rejects(compare({session,cfg,localRows:local,fetcher:svc.fetcher}),/identidad|verificar|inconsistente|fuera de orden|otro usuario|403|503/);
  }
+ const badTombstone=cloud([make(1)]);
+ badTombstone[0].metadata={kind:'comics',deleted:true};
+ await assert.rejects(compare({session,cfg,localRows:[],fetcher:service(badTombstone).fetcher}),/Tombstone cloud/);
+ badTombstone[0].metadata={kind:'comics',deleted:true,deletedAt:'2026-02-30T00:00:00Z'};
+ await assert.rejects(compare({session,cfg,localRows:[],fetcher:service(badTombstone).fetcher}),/Tombstone cloud/);
  const source=fs.readFileSync('sync-v2-manual-plan.js','utf8');
  assert.doesNotMatch(source,/\b(?:putStore|delStore|bulkPut)\s*\(/);
  assert.doesNotMatch(source,/\bmethod\s*:\s*['"](?:POST|PATCH|PUT|DELETE)['"]/);
