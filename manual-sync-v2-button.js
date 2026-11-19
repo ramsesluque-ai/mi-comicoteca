@@ -153,6 +153,12 @@
      if(actual.toLowerCase()!==line[1].toLowerCase())throw Error('SHA-256 incorrecto: respaldo alterado');
      const parsed=JSON.parse(new TextDecoder().decode(bytes));
      if(parsed?.format!=='mi-comicoteca-local-backup-v1'||!Array.isArray(parsed.comics)||parsed.count!==parsed.comics.length)throw Error('Estructura o recuento inválidos');
+     const rawSession=sessionStorage.getItem('mc_supabase_session_v1')||localStorage.getItem('mc_supabase_session_v1');
+     const activeSession=rawSession?JSON.parse(rawSession):null;
+     if(!activeSession?.user?.id||!activeSession?.access_token||typeof DBN!=='string'||DBN!=='comicteca-user-'+activeSession.user.id)
+       throw Error('No se puede verificar un respaldo sin cuenta y base local coincidentes');
+     if(typeof parsed.accountId!=='string'||parsed.accountId!==activeSession.user.id)
+       throw Error('El respaldo pertenece a otra cuenta o no identifica a su propietario; no se permite utilizarlo para recuperación');
      const ids=new Set();for(const c of parsed.comics){const id=String(c?.id??'');if(!id||ids.has(id))throw Error('ID vacío o duplicado en el respaldo');ids.add(id)}
      diagnostic.textContent='Respaldo verificado: '+ids.size.toLocaleString('es-ES')+' fichas, SHA-256 '+actual+'. Solo fichas: NO incluye imágenes de portadas. No se ha restaurado ni modificado ningún dato. Sincronización real bloqueada hasta pruebas E2E.';
    }catch(e){diagnostic.textContent='Respaldo NO verificado: '+String(e.message||e)+'. No se ha modificado ningún dato.'}finally{verifyBtn.disabled=false}};
