@@ -76,6 +76,10 @@
      if(!result.equal)throw Error('Conflicto de portada local: no sobrescribir');
      return {status:'already-identical',sha256:v.actualSha256};
    }
+   // Authentication can expire while hashing or inspecting the existing cache.
+   // Revalidate immediately before the only local write; never install bytes
+   // after a revoked/mismatched session, even if the initial check passed.
+   await verifiedOwner({session,cfg,key,fetchImpl});
    await cache.put(url,new Response(blob,{headers:{'Content-Type':blob.type}}));
    const installed=await cache.match(url);
    if(!installed)throw Error('No se pudo verificar portada guardada en caché privada');
