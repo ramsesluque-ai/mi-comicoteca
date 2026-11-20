@@ -115,17 +115,35 @@
  }
  function ackUpload(database,{uid,id,expectedRev,record,version}){
   return new Promise((resolve,reject)=>{
-   let tx,cleared=false;
    try{
-    tx=database.transaction(['comics','sync_outbox','sync_baseline'],'readwrite');
-    const outbox=tx.objectStore('sync_outbox'),base=tx.objectStore('sync_baseline');
-    const request=outbox.get(id);
-    request.onsuccess=()=>{
-     base.put({id,uid,record,version,at:new Date().toISOString()});
-     if(request.result?.rev===expectedRev){outbox.delete(id);cleared=true}
+    const tx=database.transaction(['comics','sync_outbox','sync_baseline'],'readwrite');
+    const comics=tx.objectStore('comics'),outbox=tx.objectStore('sync_outbox'),base=tx.objectStore('sync_baseline');
+    let cleared=false,hasComic=false,hasOutbox=false,live,queued,settled=false;
+    const abort=()=>{if(!settled){settled=true;try{tx.abort()}catch(_){}}};
+    const finalize=()=>{
+     if(settled||!hasComic||!hasOutbox)return;
+     try{
+      if(queued&&queued.uid!==uid){abort();return}
+      // Cloud version is acknowledged, but local data may have been edited in
+      // another tab while the HTTP request was in flight. Never lose that edit.
+      const differs=live===undefined||json(live)!==json(record);
+      base.put({id,uid,record,version,at:new Date().toISOString()});
+      if(differs){
+       if(!queued||queued.rev===expectedRev){
+        outbox.put({id,uid,rev:'race-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2),
+          createdAt:new Date().toISOString(),op:live===undefined?'delete':'save'});
+       }
+      }else if(queued?.rev===expectedRev){
+       outbox.delete(id);cleared=true;
+      }
+     }catch(_){abort()}
     };
+    const a=comics.get(id),b=outbox.get(id);
+    a.onsuccess=()=>{live=a.result;hasComic=true;finalize()};
+    b.onsuccess=()=>{queued=b.result;hasOutbox=true;finalize()};
+    a.onerror=abort;b.onerror=abort;
     tx.oncomplete=()=>resolve(cleared);
-    tx.onabort=()=>reject(Error('No se pudo confirmar localmente el envío'));
+    tx.onabort=()=>reject(Error('No se pudo confirmar localmente el envío; cambio pendiente conservado'));
     tx.onerror=()=>{};
    }catch(e){reject(e)}
   });
