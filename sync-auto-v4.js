@@ -224,6 +224,8 @@
        // the already-verified private cloud record instead of losing the cover.
        proof=await coverTransport.download({record:remote.record,uid,session,cfg,fetcher});
       }
+      assert(proof?.verified&&/^[a-f0-9]{64}$/.test(String(proof.sha256||'')),
+       'La portada privada no se ha verificado; no se puede confirmar esta ficha');
      }
      if(proof?.verified&&(local.coverSyncPending===true||!local.coverSha256)){
       const prepared={...local,coverSha256:proof.sha256,coverSyncPending:false,
@@ -292,8 +294,11 @@
     if(typeof coverTransport?.download!=='function'){
      conflicts.push({id,reason:'portada-privada-no-verificada'});continue
     }
-    try{await coverTransport.download({record:decision.record,uid,session,cfg,fetcher})}
-    catch(e){conflicts.push({id,reason:'portada-no-recuperada: '+String(e.message||e)});continue}
+    try{
+     const proof=await coverTransport.download({record:decision.record,uid,session,cfg,fetcher});
+     assert(proof?.verified&&/^[a-f0-9]{64}$/.test(String(proof.sha256||'')),
+      'La portada descargada no tiene verificación SHA-256');
+    }catch(e){conflicts.push({id,reason:'portada-no-recuperada: '+String(e.message||e)});continue}
    }
    updates.push({id,type:decision.action,original,record:decision.record,version:decision.version});
   }
