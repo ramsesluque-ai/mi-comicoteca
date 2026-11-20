@@ -1,0 +1,31 @@
+/* MI COMICTECA: opt-in light mode; dark mode remains the default. */
+html[data-mc-theme="light"]{color-scheme:light;--bg:#f3f6fb;--side:#ffffff;--card:#ffffff;--card2:#f6f9fd;--line:#d9e2ed;--ink:#182b43;--muted:#53677f;--shadow:0 12px 35px rgba(31,55,83,.09)}
+html[data-mc-theme="light"] body{background:radial-gradient(circle at 82% 8%,rgba(47,128,255,.07),transparent 30%),#f3f6fb;color:var(--ink)}
+html[data-mc-theme="light"] .side{background:#fff;border-color:#d9e2ed}
+html[data-mc-theme="light"] .nav button{color:#34475e}
+html[data-mc-theme="light"] .nav button:hover,html[data-mc-theme="light"] .nav button.active{background:#edf3fc;color:#173455}
+html[data-mc-theme="light"] .brand,html[data-mc-theme="light"] .sidefoot{border-color:#d9e2ed;color:#53677f}
+html[data-mc-theme="light"] .card,html[data-mc-theme="light"] .panel,html[data-mc-theme="light"] .modalbox,html[data-mc-theme="light"] .series-card,html[data-mc-theme="light"] .master-card,html[data-mc-theme="light"] .cover-manager-card,html[data-mc-theme="light"] .cover-candidate,html[data-mc-theme="light"] .gcd-card{background:#fff;color:var(--ink);border-color:var(--line);box-shadow:0 8px 24px rgba(24,43,67,.06)}
+html[data-mc-theme="light"] .filters,html[data-mc-theme="light"] .pager,html[data-mc-theme="light"] .cover-stats,html[data-mc-theme="light"] .panel-head{background:#f7f9fc;border-color:var(--line)}
+html[data-mc-theme="light"] input,html[data-mc-theme="light"] select,html[data-mc-theme="light"] textarea{background:#fff;color:#182b43;border-color:#cbd7e5}
+html[data-mc-theme="light"] input::placeholder,html[data-mc-theme="light"] textarea::placeholder{color:#71839a}
+html[data-mc-theme="light"] select option{background:#fff;color:#182b43}
+html[data-mc-theme="light"] .btn:not(.primary){background:#fff;color:#23415f;border-color:#cbd7e5}
+html[data-mc-theme="light"] .btn:not(.primary):hover{background:#eaf2ff}
+html[data-mc-theme="light"] th{background:#eef3f9;color:#455c77}
+html[data-mc-theme="light"] td,html[data-mc-theme="light"] .list li{border-color:#e1e8f0}
+html[data-mc-theme="light"] tr:hover td{background:#f2f7ff}
+html[data-mc-theme="light"] .pill{background:#e8eff8;color:#31516f}
+html[data-mc-theme="light"] .barbg,html[data-mc-theme="light"] .series-card .progress{background:#e2eaf5}
+html[data-mc-theme="light"] .kpi.color-purple,html[data-mc-theme="light"] .kpi.color-cyan,html[data-mc-theme="light"] .kpi.color-green,html[data-mc-theme="light"] .kpi.color-orange{background:#fff}
+html[data-mc-theme="light"] .kpi .v{color:#174c83}
+html[data-mc-theme="light"] .notice{color:#7a5600;background:#fff8e7}
+html[data-mc-theme="light"] .muted,html[data-mc-theme="light"] .sub{color:var(--muted)}
+html[data-mc-theme="light"] .click{color:#1766c0}
+html[data-mc-theme="light"] .cover-candidate img{background:#edf2f8}
+html[data-mc-theme="light"] .mc-editorial-admin,html[data-mc-theme="light"] .mc-editorial-row{background:#fff;color:var(--ink);border-color:var(--line)}
+html[data-mc-theme="light"] .mc-editorial-row small{color:var(--muted)}
+#mcThemeToggle{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:10px 12px;margin:8px 0 3px;border:1px solid var(--line);border-radius:10px;background:var(--card2);color:var(--ink);font-size:13px;font-weight:800;cursor:pointer}
+#mcThemeToggle:hover{border-color:var(--blue)}
+#mcThemeToggle:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+@media(max-width:680px){#mcThemeToggle{flex:0 0 auto;width:auto;min-width:52px;margin:0 5px;padding:9px;font-size:12px}.side{gap:4px}html[data-mc-theme="light"] .side{background:#fff}}
