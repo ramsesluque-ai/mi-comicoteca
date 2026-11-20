@@ -8,7 +8,7 @@ const transport=require('../sync-v2-cover-transport.js');
 const bridge=require('../sync-v2-cover-cache-bridge.js');
 const uidA='11111111-1111-4111-8111-111111111111';
 const uidB='22222222-2222-4222-8222-222222222222';
-const session=uid=>({user:{id:uid},access_token:'token:'+uid});
+const session=uid=>({user:{id:uid},access_token:'test.'+uid.replace(/-/g,'')+'.signature'});
 const cfg={url:'https://fake-private.test',publishableKey:'public-test'};
 const img=text=>new Blob([text],{type:'image/webp'});
 function caches(){
@@ -25,7 +25,8 @@ function caches(){
 (async()=>{
  const remote=new Map(),requests=[];let deny=false,losePost=false;
  const fetchImpl=async(url,opts)=>{
-   const uid=opts.headers.Authorization.replace('Bearer token:','');
+   const bearer=opts.headers.Authorization.replace('Bearer ','');
+   const uid=bearer.startsWith('test.')?bearer.slice(5,37).replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/,'$1-$2-$3-$4-$5'):'';
    requests.push({url,method:opts.method,uid});
    if(deny)return {ok:false,status:403};
    if(url.endsWith('/auth/v1/user'))
