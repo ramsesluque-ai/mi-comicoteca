@@ -18,6 +18,7 @@ on:
       - 'tests/sync-v2-cover-isolation.test.cjs'
       - 'tests/sync-v2-private-cover-concurrency.test.cjs'
       - 'tests/sync-v2-private-cover-failclosed.test.cjs'
+      - 'tests/sync-v2-cover-auth-status.test.cjs'
       - 'tests/sync-v2-fake-private-covers-regression.cjs'
       - 'tests/sync-v2-two-device-cover-roundtrip.test.cjs'
       - 'tests/sync-v2-two-user-cover-backend.test.cjs'
@@ -56,6 +57,7 @@ jobs:
           node tests/sync-v2-cover-isolation.test.cjs
           node tests/sync-v2-private-cover-concurrency.test.cjs
           node tests/sync-v2-private-cover-failclosed.test.cjs
+          node tests/sync-v2-cover-auth-status.test.cjs
           node tests/sync-v2-fake-private-covers-regression.cjs
           node tests/sync-v2-two-device-cover-roundtrip.test.cjs
           node tests/sync-v2-two-user-cover-backend.test.cjs
