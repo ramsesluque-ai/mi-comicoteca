@@ -245,8 +245,11 @@
  async function syncNow(options){
   if(running)return running;
   running=(async()=>{
-   const sent=await uploadQueued(options);
+   // Establish remote versions first. Existing account caches created before
+   // V4 have no acknowledged baseline: uploading first would classify every
+   // legitimate edit as a conflict. Pending local edits remain protected.
    const received=await pull(options);
+   const sent=await uploadQueued(options);
    return {sent,received};
   })();
   try{return await running}finally{running=null}
