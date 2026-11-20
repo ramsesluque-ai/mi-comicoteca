@@ -32,6 +32,17 @@ function fake(){
    return {ok:true,status:200,json:async()=>({id:uid})};
  };
  assert.equal(await transport.verifySession({session,cfg,fetchImpl:identityFetch}),uid);
+ // Reject header-injection, whitespace and oversized bearer tokens before any network request.
+ for(const token of ['token\\r\\nX-Injected: yes','token with spaces','', 'x'.repeat(8193)]){
+   let requests=0;
+   const noNetwork=async()=>{requests++;throw Error('Unexpected network access')};
+   const badSession={user:{id:uid},access_token:token};
+   await assert.rejects(()=>transport.verifySession({session:badSession,cfg,fetchImpl:noNetwork}),/Sesión autenticada inválida/);
+   await assert.rejects(()=>transport.read({session:badSession,cfg,key:'safe',integrity,fetchImpl:noNetwork}),/Sesión autenticada inválida/);
+   await assert.rejects(()=>transport.verifiedCopyIfAbsent({session:badSession,cfg,key:'safe',blob:blob('test'),integrity,fetchImpl:noNetwork}),/Sesión autenticada inválida/);
+   assert.equal(requests,0);
+ }
+
 
  // Reject malformed base URLs before a bearer token can leave the application.
  // A valid Supabase endpoint is a bare HTTPS origin (optional trailing slash).
