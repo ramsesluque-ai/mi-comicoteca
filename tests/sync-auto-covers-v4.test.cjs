@@ -76,3 +76,25 @@ test('changed bytes of a cloud cover cannot silently replace the local image',as
  await covers.putCache(uid,'c_1',image());
  await assert.rejects(covers.download({record,uid,session,cfg,fetcher:cloud.fetcher}),/Conflicto/);
 });
+
+test('user-saved HTTPS cover links can be backed up as SHA-verified private bytes',async()=>{
+ globalThis.MC_ACCOUNT_ID=uid;
+ globalThis.caches=makeCaches();
+ globalThis.CoverVault={fetchAndCompress:async link=>{
+  assert.equal(link,'https://publisher.example.com/cover.jpg');
+  return image();
+ }};
+ const item={id:'c_1',title:'Linked cover',coverUrl:'https://publisher.example.com/cover.jpg'};
+ const saved=await covers.prepareLinked({record:item,uid,session,cfg});
+ assert.equal(saved.id,item.id);
+ assert.equal(saved.coverSourceUrl,item.coverUrl);
+ assert.match(saved.coverSha256,/^[a-f0-9]{64}$/);
+ assert.match(saved.coverKey,/^c_1-[a-f0-9]{20}$/);
+ assert.equal(saved.coverSyncPending,true);
+ assert.equal((await covers.fromCache(uid,saved.coverKey)).size,4);
+});
+test('non-HTTPS cover links cannot become private uploads',async()=>{
+ globalThis.MC_ACCOUNT_ID=uid;
+ globalThis.CoverVault={fetchAndCompress:async()=>{throw Error('should not fetch')}};
+ await assert.rejects(covers.prepareLinked({record:{id:'c_1',coverUrl:'http://bad.example/cover.jpg'},uid,session,cfg}),/HTTPS/);
+});
