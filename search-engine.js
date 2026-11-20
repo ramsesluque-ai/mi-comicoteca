@@ -11,8 +11,19 @@ function mcSENorm(v){return norm(String(v??''));}
 function mcSECode(v){return String(v??'').replace(/[^0-9Xx]/g,'').toUpperCase();}
 function mcSEIssue(v){const s=String(v??'').trim().toLowerCase().replace(/[º°]/g,'').replace(/\s+/g,'');if(/^0*\d+$/.test(s))return String(parseInt(s,10));return s.replace(/^0+(?=\d)/,'')}
 function mcSEIssueExact(a,b){return !!mcSEIssue(a)&&mcSEIssue(a)===mcSEIssue(b)}
-function mcSETokens(v){const stop=new Set(['de','del','la','el','los','las','y','e','vol','volumen','serie','etapa','ediciones']);return mcSENorm(v).replace(/[^a-z0-9áéíóúüñ]+/gi,' ').split(/\s+/).filter(x=>x&&x.length>1&&!stop.has(x))}
-function mcSESeriesScore(a,b){const A=[...new Set(mcSETokens(a))],B=[...new Set(mcSETokens(b))];if(!A.length||!B.length)return 0;const inter=A.filter(x=>B.includes(x)).length;return Math.max(inter/A.length,inter/B.length)}
+function mcSETokens(v){
+ const stop=new Set(['de','del','la','el','los','las','y','e','vol','volumen','serie','etapa','ediciones']);
+ // Match punctuation, bracketed subtitles, accents and repeated words without altering stored titles.
+ return String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
+  .replace(/[^a-z0-9]+/g,' ').split(/\s+/).filter(x=>x&&x.length>1&&!stop.has(x));
+}
+function mcSESeriesScore(a,b){
+ const A=[...new Set(mcSETokens(a))],B=[...new Set(mcSETokens(b))];
+ if(!A.length||!B.length)return 0;
+ const inter=A.filter(x=>B.includes(x)).length;
+ // Require coverage of both titles: a generic 'Batman' must not match every Batman subtitle.
+ return inter/Math.max(A.length,B.length);
+}
 function mcSECanonPub(v){const n=mcSENorm(v);const rules=[['ECC',/\becc\b/],['Panini',/panini/],['Planeta \/ DeAgostini',/planeta|deagostini/],['Forum',/forum/],['Zinco',/zinco/],['Vértice',/vertice/],['Bruguera',/bruguera/],['Novaro',/novaro/],['Norma',/norma/],['Glénat',/glenat/],['Salvat',/salvat/],['Astiberri',/astiberri/],['Toutain',/toutain/],['La Cúpula',/cupula/],['Dolmen',/dolmen/],['Milky Way',/milky way/],['Ivrea',/ivrea/],['Distrito Manga',/distrito manga/],['Yermo',/yermo/],['Aleta',/aleta/],['Ediciones B',/ediciones b|grupo zeta/],['Montena',/montena/]];for(const [k,r] of rules)if(r.test(n))return k;return String(v||'').trim()}
 function mcSEPubCompatible(a,b){const A=mcSENorm(mcSECanonPub(a)),B=mcSENorm(mcSECanonPub(b));if(!A||!B)return true;return A===B||A.includes(B)||B.includes(A)}
 function mcSEMergeCovers(...lists){const out=[];for(const l of lists.flat()){const u=String(l||'').trim().replace(/^http:/,'https:');if(/^https?:\/\//i.test(u)&&!out.includes(u))out.push(u)}return out}
