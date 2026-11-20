@@ -33,3 +33,38 @@ html[data-mc-theme="light"] .mc-editorial-row small{color:var(--muted)}
 /* Compact header action beside '+ Añadir cómic', not in the sidebar. */
 #view .top .actions #mcThemeToggle{display:inline-flex;width:auto;min-width:0;margin:0;padding:9px 13px;flex:0 0 auto;white-space:nowrap}
 @media(max-width:680px){#view .top .actions #mcThemeToggle{width:auto;min-width:0;margin:0;padding:8px 10px;font-size:12px}}
+
+/* Light theme consistency: Maestro filter dashboard and secondary labels. */
+html[data-mc-theme="light"] .mc-master-filter-dashboard .mc-mf{background:#f8fbff;border-color:#cbd9e8;color:#183451}
+html[data-mc-theme="light"] .mc-master-filter-dashboard .mc-mf>span{color:#234260!important}
+html[data-mc-theme="light"] .mc-master-filter-dashboard .mc-mf input,
+html[data-mc-theme="light"] .mc-master-filter-dashboard .mc-mf select{color:#17334f!important;background:transparent!important}
+html[data-mc-theme="light"] .mc-master-filter-dashboard .mc-mf input::placeholder{color:#667f9c!important;opacity:1}
+html[data-mc-theme="light"] .mc-master-filter-dashboard .mc-mf-hint,
+html[data-mc-theme="light"] .mc-master-info,
+html[data-mc-theme="light"] .mc-master-help,
+html[data-mc-theme="light"] .mc-master-summary,
+html[data-mc-theme="light"] .master-update-card span,
+html[data-mc-theme="light"] .master-update-card small{color:#4c6581}
+html[data-mc-theme="light"] .mc-master-summary strong{color:#183451}
+html[data-mc-theme="light"] .mc-master-open{color:#1265ba}
+html[data-mc-theme="light"] .mc-master-publisher{background:#f8fbff;color:#183451;border-color:#d2dfec}
+html[data-mc-theme="light"] .mc-master-publisher small{color:#536b85}
+html[data-mc-theme="light"] .mc-master-publisher:hover{background:#edf5ff}
+html[data-mc-theme="light"] .catalog-tools,
+html[data-mc-theme="light"] .bulkbar{background:#f7f9fc;border-color:#d9e2ed}
+html[data-mc-theme="light"] .record-card,
+html[data-mc-theme="light"] .comic-card,
+html[data-mc-theme="light"] .cover-tile,
+html[data-mc-theme="light"] .purchase-card{background:#fff;color:#183451;border-color:#d9e2ed}
+html[data-mc-theme="light"] .record-sub,
+html[data-mc-theme="light"] .record-foot,
+html[data-mc-theme="light"] .record-kicker,
+html[data-mc-theme="light"] .checkline{color:#536b85}
+html[data-mc-theme="light"] .cardcover,
+html[data-mc-theme="light"] .gallerycover,
+html[data-mc-theme="light"] .mastercover{background:#edf2f8}
+html[data-mc-theme="light"] .sub,
+html[data-mc-theme="light"] .series-stats,
+html[data-mc-theme="light"] .series-meta,
+html[data-mc-theme="light"] .series-sub{color:#4b6480}
