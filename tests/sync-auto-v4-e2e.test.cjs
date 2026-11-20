@@ -157,3 +157,43 @@ test('a separate account is forbidden from using the first account database',asy
  await assert.rejects(sync.uploadQueued({database:db,dbName:'comicteca-user-'+UID,uid:OTHER,cfg,
   fetcher:backend().fetcher}),/no coinciden/);
 });
+
+test('identical metadata still requires private cover recovery on device open',async()=>{
+ const server=backend(),device=new MemoryDb();
+ session(UID,'token-primary');
+ const comic={id:'c_cover',title:'Comic with cover',coverKey:'c_cover'};
+ const version='2026-11-20T11:00:00.000Z';
+ server.maps.get(UID).set('comics:c_cover',{
+  user_id:UID,local_id:'comics:c_cover',metadata:{kind:'comics',record:comic},updated_at:version
+ });
+ device.stores.comics.set(comic.id,{...comic});
+ let recovered=0;
+ const transport={download:async()=>{recovered++}};
+ const result=await sync.pull({database:device,dbName:'comicteca-user-'+UID,uid:UID,cfg,
+  fetcher:server.fetcher,coverTransport:transport});
+ assert.equal(result.downloaded,0,'metadata was already identical');
+ assert.equal(recovered,1,'matching cover reference still downloads/validates binary');
+ assert.equal(device.stores.sync_baseline.get(comic.id).version,version);
+});
+test('acknowledged data must restore a cloud cover if local binary is absent',async()=>{
+ const server=backend(),device=new MemoryDb();
+ session(UID,'token-primary');
+ const comic={id:'c_covered',title:'Covered comic',coverKey:'c_covered'};
+ const version='2026-11-20T11:00:00.000Z';
+ server.maps.get(UID).set('comics:c_covered',{
+  user_id:UID,local_id:'comics:c_covered',metadata:{kind:'comics',record:comic},updated_at:version
+ });
+ device.stores.comics.set(comic.id,{...comic});
+ device.stores.sync_outbox.set(comic.id,{id:comic.id,uid:UID,rev:'cover-retry'});
+ let uploads=0,downloads=0;
+ const transport={
+  upload:async()=>{uploads++;throw Error('Portada ausente en local')},
+  download:async()=>{downloads++}
+ };
+ const result=await sync.uploadQueued({database:device,dbName:'comicteca-user-'+UID,uid:UID,cfg,
+  fetcher:server.fetcher,coverTransport:transport});
+ assert.equal(result.acknowledged,1);
+ assert.equal(uploads,1);
+ assert.equal(downloads,1);
+ assert.equal(device.stores.sync_outbox.size,0);
+});
