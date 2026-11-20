@@ -91,7 +91,15 @@ renderMaster=async function(){
  if(showMorrison){const sample={...morrisonRows[0],catalogHeader:'Batman y Robin · Etapa Grant Morrison (4 tomos)',series:'Batman y Robin · Etapa Grant Morrison (4 tomos)',startYear:'2012–2013',volume:'',stage:'Tomos recopilatorios'};groups.set(morrisonKey,{sample,cover:coverFor(morrisonRows[0]),count:4});}
  // Personal-only series are shown as reconciliation candidates, never counted as verified Maestro records.
  let personal=[];
- try{if(typeof allStore==='function')personal=await allStore('comics')||[];}catch(err){console.warn('[Maestro] Colección local no disponible; el Maestro público sigue visible',err);}
+ try{
+  if(typeof allStore==='function'){
+   // Never present a pending local deletion as a personal series awaiting Maestro review.
+   // The two reads share the account-scoped IndexedDB namespace; no cloud mutation.
+   const [comics,outbox]=await Promise.all([allStore('comics'),allStore('sync_outbox')]);
+   const deleted=new Set(outbox.filter(x=>x.op==='delete'&&(!x.uid||x.uid===MC_ACCOUNT_ID)).map(x=>String(x.id)));
+   personal=comics.filter(x=>!deleted.has(String(x.id)));
+  }
+ }catch(err){console.warn('[Maestro] Colección local no disponible; el Maestro público sigue visible',err);}
  if(token!==state.serial)return;
  const existingNames=new Set(rows.map(r=>mcSENorm(r.catalogHeader||r.series)));
  const missing=new Map();
