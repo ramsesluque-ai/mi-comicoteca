@@ -96,6 +96,95 @@
    }catch(e){reject(e)}
   });
  }
+
+ // Add-only reconciliation for a POPULATED account cache. Never uses put/delete,
+ // never sends writes to the server and never changes an existing local row.
+ // The complete authenticated cloud scan finishes BEFORE this transaction.
+ function mergeMissingAtomically(database,rows){
+  return new Promise((resolve,reject)=>{
+   let transaction,added=0,present=0;
+   try{
+    transaction=database.transaction('comics','readwrite');
+    const store=transaction.objectStore('comics');
+    const keys=store.getAllKeys();
+    keys.onsuccess=()=>{
+     const existing=new Set(keys.result.map(String));
+     for(const row of rows){
+      const id=String(row?.id??'');
+      if(!id){transaction.abort();return}
+      if(existing.has(id)){present++;continue}
+      existing.add(id);store.add(row);added++;
+     }
+    };
+    keys.onerror=()=>transaction.abort();
+    transaction.oncomplete=()=>resolve({added,present});
+    transaction.onabort=()=>reject(Error('Reconciliación cancelada y revertida: '+(transaction.error?.message||'colisión o error de almacenamiento')));
+    transaction.onerror=()=>{};
+   }catch(e){reject(e)}
+  });
+ }
+ let refreshInFlight=null,refreshLastStarted=0;
+ async function refreshAddOnly({database,dbName,uid,cfg,fetcher=fetch,verify=()=>root.CommercialBilling?.currentUser(),hasher}={}){
+  assert(database&&uid&&dbName==='comicteca-user-'+uid,'Identidad de la base local no coincide');
+  if(refreshInFlight)return refreshInFlight;
+  refreshLastStarted=Date.now();
+  refreshInFlight=(async()=>{
+   const before=await countLocal(database);
+   const result=await scanCloud({uid,cfg,fetcher,verify});
+   // Reject an incomplete or unexpectedly empty remote read; never infer deletion.
+   let remembered=0;
+   try{remembered=Number(localStorage.getItem('mc-catalog-cloud-seen-'+uid)||0)}catch(_){}
+   const owner='0bcbe06d-263d-4ac1-a516-355d27d417f1';
+   if(uid===owner)assert(result.rows.length>=16523,'Lectura parcial del catálogo verificado (16.523 fichas); no se modificó IndexedDB.');
+   assert(result.rows.length>0||remembered===0,'Supabase devolvió una colección vacía inesperada.');
+   assert(result.rows.length>=remembered,'Supabase devolvió menos fichas que el último recuento seguro. Reconciliación detenida.');
+   if(!result.rows.length)return {state:'cloud-empty',before,added:0,after:before,cloud:0};
+   // Prove that the remote snapshot is fully serializable before any IndexedDB write.
+   const proof=await verifiedSnapshot(result.rows,hasher);
+   const account=getAccountSession(uid),verified=await verify();
+   assert(account?.user?.id===uid&&verified?.id===uid&&dbName==='comicteca-user-'+uid,'La sesión cambió durante la lectura; ninguna ficha importada.');
+   const ids=new Set();
+   for(const row of result.rows){
+    const id=String(row?.id??'');
+    assert(id&&!ids.has(id),'ID remoto repetido o inválido; ninguna ficha importada.');
+    ids.add(id);
+   }
+   const merged=await mergeMissingAtomically(database,result.rows);
+   const after=await countLocal(database);
+   assert(after>=result.rows.length,'El recuento tras reconciliación es inesperado: comprueba el almacenamiento local.');
+   try{localStorage.setItem('mc-catalog-cloud-seen-'+uid,String(result.rows.length))}catch(_){}
+   return {state:'add-only-reconciled',before,after,cloud:result.rows.length,added:merged.added,
+     kept:merged.present,sha256:proof.sha,coverBinariesRestored:false,cloudWrites:false};
+  })();
+  try{return await refreshInFlight}finally{refreshInFlight=null}
+ }
+ function notifyPartial(title,message,permanent=false){
+  if(!root.document?.body)return;
+  let el=root.document.getElementById('mc-add-only-cloud-status');
+  if(!el){
+   el=root.document.createElement('aside');el.id='mc-add-only-cloud-status';
+   el.setAttribute('role','status');el.setAttribute('aria-live','polite');
+   el.style.cssText='position:fixed;bottom:14px;left:14px;z-index:99990;max-width:min(460px,calc(100vw - 28px));background:#102b43;border:1px solid #6eb6d5;color:#fff;padding:11px 14px;border-radius:9px;font:13px/1.5 system-ui;box-shadow:0 2px 14px #0017';
+   root.document.body.appendChild(el);
+  }
+  el.textContent=title+': '+message;
+  if(!permanent)setTimeout(()=>{if(el.isConnected)el.remove()},9000);
+ }
+ async function safeBackgroundRefresh(options){
+  try{
+   const r=await refreshAddOnly(options);
+   if(r.added>0){
+    notifyPartial('Catálogo recuperado',r.added.toLocaleString('es-ES')+' fichas añadidas desde Supabase. Ninguna ficha local sobrescrita. Las portadas privadas se sincronizan aparte.');
+    root.dispatchEvent?.(new CustomEvent('mc-catalog-cloud-merged',{detail:r}));
+   }
+   return r;
+  }catch(e){
+   console.warn('MI COMICTECA: recuperación aditiva sin cambios en la nube',e);
+   notifyPartial('Nube sin comprobar','Se muestran tus datos locales; no se pudo completar la recuperación: '+String(e.message||e)+'. Recarga para reintentar.',true);
+   return {state:'cloud-unavailable',error:String(e.message||e)};
+  }
+ }
+
  function showMessage(title,message,allowRetry){
   let el=document.getElementById('mc-catalog-startup-status');
   if(!el){
@@ -122,7 +211,11 @@
   if(!uid||!database)return {state:'guest'};
   assert(dbName==='comicteca-user-'+uid,'La base IndexedDB no pertenece a la cuenta iniciada.');
   const count=await countLocal(database);
-  if(count>0)return {state:'local',count};
+  if(count>0){
+   // Do not delay an offline/local page behind a 16k-record network scan.
+   Promise.resolve().then(()=>safeBackgroundRefresh({database,dbName,uid,cfg,fetcher,verify,hasher}));
+   return {state:'local',count,cloudCheckPending:true};
+  }
   onState('Comprobando tu colección','La copia local está vacía. Buscando tus fichas en Supabase antes de mostrar el catálogo…');
   let result;
   try{
@@ -213,6 +306,6 @@
    filename:'mi-comicteca-respaldo-local-'+new Date().toISOString().slice(0,10)+'.json'};
  }
 
- root.MCCatalogBootstrap={bootstrap,scanCloud,restoreAtomically,verifiedSnapshot,previewOwnerReplacement,createVerifiedLocalBackup};
+ root.MCCatalogBootstrap={bootstrap,scanCloud,restoreAtomically,verifiedSnapshot,previewOwnerReplacement,createVerifiedLocalBackup,mergeMissingAtomically,refreshAddOnly,safeBackgroundRefresh};
  if(typeof module!=='undefined'&&module.exports)module.exports=root.MCCatalogBootstrap;
 })(typeof window!=='undefined'?window:globalThis);
