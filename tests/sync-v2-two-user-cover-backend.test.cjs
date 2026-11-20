@@ -6,11 +6,11 @@ const transport=require('../sync-v2-cover-transport.js');
 const sha=async blob=>crypto.createHash('sha256').update(Buffer.from(await blob.arrayBuffer())).digest('hex');
 const integrity={sha256:sha,verifyPair:async(a,b)=>({equal:(await sha(a))===(await sha(b))}),verifyExpected:async(blob,expected)=>{const actualSha256=await sha(blob);return {equal:actualSha256===expected,actualSha256}}};
 const uidA='11111111-1111-4111-8111-111111111111',uidB='22222222-2222-4222-8222-222222222222';
-const session=uid=>({user:{id:uid},access_token:'token:'+uid});
+const session=uid=>({user:{id:uid},access_token:'token.'+uid});
 const cfg={url:'https://isolated.invalid',publishableKey:'fake'};
 const objects=new Map();let failNext=false;
 const fakeFetch=async(url,options)=>{
- const uid=options.headers.Authorization.replace('Bearer token:','');
+ const uid=options.headers.Authorization.replace('Bearer token.','');
  const path=new URL(url).pathname.split('/').slice(-2);
  const [owner,key]=path.map(decodeURIComponent);
  if(owner!==uid)return {ok:false,status:403};
