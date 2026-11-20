@@ -175,16 +175,20 @@
  async function safeBackgroundRefresh(options){
   try{
    const r=await refreshAddOnly(options);
+   // Background reconciliation is transparent: never expose internal counts,
+   // pending uploads, Supabase or private-cover diagnostics to end users.
+   // Preserve the merge event so the UI can refresh normally.
    if(r.added>0){
-    notifyPartial('Catálogo recuperado',r.added.toLocaleString('es-ES')+' fichas añadidas desde Supabase. Ninguna ficha local sobrescrita. '+(r.onlyLocal? r.onlyLocal.toLocaleString('es-ES')+' fichas solo locales pendientes de subida. ':'')+'Las portadas privadas se sincronizan aparte.',r.onlyLocal>0);
     root.dispatchEvent?.(new CustomEvent('mc-catalog-cloud-merged',{detail:r}));
-   }else if(r.onlyLocal>0){
-    notifyPartial('Pendiente de subida',r.onlyLocal.toLocaleString('es-ES')+' fichas existen solo en este dispositivo. No están aún protegidas en la nube; no las borres.',true);
+   }
+   if(r.onlyLocal>0){
+    console.info('MI COMICTECA: fichas locales aún no confirmadas en nube',{count:r.onlyLocal});
    }
    return r;
   }catch(e){
    console.warn('MI COMICTECA: recuperación aditiva sin cambios en la nube',e);
-   notifyPartial('Nube sin comprobar','Se muestran tus datos locales; no se pudo completar la recuperación: '+String(e.message||e)+'. Recarga para reintentar.',true);
+   // The local catalog remains usable. No technical toast or persistent
+   // banner; retry happens on the next normal refresh.
    return {state:'cloud-unavailable',error:String(e.message||e)};
   }
  }
