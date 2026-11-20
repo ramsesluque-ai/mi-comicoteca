@@ -104,21 +104,29 @@
   return new Promise((resolve,reject)=>{
    let transaction,added=0,present=0,onlyLocal=0;
    try{
-    transaction=database.transaction('comics','readwrite');
+    transaction=database.transaction(['comics','sync_outbox'],'readwrite');
     const store=transaction.objectStore('comics');
+    const pending=transaction.objectStore('sync_outbox').getAll();
     const keys=store.getAllKeys();
-    keys.onsuccess=()=>{
-     const existing=new Set(keys.result.map(String));
+    let existingKeys=null,queuedDeletes=null;
+    const reconcile=()=>{
+     if(!existingKeys||!queuedDeletes)return;
+     const existing=new Set(existingKeys.map(String));
      const cloudIds=new Set(rows.map(row=>String(row.id)));
      onlyLocal=[...existing].filter(id=>!cloudIds.has(id)).length;
      for(const row of rows){
       const id=String(row?.id??'');
       if(!id){transaction.abort();return}
       if(existing.has(id)){present++;continue}
+      // Local deletions are durable intent. Add-only cloud recovery must never resurrect them.
+      if(queuedDeletes.has(id))continue;
       existing.add(id);store.add(row);added++;
      }
     };
+    keys.onsuccess=()=>{existingKeys=keys.result;reconcile()};
+    pending.onsuccess=()=>{queuedDeletes=new Set(pending.result.filter(x=>x.op==='delete').map(x=>String(x.id)));reconcile()};
     keys.onerror=()=>transaction.abort();
+    pending.onerror=()=>transaction.abort();
     transaction.oncomplete=()=>resolve({added,present,onlyLocal});
     transaction.onabort=()=>reject(Error('Reconciliación cancelada y revertida: '+(transaction.error?.message||'colisión o error de almacenamiento')));
     transaction.onerror=()=>{};
@@ -153,7 +161,7 @@
    }
    const merged=await mergeMissingAtomically(database,result.rows);
    const after=await countLocal(database);
-   assert(after>=result.rows.length,'El recuento tras reconciliación es inesperado: comprueba el almacenamiento local.');
+   assert(after>=before,'La reconciliación no debe eliminar fichas locales.');
    try{localStorage.setItem('mc-catalog-cloud-seen-'+uid,String(result.rows.length))}catch(_){}
    return {state:'add-only-reconciled',before,after,cloud:result.rows.length,added:merged.added,
      kept:merged.present,onlyLocal:merged.onlyLocal,sha256:proof.sha,coverBinariesRestored:false,cloudWrites:false};
