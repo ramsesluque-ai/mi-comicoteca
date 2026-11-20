@@ -7,7 +7,23 @@
  const RELEASE_APPROVED=false; // Flip only after verified E2E; never from localStorage/query params.
  const STATE={enabled:RELEASE_APPROVED,running:false,scheduled:false,lastError:null,lastSuccessful:null,
   lastUploads:0,lastDownloads:0,lastConflicts:0,pending:null};
- let job=null,timer=null,lastOnReturn=0;
+ let job=null,timer=null,lastOnReturn=0,retryMs=5000;
+ function reschedulePending(sent){
+  if(!RELEASE_APPROVED||!sent||!Number(sent.pending)||timer)return;
+  const errors=sent.conflicts||[];
+  const retryable=errors.length>0&&errors.every(e=>
+   /(?:HTTP 5\d\d|HTTP 429|Failed to fetch|NetworkError|network|sin conexión|timeout|offline)/i.test(String(e.reason||'')));
+  if(errors.length&&!retryable)return; // Real conflict requires user review, not a busy loop.
+  const delay=retryable?retryMs:1500;
+  if(retryable)retryMs=Math.min(retryMs*2,300000);
+  else retryMs=5000;
+  timer=setTimeout(()=>{
+   timer=null;
+   STATE.scheduled=false;emit();
+   work('push').catch(e=>console.warn('MI COMICTECA retry de sincronización pendiente',e));
+  },delay);
+  STATE.scheduled=true;emit();
+ }
  const emit=()=>{try{root.dispatchEvent(new CustomEvent('mc-sync-v4-status',{detail:{...STATE}}))}catch(_){}};
  function context(){
   if(typeof db==='undefined'||!db||typeof DBN!=='string'||typeof MC_ACCOUNT_ID!=='string'||!MC_ACCOUNT_ID)throw Error('Colección local no preparada');
@@ -20,7 +36,9 @@
   STATE.lastUploads=result?.sent?.uploaded||0;STATE.lastDownloads=result?.received?.downloaded||0;
   STATE.lastConflicts=(result?.sent?.conflicts?.length||0)+(result?.received?.conflicts?.length||0);
   STATE.pending=result?.sent?.pending??null;
+  STATE.lastError=STATE.lastConflicts?'Hay '+STATE.lastConflicts+' cambios que requieren revisión o reconexión':null;
   emit();
+  reschedulePending(result?.sent);
   if(STATE.lastDownloads){
    root.dispatchEvent(new CustomEvent('mc-catalog-cloud-merged',{detail:{added:STATE.lastDownloads}}));
   }
@@ -45,7 +63,7 @@
  function queueUpload(){
   if(!RELEASE_APPROVED)return;
   if(timer)clearTimeout(timer);
-  timer=setTimeout(()=>{timer=null;work('push').catch(e=>console.warn('MI COMICTECA auto-upload pendiente',e))},800);
+  timer=setTimeout(()=>{timer=null;STATE.scheduled=false;work('push').catch(e=>console.warn('MI COMICTECA auto-upload pendiente',e))},800);
  }
  function onReturn(){
   if(!RELEASE_APPROVED||root.document?.hidden||Date.now()-lastOnReturn<120000)return;
