@@ -107,7 +107,32 @@
   }else await putCache(uid,key,remote);
   return {sha256:proof.sha256,verified:true,downloaded:!local};
  }
- const api={cacheName,cacheUrl,mimeFromBlob,integrity,fromCache,putCache,remoteUrl,uploadUrl,getRemote,upload,download};
+
+ // Convert an explicitly SAVED HTTPS cover link into an owned binary object.
+ // Never scan legacy collections or bulk-fetch external sites automatically.
+ // The caller atomically checks its outbox revision before changing the comic.
+ async function prepareLinked({record,uid,session,cfg}){
+  check(!record?.coverKey,'La portada ya dispone de referencia privada');
+  const link=String(record?.coverUrl||'').trim();
+  check(/^https:\/\//i.test(link),'Solo se admiten portadas enlazadas mediante HTTPS');
+  const id=String(record?.id||'');
+  check(/^[A-Za-z0-9_.:-]{1,180}$/.test(id),'Identificador de ficha no válido');
+  check(session?.user?.id===uid&&session.access_token,'Identidad de portada no verificada');
+  check(typeof root.CoverVault?.fetchAndCompress==='function','El recuperador de imágenes no está disponible');
+  // This is a browser CORS download, never a blind link transfer. If the
+  // image host forbids CORS or gives an invalid image, no cloud data is changed.
+  const blob=await root.CoverVault.fetchAndCompress(link);
+  const proof=await integrity(blob);
+  const safeId=id.replace(/[^A-Za-z0-9_.-]/g,'_').slice(0,145);
+  const key=safeId+'-'+proof.sha256.slice(0,20);
+  check(key.length<=180,'Nombre de portada inválido');
+  // Avoid creating a reference to bytes until the local cached copy exists.
+  await putCache(uid,key,blob);
+  return {...record,coverKey:key,coverSha256:proof.sha256,
+    coverSourceUrl:link,coverSyncPending:true};
+ }
+
+ const api={cacheName,cacheUrl,mimeFromBlob,integrity,fromCache,putCache,remoteUrl,uploadUrl,getRemote,upload,download,prepareLinked};
  root.MCAutoCoversV4=api;
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
