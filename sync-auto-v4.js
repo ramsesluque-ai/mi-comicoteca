@@ -315,9 +315,17 @@
   }
   return {cloud:remote.length,downloaded,conflicts,unchanged:updates.length-downloaded};
  }
- let running=null;
+ // A global in-flight promise must never be shared across accounts or databases.
+ // Reject concurrent cross-account runs rather than returning another user's result.
+ let running=null,runningUid=null;
  async function syncNow(options){
-  if(running)return running;
+  const uid=options?.uid;
+  assert(typeof uid==='string'&&uid,'La sincronización requiere una cuenta autenticada');
+  if(running){
+   assert(runningUid===uid,'Cambio de cuenta durante una sincronización; operación bloqueada');
+   return running;
+  }
+  runningUid=uid;
   running=(async()=>{
    // Establish remote versions first. Existing account caches created before
    // V4 have no acknowledged baseline: uploading first would classify every
@@ -326,7 +334,7 @@
    const sent=await uploadQueued(options);
    return {sent,received};
   })();
-  try{return await running}finally{running=null}
+  try{return await running}finally{running=null;runningUid=null}
  }
  const api={decidePull,decidePush,lookup,txRows,txOne,commitLocal,ackUpload,stagePreparedCover,uploadQueued,pull,syncNow};
  root.MCAutoSyncV4=api;
