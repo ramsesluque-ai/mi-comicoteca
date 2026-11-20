@@ -76,6 +76,10 @@
      if(!comparison.equal)throw Error('Conflicto de portada remota: contenido diferente; no se sobrescribe');
      return {status:'already-identical',sha256:expected};
    }
+   // The initial authenticated gate may have succeeded before a slow GET or
+   // SHA-256 comparison. Recheck the live identity immediately before POST.
+   // This is staged code; no UI activation or owner-catalogue write.
+   await verifySession({session,cfg,fetchImpl});
    let res;
    try{
      res=await fetchImpl(cfg.url.replace(/\/+$/,'')+path(uid,key),{method:'POST',headers:{apikey:cfg.publishableKey,Authorization:'Bearer '+session.access_token,'Content-Type':blob.type||'image/webp','x-upsert':'false'},body:blob});
