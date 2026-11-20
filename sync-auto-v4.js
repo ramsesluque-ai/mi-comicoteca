@@ -214,25 +214,41 @@
      continue; // New outbox revision will upload the verified private binary.
     }
     if(decision.action==='ack'){
-     // Equal record metadata does not prove an image exists in both devices.
-     // Verify the private image before marking the queued change acknowledged.
+     // Matching metadata does not mean that a binary image is present locally.
+     let proof=null;
      if(remote.record?.coverKey){
       assert(coverTransport?.upload&&coverTransport?.download,'No existe transporte de portadas verificable');
-      try{await coverTransport.upload({record:remote.record,uid,session,cfg,fetcher})}
+      try{proof=await coverTransport.upload({record:remote.record,uid,session,cfg,fetcher})}
       catch(error){
-       // This device may be missing the image while the cloud already has it.
-       // Download can recover that case, but MUST also SHA-verify the bytes.
-       await coverTransport.download({record:remote.record,uid,session,cfg,fetcher});
+       // The source device may no longer have the binary; download it from
+       // the already-verified private cloud record instead of losing the cover.
+       proof=await coverTransport.download({record:remote.record,uid,session,cfg,fetcher});
       }
+     }
+     if(proof?.verified&&(local.coverSyncPending===true||!local.coverSha256)){
+      const prepared={...local,coverSha256:proof.sha256,coverSyncPending:false,
+        coverSyncedAt:new Date().toISOString()};
+      await stagePreparedCover(database,{uid,original:local,expectedRev:entry.rev,
+        updated:prepared,remoteBaseline:remote});
+      stats.prepared++;continue;
      }
      await ackUpload(database,{uid,id:entry.id,expectedRev:entry.rev,record:remote.record,version:remote.version});
      stats.acknowledged++;continue;
     }
-    // Keep original cover bytes safe and private before posting references.
-    // A cover URL alone is never evidence of an uploaded cover object.
+    // Confirm private binary BEFORE metadata. Adding a SHA-256 and clearing
+    // the pending flag is itself a local edit with a durable outbox revision.
     if(decision.record?.coverKey){
      assert(typeof coverTransport?.upload==='function','No existe transporte de portadas verificable');
-     await coverTransport.upload({record:decision.record,uid,session,cfg,fetcher});
+     const proof=await coverTransport.upload({record:decision.record,uid,session,cfg,fetcher});
+     assert(proof?.verified&&/^[a-f0-9]{64}$/.test(String(proof.sha256||'')),
+       'Storage no ha confirmado la huella SHA-256');
+     if(local.coverSyncPending===true||!local.coverSha256){
+      const prepared={...local,coverSha256:proof.sha256,coverSyncPending:false,
+        coverSyncedAt:new Date().toISOString()};
+      await stagePreparedCover(database,{uid,original:local,expectedRev:entry.rev,
+        updated:prepared,remoteBaseline:null});
+      stats.prepared++;continue;
+     }
     }
     const newer=await txOne(database,'sync_outbox',entry.id);
     const live=await txOne(database,'comics',entry.id);
