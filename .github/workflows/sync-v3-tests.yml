@@ -1,0 +1,19 @@
+name: MI COMICTECA Sync V3 isolated tests
+on:
+  push:
+    branches: [commercial-published]
+    paths:
+      - 'sync-v3-core.js'
+      - 'tests/sync-v3-core.test.cjs'
+      - '.github/workflows/sync-v3-tests.yml'
+  workflow_dispatch:
+jobs:
+  isolated-v3-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/sync-v3-core.test.cjs
