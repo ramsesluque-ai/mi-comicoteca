@@ -197,3 +197,44 @@ test('acknowledged data must restore a cloud cover if local binary is absent',as
  assert.equal(downloads,1);
  assert.equal(device.stores.sync_outbox.size,0);
 });
+
+test('cloud acknowledgment cannot discard a comic edited during the request',async()=>{
+ const comic={id:'c_race',title:'Original',notes:'From phone'};
+ const later={...comic,notes:'Changed again while uploading'};
+ const db=new MemoryDb();
+ db.stores.comics.set(comic.id,later);
+ db.stores.sync_outbox.set(comic.id,{id:comic.id,uid:UID,rev:'old-rev',op:'save'});
+ const acknowledged=await sync.ackUpload(db,{
+  uid:UID,id:comic.id,expectedRev:'old-rev',record:comic,
+  version:'2026-11-20T11:30:00.000Z'
+ });
+ assert.equal(acknowledged,false);
+ assert.equal(db.stores.comics.get(comic.id).notes,'Changed again while uploading');
+ assert.notEqual(db.stores.sync_outbox.get(comic.id).rev,'old-rev');
+ assert.equal(db.stores.sync_baseline.get(comic.id).record.notes,'From phone');
+});
+test('cloud acknowledgment can clear outbox only when the local content matches',async()=>{
+ const comic={id:'c_ack',title:'Finished'};
+ const db=new MemoryDb();
+ db.stores.comics.set(comic.id,comic);
+ db.stores.sync_outbox.set(comic.id,{id:comic.id,uid:UID,rev:'same-rev'});
+ const cleared=await sync.ackUpload(db,{
+  uid:UID,id:comic.id,expectedRev:'same-rev',record:comic,
+  version:'2026-11-20T11:45:00.000Z'
+ });
+ assert.equal(cleared,true);
+ assert.equal(db.stores.sync_outbox.size,0);
+ assert.equal(db.stores.sync_baseline.get(comic.id).record.title,'Finished');
+});
+test('newer outbox revision never gets cleared by an older cloud response',async()=>{
+ const comic={id:'c_rev',title:'Still edited'};
+ const db=new MemoryDb();
+ db.stores.comics.set(comic.id,comic);
+ db.stores.sync_outbox.set(comic.id,{id:comic.id,uid:UID,rev:'new-rev'});
+ const cleared=await sync.ackUpload(db,{
+  uid:UID,id:comic.id,expectedRev:'old-rev',record:comic,
+  version:'2026-11-20T11:50:00.000Z'
+ });
+ assert.equal(cleared,false);
+ assert.equal(db.stores.sync_outbox.get(comic.id).rev,'new-rev');
+});
