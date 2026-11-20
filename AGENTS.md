@@ -18,7 +18,7 @@ La plataforma es de pago y la sincronización es **irrenunciable**. Requisito fu
 
 1. Cada usuario tiene una colección central privada en **Supabase**; su copia local en IndexedDB es un caché de trabajo, **no una colección independiente**.
 2. Al pulsar **Guardar** en móvil u ordenador, guardar en local y enviar automáticamente el cambio a Supabase; sin conexión, conservar una cola pendiente fiable y reintentar después.
-3. Al entrar desde otro dispositivo, **un solo clic** en **Sincronizar ahora** debe bastar para descargar y conciliar los cambios. **No se exige pulsar Sincronizar en el dispositivo de origen.**
+3. Al abrir otro dispositivo, **la sincronización debe ejecutarse automáticamente**, recuperando cambios de Supabase sin pulsar ningún botón. **Sincronizar ahora** permanece como comprobación o reintento manual y tampoco requiere ninguna acción en el dispositivo de origen.
 4. Sincronizar **fichas y portadas**. Imágenes privadas por UID en Storage; comprobar integridad de los bytes (SHA-256) y no confundir enlaces con binarios ya almacenados.
 5. Resolver conflictos con versión/baseline; nunca sobrescribir silenciosamente cambios simultáneos, ni borrar por ausencia en una página. Bajas mediante tombstones validados.
 6. Garantizar aislamiento estricto entre cuentas y cumplimiento de políticas RLS; no mezclar registros, cubiertas ni datos locales de dos usuarios.
@@ -43,3 +43,11 @@ La plataforma es de pago y la sincronización es **irrenunciable**. Requisito fu
 5. **Nunca** decir «listo en producción» si solo se ha hecho commit o simulación.
 
 Esta política debe mantenerse para los próximos trabajos aunque se retome la conversación desde otro chat o tarea automática.
+## Nueva arquitectura aprobada por el usuario (20 noviembre 2026)
+
+- **Guardar = guardar localmente + encolar automáticamente + subir por API a Supabase.** La confirmación de nube solo se muestra tras respuesta correcta y verificada.
+- **Abrir o recuperar conexión = descargar y reconciliar automáticamente desde Supabase.** No se exige sincronizar manualmente en origen ni destino.
+- **Botón «Sincronizar ahora» = reintentar/verificar**, sin ser necesario para el funcionamiento normal.
+- **16.523 registros originales son intocables mediante sobrescritura masiva.** Respetar baselines, versión de servidor y conflictos. Preservar portadas por UID y SHA-256 antes de reconocer éxito.
+- Código incorporado: `app1.js` DBV2 con `sync_outbox` y `sync_baseline`, `sync-auto-v4.js`, `sync-auto-covers-v4.js`, `sync-auto-runtime-v4.js`, `vault.js` cache privada. **La activación automática permanece BLOQUEADA por `RELEASE_APPROVED=false` hasta completar las pruebas E2E.** No afirmar que ya está sincronizando en producción.
+- Fechas objetivo: 23/11 primera integración verificada; 25/11 altas y modificaciones automáticas; 27/11 portadas/conflictos; 30/11 E2E y despliegue final condicionado a pruebas. Son objetivos, no garantía de entrega.
