@@ -7,9 +7,10 @@
 (function(root){
  const safeEndpoint=url=>typeof url==='string'&&/^https:\/\/[^/?#]+\/?$/.test(url)&&!url.includes('@');
  const safeKey=k=>typeof k==='string'&&/^[a-zA-Z0-9_.-]{1,180}$/.test(k)&&k!=='.'&&k!=='..';
+ const safeToken=t=>typeof t==='string'&&t.length>=3&&t.length<=8192&&/^[A-Za-z0-9._~+\/-]+={0,2}$/.test(t);
  function validate({session,cfg,key,integrity}){
    const uid=session?.user?.id;
-   if(!uid||!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(uid)||!session?.access_token)throw Error('Sesión autenticada inválida');
+   if(!uid||!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(uid)||!safeToken(session?.access_token))throw Error('Sesión autenticada inválida');
    if(!safeEndpoint(cfg?.url)||!cfg?.publishableKey)throw Error('Configuración cloud inválida');
    if(!safeKey(key))throw Error('Identificador de portada inválido');
    if(!integrity?.sha256||!integrity?.verifyPair)throw Error('Verificador SHA-256 no disponible');
@@ -17,7 +18,7 @@
  }
  async function verifySession({session,cfg,fetchImpl=root.fetch}){
    const uid=session?.user?.id;
-   if(!uid||!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(uid)||!session?.access_token)
+   if(!uid||!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(uid)||!safeToken(session?.access_token))
      throw Error('Sesión autenticada inválida');
    if(!safeEndpoint(cfg?.url)||!cfg?.publishableKey)
      throw Error('Configuración cloud inválida');
