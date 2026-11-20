@@ -151,6 +151,31 @@ function contactoView(){
 async function render(){let html='';if(current==='dashboard')html=await (window.PbiDashboard&&typeof window.PbiDashboard.view==='function'?window.PbiDashboard.view():dashboard());if(current==='catalog')html=await catalogView(false);if(current==='wishlist')html=await catalogView(true);if(current==='series')html=await seriesView();if(current==='master')html=await masterView();if(current==='purchases')html=await purchasesView();if(current==='quality')html=await quality();if(current==='stats')html=await stats();if(current==='backup')html=await backupView();if(current==='contacto')html=contactoView();$('#view').innerHTML=html;if(current==='catalog')await renderCat(false);if(current==='wishlist')await renderCat(true);if(current==='series')await renderSeries();if(current==='master'&&(await allStore('master')).length)await renderMaster()}
 window.onclick=e=>{if(e.target.id==='modal')closeModal()};window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;$('#installBtn').classList.remove('hidden')});$('#installBtn').onclick=async()=>{if(deferredInstall){deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;$('#installBtn').classList.add('hidden')}};
 function startupFailure(stage,e){console.error('[COMICTECA startup:'+stage+']',e);const view=document.querySelector('#view')||document.body;const msg=stage==='storage'?'No se ha podido acceder al almacenamiento local en este navegador. Tus datos no se han borrado. Cierra otras pestañas de COMICTECA y vuelve a intentarlo.':'La aplicación no ha podido completar el arranque. Tus datos locales no se han borrado.';view.innerHTML=`<div class="card" style="margin:24px;max-width:760px"><h2>No se pudo iniciar COMICTECA</h2><p>${msg}</p><p class="muted">Detalle técnico: ${String(e&&e.message||e||'Error desconocido').replace(/[<>&]/g,s=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[s]))}</p><button class="btn primary" onclick="location.reload()">Reintentar</button></div>`}
+// Repaint only after a verified add-only cloud recovery; never interrupt a form.
+window.addEventListener('mc-catalog-cloud-merged',async event=>{
+ const n=Number(event.detail?.added||0);
+ if(!n)return;
+ const modal=document.getElementById('modal');
+ if(modal&&!modal.classList.contains('hidden')){
+  toast(n.toLocaleString('es-ES')+' fichas recuperadas: abre Colecciones para verlas.');
+  return;
+ }
+ try{await render()}catch(error){console.warn('Catálogo recibido; actualización visual pendiente',error)}
+});
+// A desktop which stayed open should discover records bought from another device
+// on return to the tab, without a destructive reload or clearing IndexedDB.
+let mcLastFocusCloudCheck=Date.now();
+function mcRefreshOnReturn(){
+ if(MC_IMPORT_TEST||!MC_ACCOUNT_ID||document.hidden||!db)return;
+ if(Date.now()-mcLastFocusCloudCheck<180000)return;
+ if(window.MC_CATALOG_BOOT_PENDING)return;
+ mcLastFocusCloudCheck=Date.now();
+ window.MCCatalogBootstrap?.safeBackgroundRefresh?.({
+  database:db,dbName:DBN,uid:MC_ACCOUNT_ID,cfg:window.MI_COMICOTECA_CLOUD
+ });
+}
+window.addEventListener('focus',mcRefreshOnReturn);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)mcRefreshOnReturn()});
 (async()=>{
  try{await openDB()}catch(e){startupFailure('storage',e);return}
  if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(e=>console.warn('[COMICTECA service worker]',e));
