@@ -129,6 +129,22 @@ function caches(){
    await assert.rejects(bridge.upload(opts(uidA,key,device1,digest)),/Clave privada inválida/);
  }
  assert.equal(requests.length,beforeBadKey);
+ // Session revoked between the first identity check and the cache write:
+ // installation must fail closed and leave no private image behind.
+ const revokedCache=caches();let authChecks=0;
+ const revokedFetch=async(url,options)=>{
+   assert(url.endsWith('/auth/v1/user'));
+   authChecks++;
+   return authChecks===1?{ok:true,status:200,json:async()=>({id:uidA})}:{ok:false,status:401};
+ };
+ const revokedImage=img('must not install after auth revocation');
+ const revokedDigest=await integrity.sha256(revokedImage);
+ await assert.rejects(bridge.installIfAbsent({
+   ...opts(uidA,'revoked-install',revokedCache,revokedDigest),
+   blob:revokedImage,fetchImpl:revokedFetch
+ }),/401/);
+ assert.equal(authChecks,2);
+ assert.equal(revokedCache.actions.length,0,'Revoked session must not write private cache');
  // No mixing with Maestro buckets and no catalog mutations.
  assert(requests.filter(r=>r.method!=='GET'&&r.method!=='POST').length===0);
  assert(requests.every(r=>r.url.includes('/auth/v1/user')||r.url.includes('/storage/v1/object/user-covers/')));
