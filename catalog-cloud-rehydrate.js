@@ -102,13 +102,15 @@
  // The complete authenticated cloud scan finishes BEFORE this transaction.
  function mergeMissingAtomically(database,rows){
   return new Promise((resolve,reject)=>{
-   let transaction,added=0,present=0;
+   let transaction,added=0,present=0,onlyLocal=0;
    try{
     transaction=database.transaction('comics','readwrite');
     const store=transaction.objectStore('comics');
     const keys=store.getAllKeys();
     keys.onsuccess=()=>{
      const existing=new Set(keys.result.map(String));
+     const cloudIds=new Set(rows.map(row=>String(row.id)));
+     onlyLocal=[...existing].filter(id=>!cloudIds.has(id)).length;
      for(const row of rows){
       const id=String(row?.id??'');
       if(!id){transaction.abort();return}
@@ -117,7 +119,7 @@
      }
     };
     keys.onerror=()=>transaction.abort();
-    transaction.oncomplete=()=>resolve({added,present});
+    transaction.oncomplete=()=>resolve({added,present,onlyLocal});
     transaction.onabort=()=>reject(Error('Reconciliación cancelada y revertida: '+(transaction.error?.message||'colisión o error de almacenamiento')));
     transaction.onerror=()=>{};
    }catch(e){reject(e)}
@@ -154,7 +156,7 @@
    assert(after>=result.rows.length,'El recuento tras reconciliación es inesperado: comprueba el almacenamiento local.');
    try{localStorage.setItem('mc-catalog-cloud-seen-'+uid,String(result.rows.length))}catch(_){}
    return {state:'add-only-reconciled',before,after,cloud:result.rows.length,added:merged.added,
-     kept:merged.present,sha256:proof.sha,coverBinariesRestored:false,cloudWrites:false};
+     kept:merged.present,onlyLocal:merged.onlyLocal,sha256:proof.sha,coverBinariesRestored:false,cloudWrites:false};
   })();
   try{return await refreshInFlight}finally{refreshInFlight=null}
  }
@@ -174,8 +176,10 @@
   try{
    const r=await refreshAddOnly(options);
    if(r.added>0){
-    notifyPartial('Catálogo recuperado',r.added.toLocaleString('es-ES')+' fichas añadidas desde Supabase. Ninguna ficha local sobrescrita. Las portadas privadas se sincronizan aparte.');
+    notifyPartial('Catálogo recuperado',r.added.toLocaleString('es-ES')+' fichas añadidas desde Supabase. Ninguna ficha local sobrescrita. '+(r.onlyLocal? r.onlyLocal.toLocaleString('es-ES')+' fichas solo locales pendientes de subida. ':'')+'Las portadas privadas se sincronizan aparte.',r.onlyLocal>0);
     root.dispatchEvent?.(new CustomEvent('mc-catalog-cloud-merged',{detail:r}));
+   }else if(r.onlyLocal>0){
+    notifyPartial('Pendiente de subida',r.onlyLocal.toLocaleString('es-ES')+' fichas existen solo en este dispositivo. No están aún protegidas en la nube; no las borres.',true);
    }
    return r;
   }catch(e){
