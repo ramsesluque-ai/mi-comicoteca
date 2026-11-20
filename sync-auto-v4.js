@@ -19,6 +19,15 @@
   }
   throw Error('La sesión no coincide con la colección local');
  }
+ // CommercialBilling is responsible for safe JWT renewal (including 403/bad_jwt).
+ // Without this check an offline outbox can remain blocked after token expiry.
+ async function freshSession(uid){
+  if(typeof root.CommercialBilling?.currentUser==='function'){
+   const who=await root.CommercialBilling.currentUser();
+   assert(who?.id===uid,'La sesión autenticada cambió; sincronización detenida');
+  }
+  return sessionFromStore(uid);
+ }
  function txRows(database,store){
   return new Promise((res,rej)=>{
    const q=database.transaction(store,'readonly').objectStore(store).getAll();
@@ -123,7 +132,7 @@
  }
  async function uploadQueued({database,dbName,uid,cfg,fetcher=fetch,coverTransport,onProgress=()=>{},limit=MAX_UPLOADS}){
   validateIdentity({database,dbName,uid});
-  const session=sessionFromStore(uid);
+  const session=await freshSession(uid);
   await engine().verifySession({session,cfg,fetcher});
   const entries=(await txRows(database,'sync_outbox')).filter(x=>x.uid===uid).slice(0,limit);
   const stats={uploaded:0,acknowledged:0,conflicts:[],pending:entries.length};
@@ -175,7 +184,7 @@
  }
  async function pull({database,dbName,uid,cfg,fetcher=fetch,coverTransport,onProgress=()=>{}}){
   validateIdentity({database,dbName,uid});
-  const session=sessionFromStore(uid);
+  const session=await freshSession(uid);
   await engine().verifySession({session,cfg,fetcher});
   const remote=await engine().scan({session,cfg,fetcher,onProgress});
   // An unexpectedly filtered cloud response must not erase or acknowledge
