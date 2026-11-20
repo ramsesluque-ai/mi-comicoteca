@@ -54,10 +54,12 @@
 
   // Last-loaded handler wins: prevents later legacy scripts from leaving the
   // Dashboard button highlighted while another view remains rendered.
+  let navigationSequence = 0;
   document.querySelectorAll('.nav button[data-v]').forEach(btn => {
     btn.onclick = async () => {
       const view = btn.dataset.v;
       if (!view) return;
+      const sequence = ++navigationSequence;
       seriesReturn = null;
       editingFromSeries = false;
       current = view;
@@ -65,8 +67,32 @@
       filters = {};
       masterCollection = null;
       setNav(view);
-      await render();
-      setNav(view);
+      try {
+        await render();
+        // An older asynchronous navigation must never leave the Maestro button
+        // highlighted over a stale Collections screen.
+        if (sequence !== navigationSequence) return;
+        if (view === 'master') {
+          const title = document.querySelector('#view h1');
+          if (!title || !/maestro/i.test(title.textContent || '')) {
+            await render();
+          }
+          if (sequence !== navigationSequence) return;
+          const body = document.getElementById('masterbody');
+          if (!body) throw Error('La pantalla Maestro no se ha montado correctamente');
+          if (!body.children.length || !body.textContent.trim()) {
+            body.innerHTML = '<p role="alert">El Maestro no ha podido mostrar sus resultados. Vuelve a pulsar Maestro para reintentar.</p>';
+          }
+        }
+        setNav(view);
+      } catch (err) {
+        console.error('[Navegación] Error al abrir '+view, err);
+        if (sequence !== navigationSequence) return;
+        const root = document.getElementById('view');
+        if (root) root.innerHTML = '<section class="panel" role="alert"><h1>No se pudo abrir '+(view === 'master' ? 'Maestro' : 'esta sección')+'</h1><p>Ha fallado la carga. Tus datos no se han modificado.</p><button class="btn" type="button" id="mc-nav-retry">Reintentar</button></section>';
+        document.getElementById('mc-nav-retry')?.addEventListener('click', () => btn.click(), {once:true});
+        setNav(view);
+      }
     };
   });
 })();
