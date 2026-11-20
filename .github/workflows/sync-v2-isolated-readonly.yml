@@ -1,0 +1,19 @@
+name: Sync V2 isolated read-only E2E
+on:
+  push:
+    branches: [commercial-published]
+    paths:
+      - 'sync-v2-manual-plan.js'
+      - 'tests/sync-v2-isolated-readonly.test.cjs'
+      - '.github/workflows/sync-v2-isolated-readonly.yml'
+  workflow_dispatch:
+jobs:
+  isolated:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Two-session fake-backend tests (no secrets, no writes)
+        run: node tests/sync-v2-isolated-readonly.test.cjs
