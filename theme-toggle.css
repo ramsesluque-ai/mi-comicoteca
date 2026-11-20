@@ -105,3 +105,69 @@ html[data-mc-theme="light"] .modalbox .record-card,
 html[data-mc-theme="light"] .modalbox .comic-card{background:#fff!important;border-color:#d6e2ef!important}
 html[data-mc-theme="light"] .modalbox .record-card .record-sub,
 html[data-mc-theme="light"] .modalbox .comic-card .record-sub{color:#4d6681!important}
+
+
+/* 2026-11-20: finish light mode for actual Power BI dashboard and visual filters.
+   All selectors are scoped to light mode. Dark theme is unchanged. */
+html[data-mc-theme="light"] .pbi-kpis>button,
+html[data-mc-theme="light"] .pbi-kpis>div,
+html[data-mc-theme="light"] .pbi-panel,
+html[data-mc-theme="light"] .pbi-drill{
+  background:#fff;
+  color:#183451;
+  border-color:#d6e2ef;
+  box-shadow:0 8px 24px rgba(24,43,67,.07);
+}
+html[data-mc-theme="light"] .pbi-drill-kpis>div,
+html[data-mc-theme="light"] .pbi-quality{
+  background:#f8fbff;
+  color:#183451;
+  border-color:#d9e3ef;
+}
+html[data-mc-theme="light"] .pbi-kpis small,
+html[data-mc-theme="light"] .pbi-kpis span,
+html[data-mc-theme="light"] .pbi-title span,
+html[data-mc-theme="light"] .pbi-purchases small,
+html[data-mc-theme="light"] .pbi-progress-row small,
+html[data-mc-theme="light"] .pbi-quality small,
+html[data-mc-theme="light"] .pbi-drill-head small,
+html[data-mc-theme="light"] .pbi-drill-head p{color:#536b85;opacity:1}
+html[data-mc-theme="light"] .pbi-track,
+html[data-mc-theme="light"] .pbi-progress,
+html[data-mc-theme="light"] .pbi-quality i{background:#e2eaf4}
+html[data-mc-theme="light"] .pbi-progress i,
+html[data-mc-theme="light"] .pbi-track i,
+html[data-mc-theme="light"] .pbi-quality em,
+html[data-mc-theme="light"] .pbi-months i{background-color:transparent}
+html[data-mc-theme="light"] .pbi-purchases>div,
+html[data-mc-theme="light"] .pbi-progress-row,
+html[data-mc-theme="light"] .pbi-drill-series,
+html[data-mc-theme="light"] .pbi-drill-table th,
+html[data-mc-theme="light"] .pbi-drill-table td{border-color:#dce5f0}
+html[data-mc-theme="light"] .pbi-bar-row,
+html[data-mc-theme="light"] .pbi-progress-row,
+html[data-mc-theme="light"] .pbi-series-link{color:#183451}
+html[data-mc-theme="light"] .pbi-bar-row:hover,
+html[data-mc-theme="light"] .pbi-series-link:hover,
+html[data-mc-theme="light"] .pbi-series-link:focus-visible{background:#eaf3ff;color:#155c9d}
+html[data-mc-theme="light"] .pbi-all-groups{border-color:#dae5f0}
+html[data-mc-theme="light"] .pbi-all-groups summary{color:#1265ac}
+html[data-mc-theme="light"] .pbi-drill-table th{background:#eff5fc;color:#274967}
+html[data-mc-theme="light"] .filter-shell{
+  background:#fff;color:#183451;border-color:#d6e2ef;
+  --vf-bg:#fff;--vf-line:#d6e2ef;--vf-text:#173451;--vf-muted:#536b85;
+}
+html[data-mc-theme="light"] .filter-toolbar{background:#f4f8fd;border-color:#d6e2ef}
+html[data-mc-theme="light"] .vf-card{background:#f8fbff;border-color:#cfdeed}
+html[data-mc-theme="light"] .vf-card:hover{background:#eef5ff;border-color:#a6bfd9}
+html[data-mc-theme="light"] .vf-label{color:#385878}
+html[data-mc-theme="light"] .vf-card input,
+html[data-mc-theme="light"] .vf-card select{color:#173451!important}
+html[data-mc-theme="light"] .vf-card select option{background:#fff;color:#173451}
+html[data-mc-theme="light"] .vf-card input::placeholder{color:#667f9b;opacity:1}
+html[data-mc-theme="light"] .filter-clear{background:#fff;color:#23415f;border-color:#cbd7e5}
+html[data-mc-theme="light"] .filter-clear:hover{background:#eaf2ff}
+html[data-mc-theme="light"] .vf-chip{background:#eef7ff;color:#224b73;border-color:#cee2f3}
+html[data-mc-theme="light"] .vf-chip b{color:#173451}
+html[data-mc-theme="light"] .vf-active-title,
+html[data-mc-theme="light"] .vf-empty{color:#536b85}
