@@ -25,7 +25,7 @@
    const response=await fetchImpl(cfg.url.replace(/\/+$/,'')+'/auth/v1/user',{
      method:'GET',cache:'no-store',headers:{apikey:cfg.publishableKey,Authorization:'Bearer '+session.access_token}
    });
-   if(!response.ok)throw Error('Identidad de portada no verificada (HTTP '+response.status+')');
+   if(response.status!==200)throw Error('Identidad de portada no verificada (HTTP '+response.status+')');
    const verified=await response.json();
    if(String(verified?.id||'').toLowerCase()!==uid.toLowerCase())
      throw Error('Identidad de portada no coincide con token; operación bloqueada');
