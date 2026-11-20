@@ -89,7 +89,7 @@
      const attempt=()=>{
       if(!haveComic||!havePending||failed)return;
       try{
-       if(dirty||json(row)!==json(u.original)){abort();return}
+       if(dirty||!((row===undefined&&u.original===undefined)||(row!==undefined&&u.original!==undefined&&json(row)===json(u.original)))){abort();return}
        if(u.type==='download'){comics.put(u.record);performed++}
        baseline.put({id:u.id,uid,record:u.record,version:u.version,at:new Date().toISOString()});
       }catch(_){abort()}
