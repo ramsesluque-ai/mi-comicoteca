@@ -14,20 +14,48 @@ function mcAccountStorageId(){
  return null;
 }
 const MC_ACCOUNT_ID=mcAccountStorageId();
-const DBN=MC_IMPORT_TEST?'comicteca-importacion-prueba-v2':MC_ACCOUNT_ID?'comicteca-user-'+MC_ACCOUNT_ID:'comicteca-guest-v1', DBV=1, PAGE=50;let db,current='dashboard',page=1,filters={},masterCollection=null,deferredInstall=null;
+const DBN=MC_IMPORT_TEST?'comicteca-importacion-prueba-v2':MC_ACCOUNT_ID?'comicteca-user-'+MC_ACCOUNT_ID:'comicteca-guest-v1', DBV=2, PAGE=50;let db,current='dashboard',page=1,filters={},masterCollection=null,deferredInstall=null;
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 const norm=s=>String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
 const num=v=>{const n=parseFloat(String(v??'').replace(',','.'));return Number.isFinite(n)?n:0}; const money=v=>new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(num(v));
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.remove('hidden');setTimeout(()=>e.classList.add('hidden'),2200)}
 function busy(v,t='Procesando…'){$('#loadingText').textContent=t;$('#loading').classList.toggle('hidden',!v)}
-function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open(DBN,DBV);r.onupgradeneeded=()=>{const d=r.result;for(const n of ['comics','purchases','master','settings'])if(!d.objectStoreNames.contains(n))d.createObjectStore(n,{keyPath:n==='settings'?'key':'id'})};r.onsuccess=()=>{db=r.result;res(db)};r.onerror=()=>rej(r.error)})}
+function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open(DBN,DBV);r.onupgradeneeded=()=>{const d=r.result;for(const n of ['comics','purchases','master','settings','sync_outbox'])if(!d.objectStoreNames.contains(n))d.createObjectStore(n,{keyPath:n==='settings'?'key':'id'})};r.onsuccess=()=>{db=r.result;db.onversionchange=()=>{db.close();console.warn('MI COMICTECA: cierra otras pestañas y recarga para actualizar el almacenamiento');};res(db)};r.onblocked=()=>console.warn('MI COMICTECA: actualización de la base local bloqueada por otra pestaña');r.onerror=()=>rej(r.error)})}
 function allStore(name){return new Promise((res,rej)=>{const r=db.transaction(name).objectStore(name).getAll();r.onsuccess=()=>res(r.result||[]);r.onerror=()=>rej(r.error)})}
 function getStore(name,id){return new Promise((res,rej)=>{const r=db.transaction(name).objectStore(name).get(id);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
-function putStore(name,v){return new Promise((res,rej)=>{const r=db.transaction(name,'readwrite').objectStore(name).put(v);r.onsuccess=()=>res(v);r.onerror=()=>rej(r.error)})}
+// Each user save and its outbox entry commit atomically. A successful browser
+// save never falsely implies cloud confirmation; upload is retried separately.
+function mcOutboxEnabled(name){return name==='comics'&&!MC_IMPORT_TEST&&!!MC_ACCOUNT_ID&&DBN==='comicteca-user-'+MC_ACCOUNT_ID}
+function mcOutboxEntry(id){return {id:String(id),uid:MC_ACCOUNT_ID,rev:'r'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2),createdAt:new Date().toISOString()}}
+function mcOutboxNotify(){try{window.dispatchEvent(new CustomEvent('mc-local-comic-saved'))}catch(_){}}
+function putStore(name,v){return new Promise((res,rej)=>{
+ try{
+  const track=mcOutboxEnabled(name);
+  if(track&&(!v?.id||typeof v.id!=='string')){rej(Error('No se puede guardar una ficha sin ID'));return}
+  const tx=db.transaction(track?[name,'sync_outbox']:[name],'readwrite');
+  tx.objectStore(name).put(v);
+  if(track)tx.objectStore('sync_outbox').put(mcOutboxEntry(v.id));
+  tx.oncomplete=()=>{res(v);if(track)mcOutboxNotify()};
+  tx.onabort=()=>rej(tx.error||Error('El guardado local no se pudo completar. No se ha marcado como sincronizado.'));
+  tx.onerror=()=>{};
+ }catch(e){rej(e)}
+})}
 function delStore(name,id){return new Promise((res,rej)=>{const r=db.transaction(name,'readwrite').objectStore(name).delete(id);r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
 function clearStore(name){return new Promise((res,rej)=>{const r=db.transaction(name,'readwrite').objectStore(name).clear();r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
-async function bulkPut(name,rows){const tx=db.transaction(name,'readwrite'),st=tx.objectStore(name);rows.forEach(x=>st.put(x));return new Promise((res,rej)=>{tx.oncomplete=res;tx.onerror=()=>rej(tx.error)})}
+// Imports also enqueue changes; cloud rehydration uses its own add-only
+// transaction and therefore NEVER uploads historical cloud rows as new edits.
+async function bulkPut(name,rows){return new Promise((res,rej)=>{
+ try{
+  const track=mcOutboxEnabled(name);
+  const tx=db.transaction(track?[name,'sync_outbox']:[name],'readwrite');
+  const st=tx.objectStore(name),outbox=track?tx.objectStore('sync_outbox'):null;
+  for(const row of rows){if(track&&(!row?.id||typeof row.id!=='string'))throw Error('Importación sin ID');st.put(row);if(track)outbox.put(mcOutboxEntry(row.id))}
+  tx.oncomplete=()=>{res();if(track&&rows.length)mcOutboxNotify()};
+  tx.onabort=()=>rej(tx.error||Error('Importación local revertida'));
+  tx.onerror=()=>{};
+ }catch(e){rej(e)}
+})}
 function uuid(prefix='c'){return prefix+'_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,9)}
 function cleanComic(r={}){const a=r.authors&&typeof r.authors==='object'&&!Array.isArray(r.authors)?r.authors:{};return {...r,id:r.id||r.external_id||uuid(),publisher:r.publisher||'',series:r.series||r.catalogHeader||r.catalog_header||'',catalogHeader:r.catalogHeader||r.catalog_header||r.series||'',volume:r.volume||'',stage:r.stage||'',startYear:r.startYear||r.start_year||'',issue:r.issue??r.issue_number??r.issueNr??'',issueNr:r.issueNr??r.issue_number??r.issue??'',format:r.format||'',status:r.status??'',tags:Array.isArray(r.tags)?r.tags.join('; '):(r.tags||''),group:r.group||r.group_character||'',universe:r.universe||'',character:r.character||'',arc:r.arc||r.story_arc||'',subtitle:r.subtitle||'',title:r.title||'',purchaseDate:r.purchaseDate||r.purchase_date||'',paid:r.paid??r.price_paid??'',estimated:r.estimated??r.estimated_value??'',condition:r.condition||'',location:r.location||'',read:r.read??(r.is_read===true?'Sí':r.is_read===false?'No':''),priority:r.priority||'',seller:r.seller||'',notes:r.notes||'',review:r.review||r.review_status||'',coverUrl:r.coverUrl||r.cover_url||'',isbn:r.isbn||'',legalDeposit:r.legalDeposit||r.legal_deposit||'',publicationDate:r.publicationDate||r.publication_date||'',pages:r.pages||'',color:r.color||'',edition:r.edition||'',authors:{...a,cover_artist:a.cover_artist||a.portadista||'',writer:a.writer||a.guionista||'',inker:a.inker||a.entintador||'',artist:a.artist||a.dibujante||a.dibujantes||'',colorist:a.colorist||a.colorista||'',translator:a.translator||a.traductor||''}}}
 function issueNumberLabel(r){const raw=String(r?.issueNr??r?.issue??'').trim();if(!raw||/^(?:\[?n{1,3}\]?|\[?s\/?n\]?|\[?sin\s*n[uú]mero\]?|[-—?])$/i.test(raw))return 'N.º sin identificar';return '#'+raw}
