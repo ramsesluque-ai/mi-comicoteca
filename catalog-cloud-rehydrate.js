@@ -100,7 +100,7 @@
  // Add-only reconciliation for a POPULATED account cache. Never uses put/delete,
  // never sends writes to the server and never changes an existing local row.
  // The complete authenticated cloud scan finishes BEFORE this transaction.
- function mergeMissingAtomically(database,rows){
+ function mergeMissingAtomically(database,rows,uid){
   return new Promise((resolve,reject)=>{
    let transaction,added=0,present=0,onlyLocal=0;
    try{
@@ -124,7 +124,7 @@
      }
     };
     keys.onsuccess=()=>{existingKeys=keys.result;reconcile()};
-    pending.onsuccess=()=>{queuedDeletes=new Set(pending.result.filter(x=>x.op==='delete').map(x=>String(x.id)));reconcile()};
+    pending.onsuccess=()=>{queuedDeletes=new Set(pending.result.filter(x=>x.op==='delete'&&x.uid===uid).map(x=>String(x.id)));reconcile()};
     keys.onerror=()=>transaction.abort();
     pending.onerror=()=>transaction.abort();
     transaction.oncomplete=()=>resolve({added,present,onlyLocal});
@@ -133,11 +133,12 @@
    }catch(e){reject(e)}
   });
  }
- let refreshInFlight=null,refreshLastStarted=0;
+ let refreshInFlight=null,refreshInFlightUid=null,refreshLastStarted=0;
  async function refreshAddOnly({database,dbName,uid,cfg,fetcher=fetch,verify=()=>root.CommercialBilling?.currentUser(),hasher}={}){
   assert(database&&uid&&dbName==='comicteca-user-'+uid,'Identidad de la base local no coincide');
-  if(refreshInFlight)return refreshInFlight;
+  if(refreshInFlight){assert(refreshInFlightUid===uid,'La recuperación en curso pertenece a otra cuenta');return refreshInFlight;}
   refreshLastStarted=Date.now();
+  refreshInFlightUid=uid;
   refreshInFlight=(async()=>{
    const before=await countLocal(database);
    const result=await scanCloud({uid,cfg,fetcher,verify});
@@ -159,14 +160,14 @@
     assert(id&&!ids.has(id),'ID remoto repetido o inválido; ninguna ficha importada.');
     ids.add(id);
    }
-   const merged=await mergeMissingAtomically(database,result.rows);
+   const merged=await mergeMissingAtomically(database,result.rows,uid);
    const after=await countLocal(database);
    assert(after>=before,'La reconciliación no debe eliminar fichas locales.');
    try{localStorage.setItem('mc-catalog-cloud-seen-'+uid,String(result.rows.length))}catch(_){}
    return {state:'add-only-reconciled',before,after,cloud:result.rows.length,added:merged.added,
      kept:merged.present,onlyLocal:merged.onlyLocal,sha256:proof.sha,coverBinariesRestored:false,cloudWrites:false};
   })();
-  try{return await refreshInFlight}finally{refreshInFlight=null}
+  try{return await refreshInFlight}finally{refreshInFlight=null;refreshInFlightUid=null}
  }
  function notifyPartial(title,message,permanent=false){
   if(!root.document?.body)return;
