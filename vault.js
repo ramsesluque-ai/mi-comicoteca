@@ -2,6 +2,10 @@
 /* Bóveda propia de portadas v3: copia local primero; recuperación por fuente; sincronización cifrada separada. */
 (function(){
  const OWNER='ramsesluque-ai',REPO='mi-comicoteca',BRANCH='sync-data',CACHE='mi-comicoteca-cover-vault-v1';
+ const CLOUD_OWNER='0bcbe06d-263d-4ac1-a516-355d27d417f1';
+ // Keep new user covers in distinct CacheStorage namespaces. Legacy data is
+ // read-only and recovered only for the original account after an ownership check.
+ const userCache=()=>typeof MC_ACCOUNT_ID==='string'&&MC_ACCOUNT_ID?'mi-comicoteca-cover-user-'+MC_ACCOUNT_ID:'mi-comicoteca-cover-guest-v1';
  const PASS_KEY='mc_sync_pass_v1',TOKEN_KEY='mc_github_token_v1',HISTORY_KEY='mc_cover_write_history_v2';
  const MAX_HOUR=400,MIN_GAP_MS=1250;
  const enc=new TextEncoder();
@@ -22,8 +26,20 @@
  async function decryptBlob(e){const p=pass();if(!p)throw Error('Falta la clave de sincronización');const key=await derive(p,unb64(e.salt),e.iterations||180000),plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(e.iv)},key,unb64(e.ciphertext));return new Blob([plain],{type:e.mime||'image/webp'})}
  async function compress(blob){const bmp=await createImageBitmap(blob),maxW=480,maxH=720,scale=Math.min(1,maxW/bmp.width,maxH/bmp.height),w=Math.max(1,Math.round(bmp.width*scale)),h=Math.max(1,Math.round(bmp.height*scale)),c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(bmp,0,0,w,h);bmp.close?.();const out=await new Promise(res=>c.toBlob(b=>res(b),'image/webp',.78));if(out)return out;return new Promise(res=>c.toBlob(b=>res(b),'image/jpeg',.8))}
  async function fetchAndCompress(url){const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw Error('No se pudo descargar la portada ('+r.status+')');const b=await r.blob();if(!String(b.type).startsWith('image/'))throw Error('La dirección no devolvió una imagen');return compress(b)}
- async function cachePut(k,blob){await ensurePersistent();const c=await caches.open(CACHE);await c.put(cacheUrl(k),new Response(blob,{headers:{'Content-Type':blob.type||'image/webp'}}));if(objectUrls.has(k)){URL.revokeObjectURL(objectUrls.get(k));objectUrls.delete(k)}}
- async function cacheGet(k){const c=await caches.open(CACHE),r=await c.match(cacheUrl(k));return r?await r.blob():null}
+ async function cachePut(k,blob){await ensurePersistent();const c=await caches.open(userCache());await c.put(cacheUrl(k),new Response(blob,{headers:{'Content-Type':blob.type||'image/webp'}}));if(objectUrls.has(k)){URL.revokeObjectURL(objectUrls.get(k));objectUrls.delete(k)}}
+ async function cacheGet(k){
+  const c=await caches.open(userCache()),r=await c.match(cacheUrl(k));
+  if(r)return r.blob();
+  if(typeof MC_ACCOUNT_ID==='string'&&MC_ACCOUNT_ID===CLOUD_OWNER&&typeof getStore==='function'){
+   // Confirm the original owner really has this comic before accessing legacy.
+   const comic=await getStore('comics',k).catch(()=>null);
+   if(comic?.id===k&&comic.coverKey===k){
+    const old=await caches.open(CACHE),legacy=await old.match(cacheUrl(k));
+    if(legacy){const blob=await legacy.blob();await cachePut(k,blob);return blob}
+   }
+  }
+  return null;
+ }
  async function fileSha(k){const t=token();if(!t)return null;const r=await fetch(apiUrl(k)+'?ref='+encodeURIComponent(BRANCH),{headers:{Accept:'application/vnd.github+json',Authorization:'Bearer '+t,'X-GitHub-Api-Version':'2022-11-28'},cache:'no-store'});if(r.status===404)return null;if(!r.ok)throw Error('No se pudo comprobar la portada central ('+r.status+')');return (await r.json()).sha||null}
  function history(){const now=Date.now();let a=[];try{a=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]')}catch{}a=(Array.isArray(a)?a:[]).map(Number).filter(t=>Number.isFinite(t)&&now-t<3600000);localStorage.setItem(HISTORY_KEY,JSON.stringify(a));return a}
  function markWrite(){const a=history();a.push(Date.now());localStorage.setItem(HISTORY_KEY,JSON.stringify(a))}
