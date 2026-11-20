@@ -213,8 +213,22 @@
   // Never call delete on either device; a missing record is not a deletion.
   for(const item of localUpdates){
    if(item.record?.coverKey){
-    // Metadata is preserved, but private binary images need a separate verified transfer.
-    stats.coversPending++;
+    // A remote coverKey is NOT a cover. Before committing metadata to IndexedDB,
+    // require a verified binary download into the authenticated user's private
+    // cache. Never acknowledge a record with a missing or unverified cover.
+    // The legacy CoverVault cache is not evidence of per-account ownership.
+    if(typeof coverGate!=='function'){
+      stats.coversPending++;
+      stats.conflicts.push({id:item.id,reason:'private-cover-download-not-verified'});
+      continue;
+    }
+    try{
+      await coverGate(item.record,uid,session,cfg,'download');
+    }catch(e){
+      stats.coversPending++;
+      stats.conflicts.push({id:item.id,reason:'private-cover-download-failed: '+String(e.message||e)});
+      continue;
+    }
    }
    if(!nextBaseline[item.id]){
     nextBaseline[item.id]={record:item.record,version:item.version};
