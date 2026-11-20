@@ -148,12 +148,52 @@
    }catch(e){reject(e)}
   });
  }
+
+ // Preserve the exact user's edited record and revision while an external image
+ // is converted to a private binary. Remote record remains untouched here.
+ function stagePreparedCover(database,{uid,original,expectedRev,updated,remoteBaseline=null}){
+  return new Promise((resolve,reject)=>{
+   try{
+    const tx=database.transaction(['comics','sync_outbox','sync_baseline'],'readwrite');
+    const comics=tx.objectStore('comics'),outbox=tx.objectStore('sync_outbox'),base=tx.objectStore('sync_baseline');
+    let live,queued,hasComic=false,hasQueued=false,failed=false;
+    const abort=()=>{if(!failed){failed=true;try{tx.abort()}catch(_){}}};
+    const finish=()=>{
+     if(!hasComic||!hasQueued||failed)return;
+     try{
+      if(!live||json(live)!==json(original)||queued?.uid!==uid||queued?.rev!==expectedRev){
+       abort();return;
+      }
+      comics.put(updated);
+      outbox.put({id:updated.id,uid,
+        rev:'cover-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2),
+        op:'save',createdAt:new Date().toISOString()});
+      if(remoteBaseline){
+       base.put({id:updated.id,uid,record:remoteBaseline.record,
+        version:remoteBaseline.version,at:new Date().toISOString()});
+      }
+     }catch(_){abort()}
+    };
+    const a=comics.get(original.id),b=outbox.get(original.id);
+    a.onsuccess=()=>{live=a.result;hasComic=true;finish()};
+    b.onsuccess=()=>{queued=b.result;hasQueued=true;finish()};
+    a.onerror=abort;b.onerror=abort;
+    tx.oncomplete=()=>{
+     try{root.dispatchEvent?.(new CustomEvent('mc-local-comic-saved'))}catch(_){}
+     resolve(true);
+    };
+    tx.onabort=()=>reject(Error('La ficha cambió mientras se obtenía la portada; se conservaron los datos originales'));
+    tx.onerror=()=>{};
+   }catch(e){reject(e)}
+  });
+ }
+
  async function uploadQueued({database,dbName,uid,cfg,fetcher=fetch,coverTransport,onProgress=()=>{},limit=MAX_UPLOADS}){
   validateIdentity({database,dbName,uid});
   const session=await freshSession(uid);
   await engine().verifySession({session,cfg,fetcher});
   const entries=(await txRows(database,'sync_outbox')).filter(x=>x.uid===uid).slice(0,limit);
-  const stats={uploaded:0,acknowledged:0,conflicts:[],pending:entries.length};
+  const stats={uploaded:0,acknowledged:0,prepared:0,conflicts:[],pending:entries.length};
   for(const entry of entries){
    const current=await txOne(database,'sync_outbox',entry.id);
    if(!current||current.rev!==entry.rev)continue;
@@ -163,6 +203,16 @@
     const remote=await lookup({uid,session,cfg,id:entry.id,fetcher});
     const decision=decidePush({local,remote,baseline});
     if(decision.action==='conflict'){stats.conflicts.push({id:entry.id,reason:decision.reason});continue}
+    // Convert HTTPS linked covers only for records the user has SAVED; never
+    // bulk-convert the original 16.523 remote records or change them silently.
+    if(local&&!local.coverKey&&/^https:\/\//i.test(String(local.coverUrl||''))){
+     assert(typeof coverTransport?.prepareLinked==='function','No está disponible la copia privada de portadas enlazadas');
+     const prepared=await coverTransport.prepareLinked({record:local,uid,session,cfg});
+     await stagePreparedCover(database,{uid,original:local,expectedRev:entry.rev,
+       updated:prepared,remoteBaseline:decision.action==='ack'?remote:null});
+     stats.prepared++;
+     continue; // New outbox revision will upload the verified private binary.
+    }
     if(decision.action==='ack'){
      // Equal record metadata does not prove an image exists in both devices.
      // Verify the private image before marking the queued change acknowledged.
@@ -254,7 +304,7 @@
   })();
   try{return await running}finally{running=null}
  }
- const api={decidePull,decidePush,lookup,txRows,txOne,commitLocal,ackUpload,uploadQueued,pull,syncNow};
+ const api={decidePull,decidePush,lookup,txRows,txOne,commitLocal,ackUpload,stagePreparedCover,uploadQueued,pull,syncNow};
  root.MCAutoSyncV4=api;
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
