@@ -238,3 +238,44 @@ test('newer outbox revision never gets cleared by an older cloud response',async
  assert.equal(cleared,false);
  assert.equal(db.stores.sync_outbox.get(comic.id).rev,'new-rev');
 });
+
+test('first automatic open establishes remote baseline before pushing new pending saves',async()=>{
+ const server=backend(),device=new MemoryDb();
+ session(UID,'token-primary');
+ const existing={id:'c_existing',title:'Already in cloud'};
+ const fresh={id:'c_new_offline',title:'Bought offline'};
+ server.maps.get(UID).set('comics:c_existing',{
+  user_id:UID,local_id:'comics:c_existing',metadata:{kind:'comics',record:existing},
+  updated_at:'2026-11-20T11:00:00.000Z'
+ });
+ device.stores.comics.set(existing.id,existing);
+ device.stores.comics.set(fresh.id,fresh);
+ device.stores.sync_outbox.set(fresh.id,{id:fresh.id,uid:UID,rev:'pending-new'});
+ const stages=[];
+ const result=await sync.syncNow({database:device,dbName:'comicteca-user-'+UID,uid:UID,cfg,
+  fetcher:server.fetcher,onProgress:ev=>stages.push(ev.stage)});
+ assert.ok(stages.indexOf('reading')>=0,'first scans authenticated cloud');
+ assert.ok(stages.indexOf('upload')>=0,'then transmits locally queued record');
+ assert.ok(stages.indexOf('reading')<stages.indexOf('upload'),'cloud read must be first');
+ assert.equal(result.sent.uploaded,1);
+ assert.equal(device.stores.sync_baseline.get(existing.id).record.title,'Already in cloud');
+ assert.equal(server.maps.get(UID).get('comics:c_new_offline').metadata.record.title,'Bought offline');
+});
+test('an unversioned local edit never overwrites an existing cloud record',async()=>{
+ const server=backend(),device=new MemoryDb();
+ session(UID,'token-primary');
+ const original={id:'c_old',title:'Original'};
+ const edited={id:'c_old',title:'Different local edit'};
+ server.maps.get(UID).set('comics:c_old',{
+  user_id:UID,local_id:'comics:c_old',metadata:{kind:'comics',record:original},
+  updated_at:'2026-11-20T11:00:00.000Z'
+ });
+ device.stores.comics.set(original.id,edited);
+ device.stores.sync_outbox.set(original.id,{id:original.id,uid:UID,rev:'no-baseline'});
+ const result=await sync.syncNow({database:device,dbName:'comicteca-user-'+UID,uid:UID,cfg,fetcher:server.fetcher});
+ assert.equal(result.sent.uploaded,0);
+ assert.equal(result.sent.conflicts[0].reason,'cambios-locales-sin-version-base');
+ assert.equal(device.stores.comics.get(original.id).title,'Different local edit');
+ assert.equal(server.maps.get(UID).get('comics:c_old').metadata.record.title,'Original');
+ assert.equal(device.stores.sync_outbox.size,1);
+});
