@@ -137,6 +137,17 @@
     const decision=decidePush({local,remote,baseline});
     if(decision.action==='conflict'){stats.conflicts.push({id:entry.id,reason:decision.reason});continue}
     if(decision.action==='ack'){
+     // Equal record metadata does not prove an image exists in both devices.
+     // Verify the private image before marking the queued change acknowledged.
+     if(remote.record?.coverKey){
+      assert(coverTransport?.upload&&coverTransport?.download,'No existe transporte de portadas verificable');
+      try{await coverTransport.upload({record:remote.record,uid,session,cfg,fetcher})}
+      catch(error){
+       // This device may be missing the image while the cloud already has it.
+       // Download can recover that case, but MUST also SHA-verify the bytes.
+       await coverTransport.download({record:remote.record,uid,session,cfg,fetcher});
+      }
+     }
      await ackUpload(database,{uid,id:entry.id,expectedRev:entry.rev,record:remote.record,version:remote.version});
      stats.acknowledged++;continue;
     }
@@ -184,7 +195,7 @@
    const decision=decidePull({local:original,remote:r,baseline:baseById.get(id),pending:dirty.has(id)});
    if(decision.action==='conflict'){conflicts.push({id,reason:decision.reason});continue}
    if(decision.action==='defer')continue;
-   if(decision.action==='download'&&decision.record.coverKey){
+   if((decision.action==='download'||decision.action==='ack')&&decision.record.coverKey){
     if(typeof coverTransport?.download!=='function'){
      conflicts.push({id,reason:'portada-privada-no-verificada'});continue
     }
