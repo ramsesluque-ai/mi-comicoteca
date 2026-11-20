@@ -166,15 +166,37 @@
    const close=document.createElement('button');close.type='button';close.textContent='Entendido';close.style.cssText='padding:9px 16px;border-radius:8px;cursor:pointer';close.onclick=()=>panel.remove();
    panel.append(title,p,diagnostic,covers,coverAudit,backup,verifyBox,close);document.body.append(panel);close.focus();
  }
+ async function runLiveSyncV4(btn){
+  const api=window.MCAutoSyncRuntimeV4;
+  if(!api?.enabled){showStatus();return}
+  const original=btn.textContent;
+  btn.disabled=true;btn.setAttribute('aria-busy','true');btn.textContent='↻ Sincronizando…';
+  try{
+   const result=await api.syncNow();
+   if(result?.paused)throw Error(result.reason||'La sincronización automática no está habilitada');
+   const conflicts=(result?.sent?.conflicts?.length||0)+(result?.received?.conflicts?.length||0);
+   const pending=Number(result?.sent?.pending||0);
+   const uploads=Number(result?.sent?.uploaded||0),downloads=Number(result?.received?.downloaded||0);
+   const message=conflicts||pending?
+    'Datos protegidos: '+uploads+' enviados, '+downloads+' recuperados; '+pending+' pendientes y '+conflicts+' conflictos por revisar.':
+    'Sincronización verificada: '+uploads+' enviados y '+downloads+' recuperados. Las portadas privadas se comprueban junto a las fichas.';
+   if(typeof toast==='function')toast(message);
+   else window.alert(message);
+  }catch(error){
+   const message='La sincronización sigue pendiente. Tus datos locales se conservan. '+String(error.message||error);
+   if(typeof toast==='function')toast(message);else window.alert(message);
+  }finally{btn.disabled=false;btn.removeAttribute('aria-busy');btn.textContent=original}
+ }
+
  function mount(){
    const anchor=findNewComic();
    if(!anchor)return;
    let btn=document.getElementById(ID);
    if(!btn){
      btn=document.createElement('button');btn.id=ID;btn.type='button';btn.textContent='↻ '+text;
-     btn.title='Sincronización manual V2: pendiente de pruebas de seguridad';
+     btn.title='Comprobar o reintentar la sincronización; el guardado y la apertura se sincronizan automáticamente cuando V4 está activado';
      btn.style.cssText='display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;min-height:38px;padding:8px 12px;margin-left:8px;max-width:100%;flex-shrink:0;border-radius:9px;border:1px solid #4eacc7;background:#123e56;color:#fff;font:600 13px system-ui;cursor:pointer';
-     btn.addEventListener('click',showStatus);
+     btn.addEventListener('click',()=>runLiveSyncV4(btn));
    }
    if(anchor.nextElementSibling!==btn)anchor.insertAdjacentElement('afterend',btn);
    const parent=anchor.parentElement;
