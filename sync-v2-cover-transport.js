@@ -68,6 +68,9 @@
  async function copyIfAbsent({session,cfg,key,blob,fetchImpl=root.fetch,integrity=root.MCSyncV2CoverIntegrity}){
    const uid=validate({session,cfg,key,integrity});
    assertCover(blob);
+   // A cached token or forged session.user.id must never authorize a private write.
+   // Validate the bearer token against Auth before any Storage GET or POST.
+   await verifySession({session,cfg,fetchImpl});
    const expected=await integrity.sha256(blob);
    const existing=await read({session,cfg,key,fetchImpl,integrity});
    if(existing){
