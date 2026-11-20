@@ -168,7 +168,7 @@ test('identical metadata still requires private cover recovery on device open',a
  });
  device.stores.comics.set(comic.id,{...comic});
  let recovered=0;
- const transport={download:async()=>{recovered++}};
+ const transport={download:async()=>{recovered++;return {verified:true,sha256:'a'.repeat(64)}}};
  const result=await sync.pull({database:device,dbName:'comicteca-user-'+UID,uid:UID,cfg,
   fetcher:server.fetcher,coverTransport:transport});
  assert.equal(result.downloaded,0,'metadata was already identical');
@@ -187,15 +187,25 @@ test('acknowledged data must restore a cloud cover if local binary is absent',as
  device.stores.sync_outbox.set(comic.id,{id:comic.id,uid:UID,rev:'cover-retry'});
  let uploads=0,downloads=0;
  const transport={
-  upload:async()=>{uploads++;throw Error('Portada ausente en local')},
-  download:async()=>{downloads++}
+  upload:async()=>{
+   uploads++;
+   if(downloads===0)throw Error('Portada ausente en local');
+   return {verified:true,sha256:'a'.repeat(64)};
+  },
+  download:async()=>{downloads++;return {verified:true,sha256:'a'.repeat(64)}}
  };
- const result=await sync.uploadQueued({database:device,dbName:'comicteca-user-'+UID,uid:UID,cfg,
-  fetcher:server.fetcher,coverTransport:transport});
- assert.equal(result.acknowledged,1);
- assert.equal(uploads,1);
+ const args={database:device,dbName:'comicteca-user-'+UID,uid:UID,cfg,
+  fetcher:server.fetcher,coverTransport:transport};
+ const first=await sync.uploadQueued(args);
+ assert.equal(first.prepared,1,'first recover binary and stage its verified SHA');
+ assert.equal(first.acknowledged,0,'must not acknowledge metadata before cloud SHA');
  assert.equal(downloads,1);
+ assert.equal(device.stores.sync_outbox.size,1);
+ const result=await sync.uploadQueued(args);
+ assert.equal(result.uploaded,1,'second run commits SHA-backed metadata with CAS');
  assert.equal(device.stores.sync_outbox.size,0);
+ assert.equal(server.maps.get(UID).get('comics:c_covered').metadata.record.coverSha256,'a'.repeat(64));
+ assert.equal(device.stores.comics.get(comic.id).coverSyncPending,false);
 });
 
 test('cloud acknowledgment cannot discard a comic edited during the request',async()=>{
@@ -278,4 +288,52 @@ test('an unversioned local edit never overwrites an existing cloud record',async
  assert.equal(device.stores.comics.get(original.id).title,'Different local edit');
  assert.equal(server.maps.get(UID).get('comics:c_old').metadata.record.title,'Original');
  assert.equal(device.stores.sync_outbox.size,1);
+});
+
+test('unverified cover transport cannot acknowledge a matching comic',async()=>{
+ const server=backend(),device=new MemoryDb();
+ session(UID,'token-primary');
+ const comic={id:'c_invalid_cover',title:'Cover with invalid proof',coverKey:'c_invalid_cover'};
+ const version='2026-11-20T11:00:00.000Z';
+ server.maps.get(UID).set('comics:c_invalid_cover',{
+  user_id:UID,local_id:'comics:c_invalid_cover',
+  metadata:{kind:'comics',record:comic},updated_at:version
+ });
+ device.stores.comics.set(comic.id,comic);
+ const result=await sync.pull({database:device,dbName:'comicteca-user-'+UID,uid:UID,cfg,
+  fetcher:server.fetcher,coverTransport:{download:async()=>({verified:false,sha256:''})}});
+ assert.equal(result.downloaded,0);
+ assert.equal(result.conflicts.length,1);
+ assert.equal(device.stores.sync_baseline.size,0);
+});
+test('a newly saved linked HTTPS cover becomes private in two safe upload stages',async()=>{
+ const server=backend(),device=new MemoryDb();
+ session(UID,'token-primary');
+ const original={id:'c_link',title:'Linked comic',coverUrl:'https://publisher.example.com/cover.jpg'};
+ device.stores.comics.set(original.id,original);
+ device.stores.sync_outbox.set(original.id,{id:original.id,uid:UID,rev:'linked'});
+ let prepared=0,uploads=0;
+ const transport={
+  prepareLinked:async({record})=>{
+   prepared++;
+   return {...record,coverKey:'c_link-hash',coverSha256:'a'.repeat(64),
+    coverSourceUrl:record.coverUrl,coverSyncPending:true};
+  },
+  upload:async()=>{uploads++;return {verified:true,sha256:'a'.repeat(64)}}
+ };
+ const args={database:device,dbName:'comicteca-user-'+UID,uid:UID,cfg,
+  fetcher:server.fetcher,coverTransport:transport};
+ const first=await sync.uploadQueued(args);
+ assert.equal(first.prepared,1);
+ assert.equal(device.stores.comics.get(original.id).coverKey,'c_link-hash');
+ assert.equal(device.stores.sync_outbox.size,1);
+ const second=await sync.uploadQueued(args);
+ assert.equal(second.prepared,1,'binary verified and pending cover flag cleared');
+ assert.equal(device.stores.comics.get(original.id).coverSyncPending,false);
+ const third=await sync.uploadQueued(args);
+ assert.equal(third.uploaded,1);
+ assert.equal(device.stores.sync_outbox.size,0);
+ assert.equal(prepared,1);
+ assert.equal(uploads,2);
+ assert.equal(server.maps.get(UID).get('comics:c_link').metadata.record.coverSha256,'a'.repeat(64));
 });
