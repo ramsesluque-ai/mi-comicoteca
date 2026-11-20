@@ -208,6 +208,9 @@
     if(local&&!local.coverKey&&/^https:\/\//i.test(String(local.coverUrl||''))){
      assert(typeof coverTransport?.prepareLinked==='function','No está disponible la copia privada de portadas enlazadas');
      const prepared=await coverTransport.prepareLinked({record:local,uid,session,cfg});
+     assert(prepared?.id===local.id&&/^[A-Za-z0-9_.-]{1,180}$/.test(String(prepared.coverKey||''))&&
+      /^[a-f0-9]{64}$/.test(String(prepared.coverSha256||'')),
+      'La portada enlazada no se convirtió en una copia privada válida');
      await stagePreparedCover(database,{uid,original:local,expectedRev:entry.rev,
        updated:prepared,remoteBaseline:decision.action==='ack'?remote:null});
      stats.prepared++;
