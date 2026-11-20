@@ -78,7 +78,7 @@ test('unexpected account identity during token refresh is rejected',async()=>{
 });
 test('deployment HTML references new account and diagnostic versions',()=>{
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
- for(const marker of ['app1.js?v=20261116-persistent-account','commercial-billing.js?v=20261116-auth-badjwt403','account-storage-diagnostic.js?v=20261116-auth-badjwt403'])assert.ok(html.includes(marker),marker);
+ for(const marker of ['app1.js?v=20261120-catalog-focus1','commercial-billing.js?v=20261116-auth-badjwt403','account-storage-diagnostic.js?v=20261116-auth-badjwt403'])assert.ok(html.includes(marker),marker);
 });
 
 test('simultaneous membership and collection checks refresh once',async()=>{
