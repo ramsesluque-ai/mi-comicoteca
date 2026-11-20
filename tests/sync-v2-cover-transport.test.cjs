@@ -11,6 +11,7 @@ function fake(){
  const storage=new Map(),calls=[];
  async function fetchImpl(url,opts){
   calls.push({url,method:opts.method,headers:opts.headers});
+  if(url==='https://test.invalid/auth/v1/user')return {ok:true,status:200,json:async()=>({id:uid})};
   assert(url.includes('/user-covers/'+uid+'/'));
   assert.equal(opts.headers.Authorization,'Bearer test-token');
   if(opts.method==='GET'){
