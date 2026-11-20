@@ -14,6 +14,7 @@ const cover=text=>new Blob([text],{type:'image/webp'});
     calls.push({url,method:opts.method});
     const uid=opts.headers.Authorization.replace('Bearer token-','');
     const pathname=new URL(url).pathname;
+    if(pathname==='/auth/v1/user')return {ok:true,status:200,json:async()=>({id:uid})};
     assert(pathname.startsWith('/storage/v1/object/user-covers/'+uid+'/'),'cross-user object access');
     if(opts.method==='GET'){
       const found=store.get(pathname);
