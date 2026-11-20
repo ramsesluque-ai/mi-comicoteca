@@ -4,6 +4,11 @@ on:
     branches: [commercial-published]
     paths:
       - 'app1.js'
+      - 'app5.js'
+      - 'index.html'
+      - 'sw.js'
+      - 'manual-sync-v2-button.js'
+      - 'catalog-cloud-rehydrate.js'
       - 'vault.js'
       - 'sync-auto-v4.js'
       - 'sync-auto-covers-v4.js'
