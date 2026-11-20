@@ -166,6 +166,9 @@ window.addEventListener('mc-catalog-cloud-merged',async event=>{
 // on return to the tab, without a destructive reload or clearing IndexedDB.
 let mcLastFocusCloudCheck=Date.now();
 function mcRefreshOnReturn(){
+ // V4 alone owns reconciliation after release; never race the old add-only
+ // rehydrator against a bidirectional transaction on the same IndexedDB.
+ if(window.MCAutoSyncRuntimeV4?.enabled)return;
  if(MC_IMPORT_TEST||!MC_ACCOUNT_ID||document.hidden||!db)return;
  if(Date.now()-mcLastFocusCloudCheck<180000)return;
  if(window.MC_CATALOG_BOOT_PENDING)return;
@@ -182,7 +185,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)mcRefreshO
  try{
   // Wait for all production modules to load before choosing between a genuinely
   // new collection and the account's existing cloud collection.
-  if(!MC_IMPORT_TEST&&MC_ACCOUNT_ID){
+  if(!MC_IMPORT_TEST&&MC_ACCOUNT_ID&&!window.MCAutoSyncRuntimeV4?.enabled){
    if(document.readyState==='loading')await new Promise(resolve=>document.addEventListener('DOMContentLoaded',resolve,{once:true}));
    if(!window.MCCatalogBootstrap?.bootstrap)throw Error('La comprobación segura del catálogo no está disponible. No se mostrará una colección vacía.');
    window.MC_CATALOG_BOOT_PENDING=true;
