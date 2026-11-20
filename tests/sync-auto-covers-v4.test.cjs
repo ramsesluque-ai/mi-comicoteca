@@ -2,7 +2,8 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const {webcrypto}=require('node:crypto');
-globalThis.crypto=webcrypto;
+// Node 22 exposes globalThis.crypto as a read-only accessor. Reuse it when present.
+if (!globalThis.crypto) Object.defineProperty(globalThis,'crypto',{value:webcrypto,configurable:true});
 globalThis.MCSyncV2CoverIntegrity=require('../sync-v2-cover-integrity.js');
 const covers=require('../sync-auto-covers-v4.js');
 const uid='11111111-1111-4111-8111-111111111111';
