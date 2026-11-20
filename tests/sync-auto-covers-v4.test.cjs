@@ -17,7 +17,7 @@ function makeCaches(){
  return {stores,async open(name){
   if(!stores.has(name))stores.set(name,new Map());
   const map=stores.get(name);
-  return {match:async url=>map.get(String(url)),put:async (url,response)=>{map.set(String(url),response)}};
+  return {match:async url=>map.get(String(url))?.clone(),put:async (url,response)=>{map.set(String(url),response.clone())}};
  }};
 }
 function backend(){
