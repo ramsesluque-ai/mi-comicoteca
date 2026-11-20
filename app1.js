@@ -41,7 +41,19 @@ function putStore(name,v){return new Promise((res,rej)=>{
   tx.onerror=()=>{};
  }catch(e){rej(e)}
 })}
-function delStore(name,id){return new Promise((res,rej)=>{const r=db.transaction(name,'readwrite').objectStore(name).delete(id);r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
+// Deleting locally is also a persistent pending intent; never infer it from
+// a missing row. V4 will only upload a deletion after dedicated tombstone tests.
+function delStore(name,id){return new Promise((res,rej)=>{
+ try{
+  const track=mcOutboxEnabled(name);
+  const tx=db.transaction(track?[name,'sync_outbox']:[name],'readwrite');
+  tx.objectStore(name).delete(id);
+  if(track)tx.objectStore('sync_outbox').put({...mcOutboxEntry(id),op:'delete',deletedAt:new Date().toISOString()});
+  tx.oncomplete=()=>{res();if(track)mcOutboxNotify()};
+  tx.onabort=()=>rej(tx.error||Error('El borrado local no pudo completarse'));
+  tx.onerror=()=>{};
+ }catch(e){rej(e)}
+})}
 function clearStore(name){return new Promise((res,rej)=>{const r=db.transaction(name,'readwrite').objectStore(name).clear();r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
 // Imports also enqueue changes; cloud rehydration uses its own add-only
 // transaction and therefore NEVER uploads historical cloud rows as new edits.
