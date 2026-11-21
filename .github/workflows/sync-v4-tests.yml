@@ -15,6 +15,8 @@ on:
       - 'sync-auto-runtime-v4.js'
       - 'sync-v3-core.js'
       - 'sync-v2-cover-integrity.js'
+      - 'sql/mc_sync_delete_v4_cas_tombstone.sql'
+      - 'tests/sync-delete-v4-sql.test.cjs'
       - 'tests/sync-auto-v4.test.cjs'
       - 'tests/sync-auto-v4-e2e.test.cjs'
       - 'tests/sync-auto-runtime-v4.test.cjs'
@@ -30,6 +32,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: V4 tombstone SQL safety contract
+        run: node --test tests/sync-delete-v4-sql.test.cjs
       - name: V4 core optimistic sync tests
         run: node --test tests/sync-auto-v4.test.cjs
       - name: V4 two-device simulated E2E tests
