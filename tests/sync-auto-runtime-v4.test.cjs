@@ -120,14 +120,14 @@ test('transient upload failures retry with exponential backoff, but CAS conflict
  vm.runInNewContext(enabled,ctx,{filename:'sync-auto-runtime-v4.js'});
  documentEvents.get('DOMContentLoaded')();
  // Avoid startup scheduling: invoke the explicit API directly.
- for(let n=0;n<3;n++){
-  await win.MCAutoSyncRuntimeV4.uploadQueued();
-  if(n<2){
-   assert.equal(timers.size,1,'a transient failure schedules exactly one retry');
-   const entry=[...timers.entries()][0];
-   assert.equal(entry[1].ms,n===0?5000:10000);
-   timers.delete(entry[0]); // isolate each call without invoking background callbacks
-  }
+ await win.MCAutoSyncRuntimeV4.uploadQueued();
+ for(const delay of [5000,10000]){
+  assert.equal(timers.size,1,'a transient failure schedules exactly one retry');
+  const entry=[...timers.entries()][0];
+  assert.equal(entry[1].ms,delay);
+  timers.delete(entry[0]);
+  entry[1].fn();
+  for(let i=0;i<12;i++)await Promise.resolve();
  }
  assert.equal(uploads,3);
  assert.equal(timers.size,0,'CAS conflicts must not trigger a busy retry loop');
