@@ -1,0 +1,59 @@
+name: MI COMICTECA V4 official domain integrity
+on:
+  push:
+    branches: [commercial-published]
+    paths:
+      - 'app1.js'
+      - 'sync-auto-v4.js'
+      - 'sync-auto-covers-v4.js'
+      - 'sync-auto-runtime-v4.js'
+      - 'vault.js'
+      - 'index.html'
+      - 'sw.js'
+      - '.github/workflows/sync-v4-official-domain.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-official-domain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Compare official domain V4 bytes to this exact commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(index.html sw.js app1.js vault.js sync-auto-v4.js sync-auto-covers-v4.js sync-auto-runtime-v4.js)
+          for attempt in $(seq 1 10); do
+            echo "Checking https://micomicteca.es, attempt ${attempt}/10, commit ${GITHUB_SHA}"
+            ok=1
+            for file in "${files[@]}"; do
+              if ! curl -fsSL --max-time 18 --retry 1 --retry-delay 1 \
+                -H 'Cache-Control: no-cache' \
+                "https://micomicteca.es/${file}?commit=${GITHUB_SHA}&attempt=${attempt}" \
+                -o "/tmp/comicteca-v4-${file}"; then
+                echo "MISSING ${file}"
+                ok=0
+                continue
+              fi
+              expected="$(sha256sum "${file}" | cut -d' ' -f1)"
+              actual="$(sha256sum "/tmp/comicteca-v4-${file}" | cut -d' ' -f1)"
+              if [[ "${expected}" != "${actual}" ]]; then
+                echo "STALE ${file} expected=${expected} actual=${actual}"
+                ok=0
+              fi
+            done
+            if [[ "${ok}" == 1 ]]; then
+              grep -Fq 'const RELEASE_APPROVED=false' /tmp/comicteca-v4-sync-auto-runtime-v4.js || {
+                echo 'Unsafe release gate detected'; exit 1;
+              }
+              echo "VERIFIED: official domain serves exact V4 bytes from ${GITHUB_SHA}, release still gated"
+              exit 0
+            fi
+            sleep 20
+          done
+          echo 'FAIL: micomicteca.es does not serve exact commit bytes; do not enable release' >&2
+          exit 1
