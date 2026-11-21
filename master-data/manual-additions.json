@@ -159,6 +159,40 @@
       "sourceUrl": "https://supervazquez.com/index.php/dc-comics/planeta-deagostini.html?cat=2161&editorial_o_cp=45&mode=list",
       "language": "es",
       "country": "España"
+    },
+    {
+      "id": "mc-ecc-batgirl-mente-abierta-owner-20261121",
+      "source": "Catálogo personal · referencia provisional",
+      "publisher": "ECC",
+      "catalogHeader": "Batgirl - Mente Abierta",
+      "series": "Batgirl - Mente Abierta",
+      "volume": "",
+      "stage": "",
+      "startYear": "",
+      "issueNr": "0",
+      "issue": "0",
+      "title": "Batgirl - Mente Abierta",
+      "isbn": "",
+      "coverUrl": "",
+      "format": "Prestige/Squarebound",
+      "bibliographicStatus": "Pendiente de verificación"
+    },
+    {
+      "id": "mc-ecc-batman-cruzado-enmascarado-owner-20261121",
+      "source": "Catálogo personal · referencia provisional",
+      "publisher": "ECC",
+      "catalogHeader": "Batman - ¿qué le sucedió al cruzado enmascarado?",
+      "series": "Batman - ¿qué le sucedió al cruzado enmascarado?",
+      "volume": "",
+      "stage": "",
+      "startYear": "",
+      "issueNr": "0",
+      "issue": "0",
+      "title": "Batman - ¿qué le sucedió al cruzado enmascarado?",
+      "isbn": "",
+      "coverUrl": "",
+      "format": "Comic",
+      "bibliographicStatus": "Pendiente de verificación"
     }
   ]
 }
