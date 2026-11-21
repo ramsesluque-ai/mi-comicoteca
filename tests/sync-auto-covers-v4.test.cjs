@@ -99,3 +99,15 @@ test('non-HTTPS cover links cannot become private uploads',async()=>{
  globalThis.CoverVault={fetchAndCompress:async()=>{throw Error('should not fetch')}};
  await assert.rejects(covers.prepareLinked({record:{id:'c_1',coverUrl:'http://bad.example/cover.jpg'},uid,session,cfg}),/HTTPS/);
 });
+
+test('linked-cover preparation rejects a stale foreign local account before fetching or caching',async()=>{
+ globalThis.MC_ACCOUNT_ID=foreign;
+ globalThis.caches=makeCaches();
+ let fetchCount=0;
+ globalThis.CoverVault={fetchAndCompress:async()=>{fetchCount++;return image()}};
+ const item={id:'c_1',coverUrl:'https://publisher.example.com/cover.jpg'};
+ await assert.rejects(covers.prepareLinked({record:item,uid,session,cfg}),/cuenta/i);
+ assert.equal(fetchCount,0);
+ assert.equal(globalThis.caches.stores.size,0);
+ globalThis.MC_ACCOUNT_ID=uid;
+});
