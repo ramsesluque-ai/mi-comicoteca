@@ -88,5 +88,5 @@ test('production release gate blocks sync on startup, save and network reconnect
  await Promise.resolve();
  await Promise.resolve();
  assert.deepEqual(calls,[],'disabled production gate must never call cloud sync');
- assert.equal(win.MCAutoSyncV4Runtime?.state?.enabled,false);
+ assert.equal(win.MCAutoSyncRuntimeV4?.enabled,false);
 });
