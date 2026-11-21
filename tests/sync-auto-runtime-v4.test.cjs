@@ -90,3 +90,46 @@ test('production release gate blocks sync on startup, save and network reconnect
  assert.deepEqual(calls,[],'disabled production gate must never call cloud sync');
  assert.equal(win.MCAutoSyncRuntimeV4?.enabled,false);
 });
+
+test('transient upload failures retry with exponential backoff, but CAS conflicts do not loop',async()=>{
+ const source=fs.readFileSync(path.resolve(__dirname,'../sync-auto-runtime-v4.js'),'utf8');
+ assert.match(source,/const RELEASE_APPROVED=false/);
+ const enabled=source.replace('const RELEASE_APPROVED=false','const RELEASE_APPROVED=true');
+ const events=new Map(),documentEvents=new Map(),timers=new Map(),delays=[];
+ let seq=0,uploads=0;
+ const win={
+  document:{readyState:'loading',hidden:false,addEventListener:(name,fn)=>documentEvents.set(name,fn)},
+  MI_COMICOTECA_CLOUD:{url:'https://example.supabase.co',publishableKey:'test'},
+  MCAutoCoversV4:{},
+  MCAutoSyncV4:{
+   syncNow:async()=>({sent:{pending:0,uploaded:0,conflicts:[]},received:{downloaded:0,conflicts:[]}}),
+   pull:async()=>({downloaded:0,conflicts:[]}),
+   uploadQueued:async()=>{
+    uploads++;
+    if(uploads<=2)return {pending:1,uploaded:0,conflicts:[{reason:'HTTP 503'}]};
+    return {pending:1,uploaded:0,conflicts:[{reason:'CAS version conflict'}]};
+   }
+  },
+  addEventListener:(name,fn)=>events.set(name,fn),dispatchEvent:()=>{}
+ };
+ const uid='11111111-1111-4111-8111-111111111111';
+ const ctx={window:win,db:{},DBN:'comicteca-user-'+uid,MC_ACCOUNT_ID:uid,MC_IMPORT_TEST:false,
+  CustomEvent:class CustomEvent{constructor(type,options){this.type=type;this.detail=options.detail}},
+  console,Promise,Date,setTimeout:(fn,ms)=>{const id=++seq;timers.set(id,{fn,ms});delays.push(ms);return id},
+  clearTimeout:id=>timers.delete(id)};
+ vm.runInNewContext(enabled,ctx,{filename:'sync-auto-runtime-v4.js'});
+ documentEvents.get('DOMContentLoaded')();
+ // Avoid startup scheduling: invoke the explicit API directly.
+ for(let n=0;n<3;n++){
+  await win.MCAutoSyncRuntimeV4.uploadQueued();
+  if(n<2){
+   assert.equal(timers.size,1,'a transient failure schedules exactly one retry');
+   const entry=[...timers.entries()][0];
+   assert.equal(entry[1].ms,n===0?5000:10000);
+   timers.delete(entry[0]); // isolate each call without invoking background callbacks
+  }
+ }
+ assert.equal(uploads,3);
+ assert.equal(timers.size,0,'CAS conflicts must not trigger a busy retry loop');
+ assert.equal(win.MCAutoSyncRuntimeV4.getStatus().lastConflicts,1);
+});
