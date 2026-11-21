@@ -94,8 +94,11 @@
  }
  function queueUpload(){
   if(!RELEASE_APPROVED)return;
-  if(timer)clearTimeout(timer);
-  timer=setTimeout(()=>{timer=null;STATE.scheduled=false;work('push').catch(e=>console.warn('MI COMICTECA auto-upload pendiente',e))},800);
+  // A fresh save supersedes any older retry timer; report the new debounce
+  // as scheduled so status never claims an obsolete retry is still active.
+  if(timer){clearTimeout(timer);timer=null}
+  STATE.scheduled=true;emit();
+  timer=setTimeout(()=>{timer=null;STATE.scheduled=false;emit();work('push').catch(e=>console.warn('MI COMICTECA auto-upload pendiente',e))},800);
  }
  function onReturn(){
   if(!RELEASE_APPROVED||root.document?.hidden||Date.now()-lastOnReturn<120000)return;
