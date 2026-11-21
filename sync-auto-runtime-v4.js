@@ -68,7 +68,7 @@
     STATE.lastError=String(e.message||e);emit();
     // Network errors can reject the transport instead of returning a pending
     // result. Retry those without acknowledging or dropping the durable outbox.
-    if(/(?:HTTP 5\\d\\d|HTTP 429|Failed to fetch|NetworkError|network|sin conexión|timeout|offline)/i.test(STATE.lastError)){
+    if(/(?:HTTP 5\d\d|HTTP 429|Failed to fetch|NetworkError|network|sin conexión|timeout|offline)/i.test(STATE.lastError)){
      reschedulePending({pending:1,conflicts:[{reason:STATE.lastError}]});
     }
     throw e
