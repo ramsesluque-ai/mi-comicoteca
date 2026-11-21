@@ -90,7 +90,7 @@
  function decideQueuedPush({entry,local,remote,baseline}){
   if(entry?.op==='delete'||entry?.op==='remove')
    return {action:'conflict',reason:'baja-pendiente-de-tombstone-CAS'};
-  if(entry?.op!=='save'&&entry?.op!=='import')
+  if(entry?.op!=null&&entry?.op!=='save'&&entry?.op!=='import')
    return {action:'conflict',reason:'operacion-outbox-no-admitida'};
   return decidePush({local,remote,baseline});
  }
