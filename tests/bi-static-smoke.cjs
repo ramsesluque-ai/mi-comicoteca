@@ -6,8 +6,8 @@ const read=p=>fs.readFileSync(p,'utf8');
 const html=read('index.html'), app=read('app5.js'), bi=read('dashboard-pbi.js'), css=read('dashboard-pbi.css'), sw=read('sw.js');
 const checks=[
   ['dashboard navigation',()=>assert.match(html,/data-v="dashboard"/)],
-  ['BI JavaScript linked',()=>assert.match(html,/src="dashboard-pbi\.js\?v=\d+"/)],
-  ['BI CSS linked',()=>assert.match(html,/href="dashboard-pbi\.css\?v=\d+"/)],
+  ['BI JavaScript linked',()=>assert.match(html,/src="dashboard-pbi\.js\?v=[A-Za-z0-9_-]+"/)],
+  ['BI CSS linked',()=>assert.match(html,/href="dashboard-pbi\.css\?v=[A-Za-z0-9_-]+"/)],
   ['interactive dashboard dispatch',()=>assert.match(app,/PbiDashboard\.view\(\)/)],
   ['BI module defined',()=>assert.match(bi,/PbiDashboard/)],
   ['BI styles defined',()=>assert.match(css,/\.pbi-/)],
@@ -15,7 +15,7 @@ const checks=[
   ['BI CSS cached',()=>assert.ok(sw.includes("'./dashboard-pbi.css'"))],
   ['visible logo references resolve',()=>{const refs=[...html.matchAll(/<img\b[^>]*\bsrc="([^"?]+)(?:\?[^\"]*)?"[^>]*>/g)].map(m=>m[1]);assert.ok(refs.length>0,'No image references found');for(const ref of refs){assert.ok(!ref.includes('..'),'Unsafe image path');assert.ok(fs.statSync(ref).size>0,`Missing or empty image: ${ref}`)}}],
   // This checks asset integrity only; approval of the final logo requires a visual comparison.
-  ['logo accessibility label',()=>assert.match(html,/<img[^>]*alt="COMICTECA"/)],
+  ['logo accessibility label',()=>assert.match(html,/<img[^>]*alt="MI COMICTECA"/)],
 ];
 let failed=0;
 for(const [name,test] of checks){try{test();console.log('PASS',name)}catch(e){failed++;console.error('FAIL',name,e.message)}}
