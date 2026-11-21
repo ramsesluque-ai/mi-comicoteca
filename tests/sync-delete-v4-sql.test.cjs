@@ -23,3 +23,10 @@ test('conflict does not report a successful deletion',()=>{
  assert.match(sql,/if v_row is null then return jsonb_build_object\('state','conflict'\)/i);
  assert.match(sql,/return jsonb_build_object\('state','deleted'/i);
 });
+
+test('trigger-overridden timestamp must fail closed and roll back',()=>{
+ assert.match(sql,/v_row\.updated_at <= p_expected_updated_at/);
+ assert.match(sql,/raise exception 'CAS version did not advance/);
+ assert.match(sql,/errcode='40001'/);
+ assert.match(sql,/trg_user_comics_updated_at/);
+});
