@@ -28,6 +28,9 @@
  function context(){
   if(typeof db==='undefined'||!db||typeof DBN!=='string'||typeof MC_ACCOUNT_ID!=='string'||!MC_ACCOUNT_ID)throw Error('Colección local no preparada');
   if(typeof MC_IMPORT_TEST==='boolean'&&MC_IMPORT_TEST)throw Error('La demo no se sincroniza');
+  // Never allow a stale browser session to pair one account's IndexedDB with another UID.
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(MC_ACCOUNT_ID)||DBN!=='comicteca-user-'+MC_ACCOUNT_ID)
+   throw Error('Cuenta y almacén privado no coinciden; sincronización bloqueada');
   if(!root.MCAutoSyncV4||!root.MCAutoCoversV4)throw Error('Motor de sincronización privada no cargado');
   return {database:db,dbName:DBN,uid:MC_ACCOUNT_ID,cfg:root.MI_COMICOTECA_CLOUD,coverTransport:root.MCAutoCoversV4};
  }
