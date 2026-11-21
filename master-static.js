@@ -4,8 +4,27 @@ const MCMasterUI={rows:[],publisher:'',collectionKey:'',loadedPublisher:'',activ
 
 let mcNovedadesArchivePromise=null;
 let mcManualAdditionsPromise=null;
+let mcManualAdditionsCheckedAt=0;
+let mcManualAdditionsSignature=null;
 async function mcManualAdditions(){
- if(!mcManualAdditionsPromise)mcManualAdditionsPromise=fetch('master-data/manual-additions.json?v=20261117-batman7',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('No se pudo cargar ampliaciones del Maestro');return r.json()}).then(j=>Array.isArray(j.items)?j.items:[]).catch(e=>{console.warn(e);return[]});
+ // Refresh public additions while the SPA remains open; never require a user to
+ // clear local data or reload their private collection to see new Maestro records.
+ if(!mcManualAdditionsPromise||Date.now()-mcManualAdditionsCheckedAt>60000){
+  const fallback=mcManualAdditionsPromise;
+  mcManualAdditionsCheckedAt=Date.now();
+  mcManualAdditionsPromise=fetch('master-data/manual-additions.json?v=20261121-live-refresh',{cache:'no-store'})
+   .then(r=>{if(!r.ok)throw Error('No se pudo cargar ampliaciones del Maestro');return r.json()})
+   .then(j=>{
+    const items=Array.isArray(j.items)?j.items:[];
+    const signature=items.map(x=>[x.id,x.catalogHeader,x.issueNr,x.title].join('|')).join('\\n');
+    if(mcManualAdditionsSignature!==null&&signature!==mcManualAdditionsSignature){
+     MCMasterUI.loadedPublisher='';MCMasterUI.rows=[];
+    }
+    mcManualAdditionsSignature=signature;
+    return items;
+   })
+   .catch(async e=>{console.warn(e);return fallback?await fallback:[]});
+ }
  return mcManualAdditionsPromise;
 }
 async function mcNovedadesArchive(){
@@ -113,7 +132,7 @@ const MC_VERIFIED_MASTER_RECORDS={
 function mcMasterCleanField(v){const s=String(v??'').trim();return /^(?:-1|null|undefined)$/i.test(s)?'':s}
 function mcMasterCleanDate(v){const s=mcMasterCleanField(v);if(s==='-1-00'||s==='0000-00-00')return '';if(/^\d{4}-00-00$/.test(s))return s.slice(0,4);if(/^\d{4}-(?:0[1-9]|1[0-2])-00$/.test(s))return s.slice(0,7);return s}
 async function mcMasterEnrichRows(rows){const over=await mcSEOverrides();const shared=await window.mcSharedCovers?.()||{};return rows.map(r=>{const code=mcMasterCode(r),o={...(MC_VERIFIED_MASTER_RECORDS[String(r.id)]||{}),...(code?over[code]||{}:{})},candidate={...r,...o},key=window.mcMasterCoverKey?.(candidate)||'',oldKey=window.mcMasterCoverKey?.(r)||'',common=shared[key]||shared[oldKey]||'';return{...r,title:mcMasterCleanField(o.title||r.title),publisher:mcMasterCleanField(o.publisher||r.publisher),catalogHeader:mcMasterCleanField(o.series||r.catalogHeader||r.series),series:mcMasterCleanField(o.series||r.series||r.catalogHeader),issueNr:mcMasterCleanField(o.issueNr||r.issueNr||r.issue),issue:mcMasterCleanField(o.issueNr||r.issue||r.issueNr),publicationDate:mcMasterCleanDate(o.publicationDate||r.publicationDate),pages:mcMasterCleanField(o.pages||r.pages),isbn:mcMasterCleanField(o.isbn||r.isbn),coverUrl:common||o.coverUrl||r.coverUrl||'',sourceUrl:o.sourceUrl||r.sourceUrl||''}})}
-async function mcMasterLoadPublisher(pub){if(MCMasterUI.loadedPublisher===pub&&MCMasterUI.rows.length)return MCMasterUI.rows;const idx=await mcMasterIndexWithArchive(),meta=(idx.publishers||[]).find(p=>p.publisher===pub)||mcSEPublisherMeta(idx,pub)[0];if(!meta){MCMasterUI.rows=[];MCMasterUI.loadedPublisher='';return[]}const rows=await mcSEChunks(meta.chunks||[]);
+async function mcMasterLoadPublisher(pub){await mcManualAdditions();if(MCMasterUI.loadedPublisher===pub&&MCMasterUI.rows.length)return MCMasterUI.rows;const idx=await mcMasterIndexWithArchive(),meta=(idx.publishers||[]).find(p=>p.publisher===pub)||mcSEPublisherMeta(idx,pub)[0];if(!meta){MCMasterUI.rows=[];MCMasterUI.loadedPublisher='';return[]}const rows=await mcSEChunks(meta.chunks||[]);
  const archive=(await mcNovedadesArchive()).filter(r=>r.publisher===pub);
  const manual=(await mcManualAdditions()).filter(r=>r.publisher===pub);
  const key=r=>String(r.isbn||'').replace(/[^0-9X]/gi,'')||[mcSENorm(r.publisher),mcSENorm(r.catalogHeader||r.series),mcSENorm(r.volume||''),mcSENorm(r.stage||''),String(r.startYear||''),mcSENorm(r.issueNr||r.issue||'Único')].join('|');
