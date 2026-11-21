@@ -40,6 +40,14 @@
   STATE.lastConflicts=(result?.sent?.conflicts?.length||0)+(result?.received?.conflicts?.length||0);
   STATE.pending=result?.sent?.pending??null;
   STATE.lastError=STATE.lastConflicts?'Hay '+STATE.lastConflicts+' cambios que requieren revisión o reconexión':null;
+  // A later successful upload can overtake a previously scheduled retry.
+  // Cancel that obsolete retry and reset backoff only after the outbox is
+  // confirmed empty; otherwise keep the pending operation retryable.
+  if(result?.sent&&Number(result.sent.pending)===0){
+   if(timer){clearTimeout(timer);timer=null}
+   STATE.scheduled=false;
+   retryMs=5000;
+  }
   emit();
   reschedulePending(result?.sent);
   if(STATE.lastDownloads){
