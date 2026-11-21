@@ -9,14 +9,17 @@
  const check=(x,msg)=>{if(!x)throw Error(msg)};
  const cacheName=uid=>'mi-comicoteca-cover-user-'+uid;
  const cacheUrl=key=>'https://mi-comicoteca.local/cover/'+encodeURIComponent(key);
- function validate({record,uid,session,cfg}){
-  check(/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(uid),'Cuenta privada inválida');
+ function assertAccount(uid,session){
   check(session?.user?.id===uid&&session.access_token,'La sesión no coincide con el usuario');
   check(root.MC_ACCOUNT_ID===uid||(
     // MC_ACCOUNT_ID is a top-level const in app1.js, not a window property.
     typeof root.MC_ACCOUNT_ID==='undefined' &&
     typeof DBN==='string'&&DBN==='comicteca-user-'+uid
   ),'La base de portadas no coincide con la cuenta');
+ }
+ function validate({record,uid,session,cfg}){
+  check(/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(uid),'Cuenta privada inválida');
+  assertAccount(uid,session);
   check(cfg?.publishableKey&&/^https:\/\/[^/?#]+\/?$/.test(String(cfg.url||'')),'Endpoint Storage inválido');
   const key=String(record?.coverKey||''),id=String(record?.id||'');
   check(/^[a-zA-Z0-9_.-]{1,180}$/.test(key),'Identificador de portada inválido');
@@ -117,7 +120,7 @@
   check(/^https:\/\//i.test(link),'Solo se admiten portadas enlazadas mediante HTTPS');
   const id=String(record?.id||'');
   check(/^[A-Za-z0-9_.:-]{1,180}$/.test(id),'Identificador de ficha no válido');
-  check(session?.user?.id===uid&&session.access_token,'Identidad de portada no verificada');
+  assertAccount(uid,session);
   check(typeof root.CoverVault?.fetchAndCompress==='function','El recuperador de imágenes no está disponible');
   // This is a browser CORS download, never a blind link transfer. If the
   // image host forbids CORS or gives an invalid image, no cloud data is changed.
