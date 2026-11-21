@@ -278,3 +278,32 @@ test('pending HTTP error during full reconciliation retries both pull and push',
  assert.equal(pushAttempts,0,'retry must not skip pull');
  assert.equal(win.MCAutoSyncRuntimeV4.getStatus().pending,0);
 });
+
+test('a new local save replaces an obsolete retry and keeps scheduled status accurate',async()=>{
+ const source=fs.readFileSync(path.resolve(__dirname,'../sync-auto-runtime-v4.js'),'utf8');
+ const enabled=source.replace('const RELEASE_APPROVED=false','const RELEASE_APPROVED=true');
+ const uid='11111111-1111-4111-8111-111111111111';
+ const events=new Map(),timers=new Map();let seq=0,uploads=0;
+ const win={document:{readyState:'loading',addEventListener:()=>{}},
+  MCAutoCoversV4:{},MCAutoSyncV4:{
+   uploadQueued:async()=>{uploads++;return {pending:1,conflicts:[{reason:'HTTP 503'}]}},
+   syncNow:async()=>({sent:{pending:0,conflicts:[]},received:{downloaded:0}}),
+   pull:async()=>({downloaded:0})
+  },addEventListener:(name,fn)=>events.set(name,fn),dispatchEvent:()=>{}};
+ const ctx={window:win,db:{},DBN:'comicteca-user-'+uid,MC_ACCOUNT_ID:uid,MC_IMPORT_TEST:false,
+  CustomEvent:class CustomEvent{constructor(type,options){this.type=type;this.detail=options.detail}},
+  console,Promise,Date,setTimeout:(fn,ms)=>{const id=++seq;timers.set(id,{fn,ms});return id},
+  clearTimeout:id=>timers.delete(id)};
+ vm.runInNewContext(enabled,ctx,{filename:'sync-auto-runtime-v4.js'});
+ await win.MCAutoSyncRuntimeV4.uploadQueued();
+ assert.equal([...timers.values()][0].ms,5000);
+ events.get('mc-local-comic-saved')();
+ assert.equal(timers.size,1);
+ assert.equal([...timers.values()][0].ms,800);
+ assert.equal(win.MCAutoSyncRuntimeV4.getStatus().scheduled,true);
+ const [id,t]=[...timers.entries()][0];timers.delete(id);t.fn();
+ for(let i=0;i<16;i++)await Promise.resolve();
+ assert.equal(uploads,2);
+ assert.equal([...timers.values()][0].ms,10000);
+ assert.equal(win.MCAutoSyncRuntimeV4.getStatus().scheduled,true);
+});
