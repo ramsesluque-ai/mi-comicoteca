@@ -49,3 +49,16 @@ test('multiple account identities must never be treated as one',async()=>{
  const unauthorized=async()=>({ok:true,status:200,json:async()=>({id:other})});
  await assert.rejects(core.verifySession({session,cfg,fetcher:unauthorized}),/differs/);
 });
+
+// A deletion is recorded in the durable outbox, but must never be translated
+// into an insert/update until the server-side CAS tombstone contract is proven.
+test('pending local deletion fails closed instead of restoring or uploading a comic',()=>{
+ const gone=engine.decidePush({local:null,remote:remote(A),baseline});
+ assert.equal(gone.action,'conflict');
+ assert.equal(gone.reason,'ficha-local-desaparecida');
+ const marked=engine.decidePush({local:{...A,deleted:true},remote:remote(A),baseline});
+ assert.equal(marked.action,'conflict');
+ assert.equal(marked.reason,'baja-sin-tombstone-validada');
+ const pulled=engine.decidePull({local:null,remote:remote(A),baseline,pending:true});
+ assert.equal(pulled.action,'defer');
+});
