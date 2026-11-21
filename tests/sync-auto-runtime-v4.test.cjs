@@ -57,3 +57,36 @@ test('automatic V4 runtime does not send writes while production release gate is
  assert.match(source,/const RELEASE_APPROVED=false/);
  assert.doesNotMatch(source,/localStorage\.getItem\(['"]release/i);
 });
+
+test('production release gate blocks sync on startup, save and network reconnection',async()=>{
+ const source=fs.readFileSync(path.resolve(__dirname,'../sync-auto-runtime-v4.js'),'utf8');
+ const events=new Map(),documentEvents=new Map(),timers=[];
+ const calls=[];
+ const uid='11111111-1111-4111-8111-111111111111';
+ const win={
+  document:{readyState:'loading',hidden:false,addEventListener:(name,fn)=>documentEvents.set(name,fn)},
+  MI_COMICOTECA_CLOUD:{url:'https://example.supabase.co',publishableKey:'test'},
+  MCAutoCoversV4:{},
+  MCAutoSyncV4:{
+   syncNow:async()=>calls.push('syncNow'),
+   uploadQueued:async()=>calls.push('uploadQueued'),
+   pull:async()=>calls.push('pull')
+  },
+  addEventListener:(name,fn)=>events.set(name,fn),
+  dispatchEvent:()=>{}
+ };
+ const ctx={window:win,db:{},DBN:'comicteca-user-'+uid,MC_ACCOUNT_ID:uid,MC_IMPORT_TEST:false,
+  CustomEvent:class CustomEvent{constructor(type,options){this.type=type;this.detail=options.detail}},
+  console,Promise,Date,setTimeout:(fn,ms)=>{timers.push({fn,ms});return timers.length},
+  clearTimeout:()=>{}};
+ vm.runInNewContext(source,ctx,{filename:'sync-auto-runtime-v4.js'});
+ documentEvents.get('DOMContentLoaded')?.();
+ for(const name of ['mc-local-comic-saved','online','focus']){
+  events.get(name)?.();
+ }
+ for(const timer of timers.slice(0,20))timer.fn();
+ await Promise.resolve();
+ await Promise.resolve();
+ assert.deepEqual(calls,[],'disabled production gate must never call cloud sync');
+ assert.equal(win.MCAutoSyncV4Runtime?.state?.enabled,false);
+});
