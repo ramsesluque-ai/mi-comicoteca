@@ -34,7 +34,7 @@
   if(!root.MCAutoSyncV4||!root.MCAutoCoversV4)throw Error('Motor de sincronización privada no cargado');
   return {database:db,dbName:DBN,uid:MC_ACCOUNT_ID,cfg:root.MI_COMICOTECA_CLOUD,coverTransport:root.MCAutoCoversV4};
  }
- function update(result){
+ function update(result,mode){
   STATE.lastError=null;STATE.lastSuccessful=new Date().toISOString();
   STATE.lastUploads=result?.sent?.uploaded||0;STATE.lastDownloads=result?.received?.downloaded||0;
   STATE.lastConflicts=(result?.sent?.conflicts?.length||0)+(result?.received?.conflicts?.length||0);
@@ -49,7 +49,7 @@
    retryMs=5000;
   }
   emit();
-  reschedulePending(result?.sent);
+  reschedulePending(result?.sent,mode);
   if(STATE.lastDownloads){
    root.dispatchEvent(new CustomEvent('mc-catalog-cloud-merged',{detail:{added:STATE.lastDownloads}}));
   }
@@ -70,7 +70,7 @@
     const engine=root.MCAutoSyncV4;
     const result=mode==='push'?{sent:await engine.uploadQueued(options)}:
       mode==='pull'?{received:await engine.pull(options)}:await engine.syncNow(options);
-    update(result);
+    update(result,mode);
     return result;
    }catch(e){
     STATE.lastError=String(e.message||e);emit();
