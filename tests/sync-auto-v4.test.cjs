@@ -62,3 +62,20 @@ test('pending local deletion fails closed instead of restoring or uploading a co
  const pulled=engine.decidePull({local:null,remote:remote(A),baseline,pending:true});
  assert.equal(pulled.action,'defer');
 });
+
+test('durable delete intent cannot be ACKed even if a comic still exists locally',()=>{
+ const entry={id:A.id,uid:'test',rev:'1',op:'delete'};
+ for(const local of [A,null,{...A,notes:'stale'}]){
+  for(const cloud of [remote(A),null]){
+   const d=engine.decideQueuedPush({entry,local,remote:cloud,baseline});
+   assert.equal(d.action,'conflict');
+   assert.equal(d.reason,'baja-pendiente-de-tombstone-CAS');
+  }
+ }
+});
+test('legacy save outbox entries without op still synchronize normally',()=>{
+ const d=engine.decideQueuedPush({entry:{id:A.id,rev:'2'},local:A,remote:null,baseline:null});
+ assert.equal(d.action,'insert');
+ const invalid=engine.decideQueuedPush({entry:{id:A.id,op:'unknown'},local:A,remote:null,baseline:null});
+ assert.equal(invalid.action,'conflict');
+});
