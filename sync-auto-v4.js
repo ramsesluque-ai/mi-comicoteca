@@ -84,6 +84,16 @@
    return {action:'conflict',reason:'cambio-concurrente-en-la-nube'};
   return {action:'update',record:local,mode:'update',expectedVersion:remote.version};
  }
+ // A durable delete intent takes precedence over a surviving local row.
+ // Until the authenticated CAS tombstone RPC is deployed and E2E-tested,
+ // never ACK, insert or update a queued deletion (including legacy op names).
+ function decideQueuedPush({entry,local,remote,baseline}){
+  if(entry?.op==='delete'||entry?.op==='remove')
+   return {action:'conflict',reason:'baja-pendiente-de-tombstone-CAS'};
+  if(entry?.op!=='save'&&entry?.op!=='import')
+   return {action:'conflict',reason:'operacion-outbox-no-admitida'};
+  return decidePush({local,remote,baseline});
+ }
  function commitLocal(database,{updates,uid}){
   if(!updates.length)return Promise.resolve(0);
   return new Promise((resolve,reject)=>{
@@ -201,7 +211,7 @@
    const baseline=await txOne(database,'sync_baseline',entry.id);
    try{
     const remote=await lookup({uid,session,cfg,id:entry.id,fetcher});
-    const decision=decidePush({local,remote,baseline});
+    const decision=decideQueuedPush({entry,local,remote,baseline});
     if(decision.action==='conflict'){stats.conflicts.push({id:entry.id,reason:decision.reason});continue}
     // Convert HTTPS linked covers only for records the user has SAVED; never
     // bulk-convert the original 16.523 remote records or change them silently.
@@ -336,7 +346,7 @@
   })();
   try{return await running}finally{running=null;runningUid=null}
  }
- const api={decidePull,decidePush,lookup,txRows,txOne,commitLocal,ackUpload,stagePreparedCover,uploadQueued,pull,syncNow};
+ const api={decidePull,decidePush,decideQueuedPush,lookup,txRows,txOne,commitLocal,ackUpload,stagePreparedCover,uploadQueued,pull,syncNow};
  root.MCAutoSyncV4=api;
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
