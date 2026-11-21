@@ -13,7 +13,7 @@ begin
  update public.user_comics
  set metadata=jsonb_set(jsonb_set(coalesce(metadata,'{}'::jsonb),
     '{deleted}','true'::jsonb,true),'{deletedAt}',to_jsonb(now()),true),
-    status='missing'
+    updated_at=greatest(clock_timestamp(),updated_at + interval '1 microsecond')
  where user_id=v_uid and local_id=p_local_id
    and updated_at=p_expected_updated_at
    and metadata->>'kind'='comics'
@@ -26,6 +26,8 @@ end;
 $function$;
 revoke all on function public.mc_sync_delete_v4(text,timestamptz) from public,anon;
 grant execute on function public.mc_sync_delete_v4(text,timestamptz) to authenticated;
--- Preflight before applying: status CHECK permits missing; updated_at trigger
--- advances CAS version; RLS owner update policy; 2 real isolated test UIDs.
+-- Preflight before applying: confirm updated_at type and no trigger overwrites it;
+-- RLS owner update policy; 2 real isolated test UIDs.
+-- Status is intentionally unchanged: no assumption about status CHECK constraints.
+-- Explicit monotonic updated_at ensures CAS changes even without a timestamp trigger.
 -- Retains original record/cover; never deletes rows or storage objects.
