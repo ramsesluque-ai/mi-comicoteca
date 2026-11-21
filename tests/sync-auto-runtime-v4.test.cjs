@@ -162,3 +162,29 @@ test('account UID and private IndexedDB namespace must match before any cloud op
   assert.deepEqual(calls,[],'mismatched UID must never reach cloud transport');
  }
 });
+
+test('rejected HTTP 503 transport retries, then succeeds without dropping the outbox',async()=>{
+ const source=fs.readFileSync(path.resolve(__dirname,'../sync-auto-runtime-v4.js'),'utf8');
+ const enabled=source.replace('const RELEASE_APPROVED=false','const RELEASE_APPROVED=true');
+ const uid='11111111-1111-4111-8111-111111111111';
+ const timers=new Map();let seq=0,attempts=0;
+ const win={MCAutoCoversV4:{},MCAutoSyncV4:{
+  uploadQueued:async()=>{attempts++;if(attempts===1)throw Error('HTTP 503');return {pending:0,uploaded:1,conflicts:[]}},
+  syncNow:async()=>({sent:{pending:0,conflicts:[]},received:{downloaded:0}}),
+  pull:async()=>({downloaded:0})
+ },dispatchEvent:()=>{}};
+ const ctx={window:win,db:{},DBN:'comicteca-user-'+uid,MC_ACCOUNT_ID:uid,MC_IMPORT_TEST:false,
+  CustomEvent:class CustomEvent{constructor(type,options){this.type=type;this.detail=options.detail}},
+  console,Promise,Date,setTimeout:(fn,ms)=>{const id=++seq;timers.set(id,{fn,ms});return id},
+  clearTimeout:id=>timers.delete(id)};
+ vm.runInNewContext(enabled,ctx,{filename:'sync-auto-runtime-v4.js'});
+ await assert.rejects(win.MCAutoSyncRuntimeV4.uploadQueued(),/HTTP 503/);
+ assert.equal(timers.size,1);
+ const [id,timer]=[...timers.entries()][0];
+ assert.equal(timer.ms,5000);
+ timers.delete(id);timer.fn();
+ for(let i=0;i<16;i++)await Promise.resolve();
+ assert.equal(attempts,2);
+ assert.equal(timers.size,0);
+ assert.equal(win.MCAutoSyncRuntimeV4.getStatus().pending,0);
+});
