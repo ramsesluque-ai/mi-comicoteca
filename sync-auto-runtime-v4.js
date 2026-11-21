@@ -8,7 +8,7 @@
  const STATE={enabled:RELEASE_APPROVED,running:false,scheduled:false,lastError:null,lastSuccessful:null,
   lastUploads:0,lastDownloads:0,lastConflicts:0,pending:null};
  let job=null,timer=null,lastOnReturn=0,retryMs=5000,afterJobPush=false,afterJobRefresh=false;
- function reschedulePending(sent){
+ function reschedulePending(sent, retryMode='push'){
   if(!RELEASE_APPROVED||!sent||!Number(sent.pending)||timer)return;
   const errors=sent.conflicts||[];
   const retryable=errors.length>0&&errors.every(e=>
@@ -20,7 +20,7 @@
   timer=setTimeout(()=>{
    timer=null;
    STATE.scheduled=false;emit();
-   work('push').catch(e=>console.warn('MI COMICTECA retry de sincronización pendiente',e));
+   work(retryMode).catch(e=>console.warn('MI COMICTECA retry de sincronización pendiente',e));
   },delay);
   STATE.scheduled=true;emit();
  }
@@ -77,7 +77,9 @@
     // Network errors can reject the transport instead of returning a pending
     // result. Retry those without acknowledging or dropping the durable outbox.
     if(/(?:HTTP 5\d\d|HTTP 429|Failed to fetch|NetworkError|network|sin conexión|timeout|offline)/i.test(STATE.lastError)){
-     reschedulePending({pending:1,conflicts:[{reason:STATE.lastError}]});
+     // A failed initial pull or full reconciliation must retry that same operation,
+     // not silently degrade to push-only (which would leave remote edits unseen).
+     reschedulePending({pending:1,conflicts:[{reason:STATE.lastError}]},mode);
     }
     throw e
    }
