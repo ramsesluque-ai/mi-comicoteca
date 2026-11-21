@@ -284,7 +284,7 @@ test('a new local save replaces an obsolete retry and keeps scheduled status acc
  const enabled=source.replace('const RELEASE_APPROVED=false','const RELEASE_APPROVED=true');
  const uid='11111111-1111-4111-8111-111111111111';
  const events=new Map(),timers=new Map();let seq=0,uploads=0;
- const win={document:{readyState:'loading',addEventListener:()=>{}},
+ const win={document:{readyState:'loading',addEventListener:(name,fn)=>events.set(name,fn)},
   MCAutoCoversV4:{},MCAutoSyncV4:{
    uploadQueued:async()=>{uploads++;return {pending:1,conflicts:[{reason:'HTTP 503'}]}},
    syncNow:async()=>({sent:{pending:0,conflicts:[]},received:{downloaded:0}}),
@@ -295,6 +295,9 @@ test('a new local save replaces an obsolete retry and keeps scheduled status acc
   console,Promise,Date,setTimeout:(fn,ms)=>{const id=++seq;timers.set(id,{fn,ms});return id},
   clearTimeout:id=>timers.delete(id)};
  vm.runInNewContext(enabled,ctx,{filename:'sync-auto-runtime-v4.js'});
+ // Runtime listeners are installed at DOMContentLoaded; isolate the startup kick timer.
+ events.get('DOMContentLoaded')();
+ timers.clear();
  await win.MCAutoSyncRuntimeV4.uploadQueued();
  assert.equal([...timers.values()][0].ms,5000);
  events.get('mc-local-comic-saved')();
