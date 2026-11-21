@@ -79,3 +79,25 @@ test('legacy save outbox entries without op still synchronize normally',()=>{
  const invalid=engine.decideQueuedPush({entry:{id:A.id,op:'unknown'},local:A,remote:null,baseline:null});
  assert.equal(invalid.action,'conflict');
 });
+
+test('an in-flight sync cannot be reused by a second IndexedDB instance with the same UID',async()=>{
+ const uid='11111111-1111-4111-8111-111111111111';
+ const previousCore=global.MCSyncV3Core,previousStorage=global.localStorage;
+ let release;
+ const gate=new Promise(resolve=>{release=resolve});
+ const database=()=>({objectStoreNames:{contains:()=>true}});
+ const firstDb=database(),secondDb=database();
+ try{
+  global.localStorage={getItem:()=>JSON.stringify({user:{id:uid},access_token:'test'})};
+  global.MCSyncV3Core={verifySession:()=>gate};
+  const first=engine.syncNow({uid,database:firstDb,dbName:'comicteca-user-'+uid,cfg:{}});
+  await assert.rejects(engine.syncNow({uid,database:secondDb,dbName:'comicteca-user-'+uid,cfg:{}}),
+   /Cambio de cuenta o base local/);
+  release();
+  await assert.rejects(first);
+ }finally{
+  release();
+  global.MCSyncV3Core=previousCore;
+  global.localStorage=previousStorage;
+ }
+});
