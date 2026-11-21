@@ -119,7 +119,10 @@ test('transient upload failures retry with exponential backoff, but CAS conflict
   clearTimeout:id=>timers.delete(id)};
  vm.runInNewContext(enabled,ctx,{filename:'sync-auto-runtime-v4.js'});
  documentEvents.get('DOMContentLoaded')();
- // Avoid startup scheduling: invoke the explicit API directly.
+ // The startup kick (100ms) is unrelated to this retry-only scenario.
+ // Remove that isolated VM timer so it cannot masquerade as a retry timer.
+ assert.equal([...timers.values()].filter(t=>t.ms===100).length,1);
+ for(const [id,t] of timers)if(t.ms===100)timers.delete(id);
  await win.MCAutoSyncRuntimeV4.uploadQueued();
  for(const delay of [5000,10000]){
   assert.equal(timers.size,1,'a transient failure schedules exactly one retry');
