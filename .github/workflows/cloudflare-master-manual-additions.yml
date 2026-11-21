@@ -1,0 +1,44 @@
+name: Verify MI COMICTECA official Maestro publication
+on:
+  push:
+    branches: [commercial-published]
+    paths:
+      - 'master-data/manual-additions.json'
+      - '.github/workflows/cloudflare-master-manual-additions.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  official-domain-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify official Cloudflare domain serves current Maestro additions
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const local=JSON.parse(fs.readFileSync('master-data/manual-additions.json','utf8'));
+          const required=local.items.filter(x=>String(x.id).includes('owner-20261121'));
+          if(required.length<11)throw Error('Expected owner additions missing from GitHub checkout');
+          fs.writeFileSync('/tmp/required-master-ids.txt',required.map(x=>x.id).join('\n'));
+          NODE
+          for attempt in 1 2 3 4 5 6; do
+            if curl -fLsS --max-time 15 -H 'Cache-Control: no-cache' "https://micomicteca.es/master-data/manual-additions.json?verify=${GITHUB_SHA}-${attempt}" -o /tmp/master-live.json; then
+              if node - <<'NODE'
+          const fs=require('node:fs');
+          const live=JSON.parse(fs.readFileSync('/tmp/master-live.json','utf8'));
+          const ids=new Set((live.items||[]).map(x=>x.id));
+          const required=fs.readFileSync('/tmp/required-master-ids.txt','utf8').trim().split('\n');
+          const missing=required.filter(id=>!ids.has(id));
+          if(missing.length)throw Error('Official domain is missing Maestro additions: '+missing.join(', '));
+          console.log('OFFICIAL_MASTER_ADDITIONS_VERIFIED',required.length);
+          NODE
+              then exit 0; fi
+            fi
+            sleep 15
+          done
+          echo 'micomicteca.es does not yet serve the expected Maestro additions' >&2
+          exit 1
