@@ -136,3 +136,29 @@ test('transient upload failures retry with exponential backoff, but CAS conflict
  assert.equal(timers.size,0,'CAS conflicts must not trigger a busy retry loop');
  assert.equal(win.MCAutoSyncRuntimeV4.getStatus().lastConflicts,1);
 });
+
+test('account UID and private IndexedDB namespace must match before any cloud operation',async()=>{
+ const source=fs.readFileSync(path.resolve(__dirname,'../sync-auto-runtime-v4.js'),'utf8');
+ const enabled=source.replace('const RELEASE_APPROVED=false','const RELEASE_APPROVED=true');
+ const uid='11111111-1111-4111-8111-111111111111';
+ const other='22222222-2222-4222-8222-222222222222';
+ for(const [account,dbName] of [
+  [uid,'comicteca-user-'+other],
+  [uid,'comicteca-guest-v1'],
+  ['not-a-uid','comicteca-user-not-a-uid']
+ ]){
+  const calls=[];
+  const win={MCAutoCoversV4:{},MCAutoSyncV4:{
+   syncNow:async()=>{calls.push('syncNow')},
+   pull:async()=>{calls.push('pull')},
+   uploadQueued:async()=>{calls.push('uploadQueued')}
+  },dispatchEvent:()=>{}};
+  const ctx={window:win,db:{},DBN:dbName,MC_ACCOUNT_ID:account,MC_IMPORT_TEST:false,
+   CustomEvent:class CustomEvent{constructor(type,options){this.type=type;this.detail=options.detail}},
+   console,Promise,Date,setTimeout,clearTimeout};
+  vm.runInNewContext(enabled,ctx,{filename:'sync-auto-runtime-v4.js'});
+  await assert.rejects(win.MCAutoSyncRuntimeV4.syncNow(),/Cuenta y almacén privado no coinciden/);
+  await assert.rejects(win.MCAutoSyncRuntimeV4.uploadQueued(),/Cuenta y almacén privado no coinciden/);
+  assert.deepEqual(calls,[],'mismatched UID must never reach cloud transport');
+ }
+});
