@@ -139,7 +139,7 @@ async function mcMasterLoadPublisher(pub){await mcManualAdditions();if(MCMasterU
  // Curated ECC Álbum de familia is a single 17-issue collection. Suppress only
  // legacy variants of this specific edition; leave other Astro City editions intact.
  if(pub==='ECC'){
-  const isAlbum=r=>/astro\\s*city/i.test(String(r.catalogHeader||r.series||''))&&/\\b(?:a[lá]bum\\s+de\\s+familia)\\b/i.test(String(r.catalogHeader||r.series||r.title||''));
+  const isAlbum=r=>/astro\s*city/i.test(String(r.catalogHeader||r.series||''))&&/\b(?:a[lá]bum\s+de\s+familia)\b/i.test(String(r.catalogHeader||r.series||r.title||''));
   for(let i=rows.length-1;i>=0;i--)if(isAlbum(rows[i]))rows.splice(i,1);
  }
  const existing=new Set(rows.map(key));
