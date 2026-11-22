@@ -14,9 +14,11 @@
   const retryable=errors.length>0&&errors.every(e=>
    /(?:HTTP 5\d\d|HTTP 429|Failed to fetch|NetworkError|network|sin conexión|timeout|offline)/i.test(String(e.reason||'')));
   if(errors.length&&!retryable)return; // Real conflict requires user review, not a busy loop.
-  const delay=retryable?retryMs:1500;
-  if(retryable)retryMs=Math.min(retryMs*2,300000);
-  else retryMs=5000;
+  // A pending outbox with no reported conflict is not proof of progress.
+  // Avoid hammering the API every 1.5 seconds if the transport repeatedly
+  // returns pending records without acknowledging any of them.
+  const delay=retryMs;
+  retryMs=Math.min(retryMs*2,300000);
   pendingRetryMode=retryMode;
   timer=setTimeout(()=>{
    timer=null;pendingRetryMode=null;
