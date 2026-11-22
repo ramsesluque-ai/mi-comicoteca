@@ -51,9 +51,12 @@ jobs:
           persist-credentials: false
       - name: Install browser dependency
         run: npm install --no-save --no-package-lock playwright@1.56.1
-      - name: Validate the deployed site in Chromium
+      # Only an anonymous public-gate smoke. This is NOT authenticated BI E2E.
+      # The commercial deployment is separate from GitHub Pages publishing.
+      - name: Validate official commercial domain public gate in Chromium
         env:
-          COMICTECA_BASE_URL: ${{ needs.deploy.outputs.page_url }}
+          COMICTECA_BASE_URL: https://micomicteca.es/
+          COMICTECA_EXPECT_PUBLIC_GATE: '1'
         run: node tests/bi-browser-smoke.cjs
       - name: Preserve screenshot and browser report
         if: always()
