@@ -341,3 +341,32 @@ test('save during failed full reconciliation preserves pull on retry',async()=>{
  assert.equal(pushes,0,'must not degrade to push-only');
  assert.equal(win.MCAutoSyncRuntimeV4.getStatus().lastDownloads,1);
 });
+
+
+test('successful push ACK does not cancel a scheduled failed full pull retry',async()=>{
+ const source=fs.readFileSync(path.resolve(__dirname,'../sync-auto-runtime-v4.js'),'utf8');
+ assert.match(source,/const RELEASE_APPROVED=false/);
+ const enabled=source.replace('const RELEASE_APPROVED=false','const RELEASE_APPROVED=true');
+ const uid='11111111-1111-4111-8111-111111111111';
+ const timers=new Map();let seq=0,full=0,push=0;
+ const win={MCAutoCoversV4:{},MCAutoSyncV4:{
+  syncNow:async()=>{full++;if(full===1)throw Error('HTTP 503');return {sent:{pending:0,conflicts:[]},received:{downloaded:1,conflicts:[]}};},
+  uploadQueued:async()=>{push++;return {pending:0,uploaded:1,conflicts:[]};},
+  pull:async()=>({downloaded:0})
+ },dispatchEvent:()=>{}};
+ const ctx={window:win,db:{},DBN:'comicteca-user-'+uid,MC_ACCOUNT_ID:uid,MC_IMPORT_TEST:false,
+  CustomEvent:class CustomEvent{constructor(type,options){this.type=type;this.detail=options.detail}},
+  console,Promise,Date,setTimeout:(fn,ms)=>{const id=++seq;timers.set(id,{fn,ms});return id},
+  clearTimeout:id=>timers.delete(id)};
+ vm.runInNewContext(enabled,ctx,{filename:'sync-auto-runtime-v4.js'});
+ await assert.rejects(win.MCAutoSyncRuntimeV4.syncNow(),/HTTP 503/);
+ assert.equal(timers.size,1);
+ assert.equal([...timers.values()][0].ms,5000);
+ await win.MCAutoSyncRuntimeV4.uploadQueued();
+ assert.equal(push,1);
+ assert.equal(timers.size,1,'push ACK must preserve failed full reconciliation retry');
+ const [id,t]=[...timers.entries()][0];timers.delete(id);t.fn();
+ for(let i=0;i<16;i++)await Promise.resolve();
+ assert.equal(full,2,'remote changes must still be recovered');
+ assert.equal(timers.size,0);
+});
