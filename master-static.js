@@ -133,14 +133,15 @@ function mcMasterCleanField(v){const s=String(v??'').trim();return /^(?:-1|null|
 function mcMasterCleanDate(v){const s=mcMasterCleanField(v);if(s==='-1-00'||s==='0000-00-00')return '';if(/^\d{4}-00-00$/.test(s))return s.slice(0,4);if(/^\d{4}-(?:0[1-9]|1[0-2])-00$/.test(s))return s.slice(0,7);return s}
 async function mcMasterEnrichRows(rows){const over=await mcSEOverrides();const shared=await window.mcSharedCovers?.()||{};return rows.map(r=>{const code=mcMasterCode(r),o={...(MC_VERIFIED_MASTER_RECORDS[String(r.id)]||{}),...(code?over[code]||{}:{})},candidate={...r,...o},key=window.mcMasterCoverKey?.(candidate)||'',oldKey=window.mcMasterCoverKey?.(r)||'',common=shared[key]||shared[oldKey]||'';return{...r,title:mcMasterCleanField(o.title||r.title),publisher:mcMasterCleanField(o.publisher||r.publisher),catalogHeader:mcMasterCleanField(o.series||r.catalogHeader||r.series),series:mcMasterCleanField(o.series||r.series||r.catalogHeader),issueNr:mcMasterCleanField(o.issueNr||r.issueNr||r.issue),issue:mcMasterCleanField(o.issueNr||r.issue||r.issueNr),publicationDate:mcMasterCleanDate(o.publicationDate||r.publicationDate),pages:mcMasterCleanField(o.pages||r.pages),isbn:mcMasterCleanField(o.isbn||r.isbn),coverUrl:common||o.coverUrl||r.coverUrl||'',sourceUrl:o.sourceUrl||r.sourceUrl||''}})}
 async function mcMasterLoadPublisher(pub){await mcManualAdditions();if(MCMasterUI.loadedPublisher===pub&&MCMasterUI.rows.length)return MCMasterUI.rows;const idx=await mcMasterIndexWithArchive(),meta=(idx.publishers||[]).find(p=>p.publisher===pub)||mcSEPublisherMeta(idx,pub)[0];if(!meta){MCMasterUI.rows=[];MCMasterUI.loadedPublisher='';return[]}const rows=await mcSEChunks(meta.chunks||[]);
- const isECCAlbum=r=>{const name=[r.catalogHeader,r.series,r.title].filter(Boolean).join(' ');return /astro\s*city/i.test(name)&&/a[lá]bum\s+de\s+familia/i.test(name)};
- const archive=(await mcNovedadesArchive()).filter(r=>r.publisher===pub&&!(pub==='ECC'&&isECCAlbum(r)));
- const manual=(await mcManualAdditions()).filter(r=>r.publisher===pub);
+ // ECC Astro City is represented solely by the curated 17-issue series.
+ // Exclude legacy one-off Astro City titles from every public Master source.
+ const isECCAstro=r=>/^astro\s*city(?:\b|\s|:)/i.test(String(r.catalogHeader||r.series||'').trim());
+ const archive=(await mcNovedadesArchive()).filter(r=>r.publisher===pub&&!(pub==='ECC'&&isECCAstro(r)));
+ const manual=(await mcManualAdditions()).filter(r=>r.publisher===pub&&(!(pub==='ECC'&&isECCAstro(r))||String(r.id||'').startsWith('mc-ecc-astro-city-album-familia-')));
  const key=r=>String(r.isbn||'').replace(/[^0-9X]/gi,'')||[mcSENorm(r.publisher),mcSENorm(r.catalogHeader||r.series),mcSENorm(r.volume||''),mcSENorm(r.stage||''),String(r.startYear||''),mcSENorm(r.issueNr||r.issue||'Único')].join('|');
- // Curated ECC Álbum de familia is a single 17-issue collection. Suppress only
- // legacy variants of this specific edition; leave other Astro City editions intact.
+ // Never delete source JSON or any user's private collection; filter public rows only.
  if(pub==='ECC'){
-  for(let i=rows.length-1;i>=0;i--)if(isECCAlbum(rows[i]))rows.splice(i,1);
+  for(let i=rows.length-1;i>=0;i--)if(isECCAstro(rows[i]))rows.splice(i,1);
  }
  const existing=new Set(rows.map(key));
  for(const r of [...archive,...manual]){const k=key(r);if(!existing.has(k)){rows.push(r);existing.add(k)}}
