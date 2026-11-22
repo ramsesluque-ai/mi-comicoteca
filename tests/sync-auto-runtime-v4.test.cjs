@@ -399,3 +399,11 @@ test('pending outbox without ACK backs off instead of polling every 1.5 seconds'
  assert.equal([...timers.values()][0].ms,40000);
  assert.equal(win.MCAutoSyncRuntimeV4.getStatus().pending,1);
 });
+
+test('HTTP 408 and 425 are classified as transient without enabling release',()=>{
+ const source=fs.readFileSync(path.resolve(__dirname,'../sync-auto-runtime-v4.js'),'utf8');
+ assert.match(source,/const RELEASE_APPROVED=false/);
+ assert.equal((source.match(/HTTP 408/g)||[]).length,2);
+ assert.equal((source.match(/HTTP 425/g)||[]).length,2);
+ assert.match(source,/if\(errors\.length&&!retryable\)return/);
+});
