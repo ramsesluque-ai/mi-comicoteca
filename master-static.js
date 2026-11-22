@@ -136,6 +136,12 @@ async function mcMasterLoadPublisher(pub){await mcManualAdditions();if(MCMasterU
  const archive=(await mcNovedadesArchive()).filter(r=>r.publisher===pub);
  const manual=(await mcManualAdditions()).filter(r=>r.publisher===pub);
  const key=r=>String(r.isbn||'').replace(/[^0-9X]/gi,'')||[mcSENorm(r.publisher),mcSENorm(r.catalogHeader||r.series),mcSENorm(r.volume||''),mcSENorm(r.stage||''),String(r.startYear||''),mcSENorm(r.issueNr||r.issue||'Único')].join('|');
+ // Curated ECC Álbum de familia is a single 17-issue collection. Suppress only
+ // legacy variants of this specific edition; leave other Astro City editions intact.
+ if(pub==='ECC'){
+  const isAlbum=r=>/astro\\s*city/i.test(String(r.catalogHeader||r.series||''))&&/\\b(?:a[lá]bum\\s+de\\s+familia)\\b/i.test(String(r.catalogHeader||r.series||r.title||''));
+  for(let i=rows.length-1;i>=0;i--)if(isAlbum(rows[i]))rows.splice(i,1);
+ }
  const existing=new Set(rows.map(key));
  for(const r of [...archive,...manual]){const k=key(r);if(!existing.has(k)){rows.push(r);existing.add(k)}}
  MCMasterUI.rows=await mcMasterEnrichRows(rows);MCMasterUI.loadedPublisher=meta.publisher;return MCMasterUI.rows}
