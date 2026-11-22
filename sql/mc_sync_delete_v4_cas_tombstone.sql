@@ -1,4 +1,24 @@
 -- REVIEW ONLY: NOT DEPLOYED. V4 CAS tombstone, no hard deletes.
+-- Scoped trigger repair for user_comics only. Preserve an explicit CAS timestamp
+-- when it strictly advances the previous version; otherwise advance it here.
+-- Do not replace shared public.set_updated_at(), used by other tables.
+create or replace function public.mc_user_comics_updated_at_monotonic()
+returns trigger language plpgsql set search_path=''
+as $trigger$
+begin
+  if new.updated_at is null or new.updated_at <= old.updated_at then
+    new.updated_at := greatest(clock_timestamp(), old.updated_at + interval '1 microsecond');
+  end if;
+  return new;
+end;
+$trigger$;
+-- This migration is REVIEW ONLY: inspect live trigger definitions and RLS
+-- before installing, then execute transactional tests with isolated UIDs.
+drop trigger if exists trg_user_comics_updated_at on public.user_comics;
+create trigger trg_user_comics_updated_at
+before update on public.user_comics
+for each row execute function public.mc_user_comics_updated_at_monotonic();
+
 create or replace function public.mc_sync_delete_v4(
  p_local_id text, p_expected_updated_at timestamptz
 ) returns jsonb language plpgsql security invoker set search_path=''
@@ -20,9 +40,7 @@ begin
    and coalesce(metadata->>'deleted','false')<>'true'
  returning local_id,updated_at into v_row;
  if v_row is null then return jsonb_build_object('state','conflict'); end if;
- -- A BEFORE UPDATE trigger currently assigns now() to updated_at, potentially
- -- overriding our monotonic expression. Fail closed and ROLLBACK the UPDATE
- -- if the persisted version did not advance. Never ACK an ambiguous CAS.
+ -- Fail closed if a future trigger change prevents a strictly increasing CAS version.
  if v_row.updated_at <= p_expected_updated_at then
    raise exception 'CAS version did not advance; check trg_user_comics_updated_at' using errcode='40001';
  end if;
@@ -32,11 +50,7 @@ end;
 $function$;
 revoke all on function public.mc_sync_delete_v4(text,timestamptz) from public,anon;
 grant execute on function public.mc_sync_delete_v4(text,timestamptz) to authenticated;
--- Verified 2026-11-21: trg_user_comics_updated_at invokes set_updated_at(),
--- which overwrites updated_at with now(). This guard prevents false ACK but
--- production installation remains BLOCKED until the trigger/version strategy
--- is corrected and tested with two isolated authenticated accounts.
--- RLS owner update policy; 2 real isolated test UIDs.
+-- Scoped trigger repair is drafted but NOT DEPLOYED. Validate live RLS, trigger\n-- ordering, transaction rollback, and two isolated authenticated test UIDs.
 -- Status is intentionally unchanged: no assumption about status CHECK constraints.
 -- Explicit monotonic updated_at ensures CAS changes even without a timestamp trigger.
 -- Retains original record/cover; never deletes rows or storage objects.
