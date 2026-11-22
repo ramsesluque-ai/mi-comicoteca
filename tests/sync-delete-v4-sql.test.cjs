@@ -30,3 +30,12 @@ test('trigger-overridden timestamp must fail closed and roll back',()=>{
  assert.match(sql,/errcode='40001'/);
  assert.match(sql,/trg_user_comics_updated_at/);
 });
+
+test('scoped user_comics trigger preserves monotonic explicit CAS versions',()=>{
+ assert.match(sql,/create or replace function public\.mc_user_comics_updated_at_monotonic\(\)/i);
+ assert.match(sql,/new\.updated_at <= old\.updated_at/i);
+ assert.match(sql,/greatest\(clock_timestamp\(\), old\.updated_at \+ interval '1 microsecond'\)/i);
+ assert.match(sql,/create trigger trg_user_comics_updated_at[\s\S]*?on public\.user_comics/i);
+ assert.doesNotMatch(sql,/create or replace function public\.set_updated_at\(/i);
+ assert.match(sql,/REVIEW ONLY: NOT DEPLOYED/i);
+});
