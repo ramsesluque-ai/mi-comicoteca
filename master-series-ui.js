@@ -63,8 +63,8 @@ renderMaster=async function(){
  // ECC Astro City Álbum de familia: only the curated 17-number edition belongs
  // to this Master card. Do not alter other Astro City series or personal data.
  const isAstroAlbum=r=>{
-   const name=[r.catalogHeader,r.series,r.title].filter(Boolean).join(' ').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLocaleLowerCase('es');
-   return /astro\\s*city/.test(name)&&/album\\s+de\\s+familia/.test(name);
+   const name=[r.catalogHeader,r.series,r.title].filter(Boolean).join(' ').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('es');
+   return /astro\s*city/.test(name)&&/album\s+de\s+familia/.test(name);
  };
  const curatedAstroAlbum=rows.filter(r=>String(r.id||'').startsWith('mc-ecc-astro-city-album-familia-'));
  if(pub==='ECC'&&curatedAstroAlbum.length===17){
