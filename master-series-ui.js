@@ -82,6 +82,14 @@ renderMaster=async function(){
  let enriched=filtered;
  try{if(typeof mcMasterEnrichRows==='function')enriched=await mcMasterEnrichRows(filtered)||filtered;}catch(err){console.warn('[Maestro] Enriquecimiento no disponible; se muestran las fichas originales',err);}
  if(token!==state.serial)return;
+ // Final presentation guard after bibliographic overrides: never show ECC
+ // Astro City one-off series beside the authoritative 17-issue collection.
+ if(pub==='ECC'){
+   const canonical=enriched.filter(r=>String(r.id||'').startsWith('mc-ecc-astro-city-album-familia-'));
+   if(canonical.length===17){
+     enriched=enriched.filter(r=>!/^astro\s*city(?:\b|\s|:)/i.test(String(r.catalogHeader||r.series||'').trim())||String(r.id||'').startsWith('mc-ecc-astro-city-album-familia-'));
+   }
+ }
  const coverFor=r=>{const key=typeof window.mcMasterCoverKey==='function'?window.mcMasterCoverKey(r):'';return key&&sharedCovers[key]?{...r,coverUrl:sharedCovers[key]}:r};
  const coverRank=r=>{const n=String(r.issueNr||r.issue||'').trim();return /^(?:0*1)(?:\D|$)/.test(n)?0:1};
  const groups=new Map();
