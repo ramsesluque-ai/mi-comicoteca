@@ -60,6 +60,16 @@ renderMaster=async function(){
  }
  const checks=[['catalogHeader','header'],['volume','volume'],['stage','stage'],['startYear','year']];
  for(const [field,prop] of checks){if(state[prop]&&!rows.some(r=>normalize(r[field])===state[prop]))state[prop]='';document.querySelector('[data-master-filter="'+field+'"]').value=state[prop]}
+ // ECC Astro City Álbum de familia: only the curated 17-number edition belongs
+ // to this Master card. Do not alter other Astro City series or personal data.
+ const isAstroAlbum=r=>{
+   const name=[r.catalogHeader,r.series,r.title].filter(Boolean).join(' ').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLocaleLowerCase('es');
+   return /astro\\s*city/.test(name)&&/album\\s+de\\s+familia/.test(name);
+ };
+ const curatedAstroAlbum=rows.filter(r=>String(r.id||'').startsWith('mc-ecc-astro-city-album-familia-'));
+ if(pub==='ECC'&&curatedAstroAlbum.length===17){
+   rows=rows.filter(r=>!isAstroAlbum(r)||String(r.id||'').startsWith('mc-ecc-astro-city-album-familia-'));
+ }
  let filtered=rows.filter(r=>{
    // Quarantine unverified ECC 2019 grouping; preserve source records for later reconciliation.
    if(mcSENorm(r.publisher)==='ecc'&&mcSENorm(r.catalogHeader||r.series)==='1st issue special'&&String(r.startYear||'')==='2019')return false;
