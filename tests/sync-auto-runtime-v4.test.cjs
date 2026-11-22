@@ -310,3 +310,34 @@ test('a new local save replaces an obsolete retry and keeps scheduled status acc
  assert.equal([...timers.values()][0].ms,10000);
  assert.equal(win.MCAutoSyncRuntimeV4.getStatus().scheduled,true);
 });
+
+test('save during failed full reconciliation preserves pull on retry',async()=>{
+ const source=fs.readFileSync(path.resolve(__dirname,'../sync-auto-runtime-v4.js'),'utf8');
+ const enabled=source.replace('const RELEASE_APPROVED=false','const RELEASE_APPROVED=true');
+ const uid='11111111-1111-4111-8111-111111111111';
+ const events=new Map(),timers=new Map();let seq=0,syncs=0,pushes=0;
+ const win={document:{readyState:'loading',addEventListener:(n,fn)=>events.set(n,fn)},
+  MCAutoCoversV4:{},MCAutoSyncV4:{
+   syncNow:async()=>{syncs++;if(syncs===1)throw Error('HTTP 503');return {sent:{pending:0,conflicts:[]},received:{downloaded:1,conflicts:[]}}},
+   uploadQueued:async()=>{pushes++;return {pending:0,conflicts:[]}},
+   pull:async()=>({downloaded:0})
+  },addEventListener:(n,fn)=>events.set(n,fn),dispatchEvent:()=>{}};
+ const ctx={window:win,db:{},DBN:'comicteca-user-'+uid,MC_ACCOUNT_ID:uid,MC_IMPORT_TEST:false,
+  CustomEvent:class CustomEvent{constructor(type,options){this.type=type;this.detail=options.detail}},
+  console,Promise,Date,setTimeout:(fn,ms)=>{const id=++seq;timers.set(id,{fn,ms});return id},
+  clearTimeout:id=>timers.delete(id)};
+ vm.runInNewContext(enabled,ctx,{filename:'sync-auto-runtime-v4.js'});
+ events.get('DOMContentLoaded')();
+ timers.clear(); // ignore automatic startup timer for this isolated scenario
+ await assert.rejects(win.MCAutoSyncRuntimeV4.syncNow(),/HTTP 503/);
+ assert.equal([...timers.values()][0].ms,5000);
+ events.get('mc-local-comic-saved')();
+ assert.equal(timers.size,1);
+ const [id,t]=[...timers.entries()][0];
+ assert.equal(t.ms,800);
+ timers.delete(id);t.fn();
+ for(let i=0;i<20;i++)await Promise.resolve();
+ assert.equal(syncs,2,'save must retain full reconciliation');
+ assert.equal(pushes,0,'must not degrade to push-only');
+ assert.equal(win.MCAutoSyncRuntimeV4.getStatus().lastDownloads,1);
+});
