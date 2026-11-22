@@ -44,7 +44,11 @@
   // A later successful upload can overtake a previously scheduled retry.
   // Cancel that obsolete retry and reset backoff only after the outbox is
   // confirmed empty; otherwise keep the pending operation retryable.
-  if(result?.sent&&Number(result.sent.pending)===0){
+  // An upload ACK only proves the outbox was drained. It does not prove a
+  // previously failed pull/full reconciliation has recovered remote changes.
+  // Preserve that retry even if a manual push completes successfully.
+  const unfinishedPull=pendingRetryMode==='both'||pendingRetryMode==='pull';
+  if(result?.sent&&Number(result.sent.pending)===0&&!(mode==='push'&&unfinishedPull)){
    if(timer){clearTimeout(timer);timer=null}
    pendingRetryMode=null;
    STATE.scheduled=false;
