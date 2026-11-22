@@ -30,7 +30,19 @@ const { chromium } = require('playwright');
     fs.writeFileSync('artifacts/bi-browser-report.json', JSON.stringify(report, null, 2));
     console.error(JSON.stringify(report, null, 2));
     await browser.close();
+    // Anonymous public smoke: the access gate is expected, not a failed BI test.
+    // Never claim authenticated Dashboard/BI validation from this result.
+    if (process.env.COMICTECA_EXPECT_PUBLIC_GATE === '1') {
+      report.publicGateVerified = response?.status() === 200 && errors.length === 0;
+      fs.writeFileSync('artifacts/bi-browser-report.json', JSON.stringify(report, null, 2));
+      process.exitCode = report.publicGateVerified ? 0 : 1;
+    } else process.exitCode = 1;
+    return;
+  }
+  if (process.env.COMICTECA_EXPECT_PUBLIC_GATE === '1') {
+    console.error('Expected anonymous public access gate was not shown');
     process.exitCode = 1;
+    await browser.close();
     return;
   }
   await page.locator('[data-v="dashboard"]').click({ timeout: 10000 });
