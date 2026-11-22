@@ -7,7 +7,7 @@
  const RELEASE_APPROVED=false; // Flip only after verified E2E; never from localStorage/query params.
  const STATE={enabled:RELEASE_APPROVED,running:false,scheduled:false,lastError:null,lastSuccessful:null,
   lastUploads:0,lastDownloads:0,lastConflicts:0,pending:null};
- let job=null,timer=null,lastOnReturn=0,retryMs=5000,afterJobPush=false,afterJobRefresh=false;
+ let job=null,timer=null,pendingRetryMode=null,lastOnReturn=0,retryMs=5000,afterJobPush=false,afterJobRefresh=false;
  function reschedulePending(sent, retryMode='push'){
   if(!RELEASE_APPROVED||!sent||!Number(sent.pending)||timer)return;
   const errors=sent.conflicts||[];
@@ -17,8 +17,9 @@
   const delay=retryable?retryMs:1500;
   if(retryable)retryMs=Math.min(retryMs*2,300000);
   else retryMs=5000;
+  pendingRetryMode=retryMode;
   timer=setTimeout(()=>{
-   timer=null;
+   timer=null;pendingRetryMode=null;
    STATE.scheduled=false;emit();
    work(retryMode).catch(e=>console.warn('MI COMICTECA retry de sincronización pendiente',e));
   },delay);
@@ -45,6 +46,7 @@
   // confirmed empty; otherwise keep the pending operation retryable.
   if(result?.sent&&Number(result.sent.pending)===0){
    if(timer){clearTimeout(timer);timer=null}
+   pendingRetryMode=null;
    STATE.scheduled=false;
    retryMs=5000;
   }
@@ -94,11 +96,13 @@
  }
  function queueUpload(){
   if(!RELEASE_APPROVED)return;
-  // A fresh save supersedes any older retry timer; report the new debounce
-  // as scheduled so status never claims an obsolete retry is still active.
+  // Preserve an unfinished full pull/reconciliation when a new save replaces
+  // its retry timer. A push-only debounce must not suppress remote changes.
+  const nextMode=pendingRetryMode==='both'||pendingRetryMode==='pull'?'both':'push';
   if(timer){clearTimeout(timer);timer=null}
+  pendingRetryMode=nextMode;
   STATE.scheduled=true;emit();
-  timer=setTimeout(()=>{timer=null;STATE.scheduled=false;emit();work('push').catch(e=>console.warn('MI COMICTECA auto-upload pendiente',e))},800);
+  timer=setTimeout(()=>{timer=null;pendingRetryMode=null;STATE.scheduled=false;emit();work(nextMode).catch(e=>console.warn('MI COMICTECA auto-upload pendiente',e))},800);
  }
  function onReturn(){
   if(!RELEASE_APPROVED||root.document?.hidden||Date.now()-lastOnReturn<120000)return;
