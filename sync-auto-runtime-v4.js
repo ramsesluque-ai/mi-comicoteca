@@ -104,10 +104,20 @@
     throw e
    }
    finally{
-    STATE.running=false;job=null;activeIdentity=null;emit();
-    const next=afterJobRefresh?'both':afterJobPush?'push':null;
+    // A completed request may belong to a signed-out account. Never publish its
+    // completion or replay its queued work against a newly opened private DB.
+    const sameAccount=activeIdentity&&
+     MC_ACCOUNT_ID===activeIdentity.uid&&DBN===activeIdentity.dbName&&db===activeIdentity.database;
+    const completedUid=activeIdentity?.uid,completedDbName=activeIdentity?.dbName,completedDatabase=activeIdentity?.database;
+    STATE.running=false;job=null;activeIdentity=null;
+    const next=sameAccount?(afterJobRefresh?'both':afterJobPush?'push':null):null;
     afterJobRefresh=false;afterJobPush=false;
-    if(next)Promise.resolve().then(()=>work(next).catch(e=>console.warn('MI COMICTECA sincronización reprogramada pendiente',e)));
+    if(sameAccount)emit();
+    if(next)Promise.resolve().then(()=>{
+     // Recheck after the microtask boundary: auth may change in the meantime.
+     if(MC_ACCOUNT_ID!==completedUid||DBN!==completedDbName||db!==completedDatabase)return;
+     return work(next).catch(e=>console.warn('MI COMICTECA sincronización reprogramada pendiente',e));
+    });
    }
   })();
   return job;
