@@ -83,8 +83,8 @@
       return [c.publisher,c.header,'','','1954'].join('|');
     }
     const k=fullKey(r);if(st.full.has(k))return k;
-    const c=collectionParts(r||{});
-    if(!String(c.year||'').trim()){
+    const originalParts=collectionParts(r||{});
+    if(!String(originalParts.year||'').trim()){
       const set=st.loose.get(looseKey(r));
       if(set&&set.size===1)return [...set][0];
     }
