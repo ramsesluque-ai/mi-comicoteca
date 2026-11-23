@@ -1,0 +1,78 @@
+'use strict';
+/* Cloud overlay for the public Maestro. Static snapshots remain a read-only fallback.
+ * Never writes to the user's collection or to the shared catalog.
+ * Shared DB changes become visible on the next publisher load without a GitHub deploy.
+ */
+(function(){
+ const original=window.mcMasterLoadPublisher;
+ if(typeof original!=='function')return;
+ const ttl=60000,cache=new Map();
+ const normalize=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+ function session(){
+  for(const store of [localStorage,sessionStorage]){
+   try{const s=JSON.parse(store.getItem('mc_supabase_session_v1')||'null');if(s?.access_token&&s?.user?.id)return s}catch(_){}
+  }
+  return null;
+ }
+ async function cloudRows(publisher){
+  const config=window.MI_COMICOTECA_CLOUD,s=session();
+  if(!config?.url||!config?.publishableKey||!s)return null;
+  const now=Date.now(),prior=cache.get(publisher);
+  if(prior&&now-prior.at<ttl)return prior.rows;
+  const headers={apikey:config.publishableKey,Authorization:'Bearer '+s.access_token};
+  const endpoint=config.url.replace(/\/$/,'')+'/rest/v1/';
+  const seriesURL=endpoint+'master_series?select=id,publisher,title,volume,stage,start_year&publisher=eq.'+encodeURIComponent(publisher)+'&limit=1000';
+  const seriesResponse=await fetch(seriesURL,{headers,cache:'no-store'});
+  if(!seriesResponse.ok)throw Error('Maestro central: lectura de colecciones HTTP '+seriesResponse.status);
+  const series=await seriesResponse.json();
+  if(!Array.isArray(series))throw Error('Maestro central: formato de colecciones incorrecto');
+  const result=[];
+  // Query by series ID to avoid cross-publisher exposure and URL length limits.
+  for(const group of series){
+   let offset=0;
+   while(true){
+    const url=endpoint+'master_comics?select=id,series_id,issue_number,title,publication_date,isbn,barcode,cover_url,metadata&series_id=eq.'+encodeURIComponent(group.id)+'&order=issue_number.asc&limit=1000&offset='+offset;
+    const response=await fetch(url,{headers,cache:'no-store'});
+    if(!response.ok)throw Error('Maestro central: lectura de números HTTP '+response.status);
+    const issues=await response.json();
+    if(!Array.isArray(issues))throw Error('Maestro central: formato de números incorrecto');
+    for(const issue of issues)result.push({
+     id:'cloud-master-'+issue.id,publisher:group.publisher,
+     catalogHeader:group.title,series:group.title,volume:group.volume||'',
+     stage:group.stage||'',startYear:group.start_year?String(group.start_year):'',
+     issueNr:String(issue.issue_number||''),issue:String(issue.issue_number||''),
+     title:issue.title||'',publicationDate:issue.publication_date||'',
+     isbn:issue.isbn||'',barcode:issue.barcode||'',coverUrl:issue.cover_url||'',
+     ...(issue.metadata&&typeof issue.metadata==='object'&&!Array.isArray(issue.metadata)?{cloudMetadata:issue.metadata}:{})
+    });
+    if(issues.length<1000)break;
+    offset+=1000;
+   }
+  }
+  cache.set(publisher,{at:now,rows:result});
+  return result;
+ }
+ window.mcMasterLoadPublisher=async function(publisher){
+  const base=await original(publisher);
+  let central;
+  try{central=await cloudRows(publisher)}catch(error){console.warn('[Maestro] No disponible la actualización central; se conserva el catálogo de referencia',error);return base}
+  if(!central?.length)return base;
+  const key=r=>[normalize(r.publisher),normalize(r.catalogHeader||r.series),normalize(r.volume),normalize(r.stage),normalize(r.startYear),normalize(r.issueNr||r.issue)].join('|');
+  const merged=base.slice(),positions=new Map();
+  merged.forEach((r,i)=>{const k=key(r);if(!positions.has(k))positions.set(k,i)});
+  for(const r of central){
+   const k=key(r),i=positions.get(k);
+   if(i===undefined){positions.set(k,merged.length);merged.push(r)}
+   else {
+    // Central edits win only for non-empty values; retain static bibliographic
+    // fields, original cover and provenance when cloud fields are not supplied.
+    const previous=merged[i],patch={};
+    for(const field of ['title','publicationDate','isbn','barcode','coverUrl'])
+     if(r[field]!==undefined&&r[field]!==null&&String(r[field]).trim())patch[field]=r[field];
+    merged[i]={...previous,...patch,cloudMasterId:r.id};
+   }
+  }
+  return merged;
+ };
+ window.mcMasterCloudInvalidate=()=>cache.clear();
+})();
