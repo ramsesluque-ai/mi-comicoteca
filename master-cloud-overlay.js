@@ -94,7 +94,7 @@
    proposed_fields:proposed,source_type:sourceType,
    source_reference:String(input?.sourceReference||'').slice(0,2000)};
   if(target)payload.target_comic_id=target;
-  const response=await fetch(config.url.replace(/\\/$/,'')+'/rest/v1/master_change_proposals',{
+  const response=await fetch(config.url.replace(/\/$/,'')+'/rest/v1/master_change_proposals',{
    method:'POST',headers:{apikey:config.publishableKey,Authorization:'Bearer '+auth.access_token,
     'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify(payload)
   });
