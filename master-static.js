@@ -151,8 +151,8 @@ async function mcMasterLoadPublisher(pub){await mcManualAdditions();if(MCMasterU
  // or discard unpaired entries, variants or other source records.
  if(mcSENorm(pub)==='novaro'){
   const isBatman=r=>mcSENorm(r.catalogHeader||r.series)==='batman';
-  const isAguila=r=>/aguila/i.test(String(r.stage||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,''))&&isBatman(r);
-  const isOther=r=>/(avestruz|colibri)/i.test(String(r.stage||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,''));
+  const isAguila=r=>mcSENorm(r.stage||'').includes('aguila')&&isBatman(r);
+  const isOther=r=>/avestruz|colibri/.test(mcSENorm(r.stage||''));
   const main=new Map();
   for(const r of rows){
    const n=String(r.issueNr||r.issue||'').trim();
