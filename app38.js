@@ -75,6 +75,13 @@
   }
 
   function resolvedKey(r,st){
+    // Unify Novaro Batman 1954 including the Aguila format in the actual
+    // v50/v53 Collections renderer. Do not alter private rows or other series.
+    const c=parts(r);
+    if(c.publisher==='novaro'&&c.header==='batman'&&c.year==='1954'&&
+       !/avestruz|colibri/.test(c.stage)){
+      return [c.publisher,c.header,'','','1954'].join('|');
+    }
     const k=fullKey(r);if(st.full.has(k))return k;
     const c=collectionParts(r||{});
     if(!String(c.year||'').trim()){
