@@ -2,27 +2,9 @@ name: MI COMICTECA V4 automatic sync safety
 on:
   push:
     branches: [commercial-published]
-    paths:
-      - 'app1.js'
-      - 'app5.js'
-      - 'index.html'
-      - 'sw.js'
-      - 'manual-sync-v2-button.js'
-      - 'catalog-cloud-rehydrate.js'
-      - 'vault.js'
-      - 'sync-auto-v4.js'
-      - 'sync-auto-covers-v4.js'
-      - 'sync-auto-runtime-v4.js'
-      - 'sync-v3-core.js'
-      - 'sync-v2-cover-integrity.js'
-      - 'sql/mc_sync_delete_v4_cas_tombstone.sql'
-      - 'tests/sync-delete-v4-sql.test.cjs'
-      - 'tests/sync-auto-v4.test.cjs'
-      - 'tests/sync-auto-v4-e2e.test.cjs'
-      - 'tests/sync-auto-runtime-v4.test.cjs'
-      - 'tests/sync-auto-covers-v4.test.cjs'
-      - '.github/workflows/sync-v4-tests.yml'
   workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   safe-automatic-sync:
     runs-on: ubuntu-latest
