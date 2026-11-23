@@ -146,6 +146,34 @@ async function mcMasterLoadPublisher(pub){await mcManualAdditions();if(MCMasterU
  }
  const existing=new Set(rows.map(key));
  for(const r of [...archive,...manual]){const k=key(r);if(!existing.has(k)){rows.push(r);existing.add(k)}}
+ // Novaro Batman: Serie Águila is a format within the numbered main series.
+ // Only collapse a verified same-number pair; never merge Avestruz/Colibrí
+ // or discard unpaired entries, variants or other source records.
+ if(mcSENorm(pub)==='novaro'){
+  const isBatman=r=>mcSENorm(r.catalogHeader||r.series)==='batman';
+  const isAguila=r=>/aguila/i.test(String(r.stage||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,''))&&isBatman(r);
+  const isOther=r=>/(avestruz|colibri)/i.test(String(r.stage||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,''));
+  const main=new Map();
+  for(const r of rows){
+   const n=String(r.issueNr||r.issue||'').trim();
+   if(isBatman(r)&&!isAguila(r)&&!isOther(r)&&/^\\d+$/.test(n)&&Number(n)>=1&&Number(n)<=1301){
+    if(!main.has(Number(n)))main.set(Number(n),r);
+   }
+  }
+  for(let i=rows.length-1;i>=0;i--){
+   const r=rows[i],n=String(r.issueNr||r.issue||'').trim();
+   if(!isAguila(r)||!/^\\d+$/.test(n))continue;
+   const target=main.get(Number(n));
+   if(!target)continue;
+   // Only collapse when bibliographic identity agrees; mismatched source
+   // metadata remains visible for manual review.
+   const isbn=x=>String(x.isbn||'').replace(/[^0-9X]/gi,'');
+   if(isbn(r)&&isbn(target)&&isbn(r)!==isbn(target))continue;
+   if(r.title&&!target.title)target.title=r.title;
+   if(r.coverUrl&&!target.coverUrl)target.coverUrl=r.coverUrl;
+   rows.splice(i,1);
+  }
+ }
  MCMasterUI.rows=await mcMasterEnrichRows(rows);MCMasterUI.loadedPublisher=meta.publisher;return MCMasterUI.rows}
 function mcMasterGroupKey(r){return [mcSENorm(r.publisher),mcSENorm(r.catalogHeader||r.series),String(r.volume||''),mcSENorm(r.stage||''),String(r.startYear||'')].join('|')}
 function mcMasterGroupLabel(r){return [r.catalogHeader||r.series,r.volume&&('Vol. '+r.volume),r.stage,r.startYear].filter(Boolean).join(' · ')}
