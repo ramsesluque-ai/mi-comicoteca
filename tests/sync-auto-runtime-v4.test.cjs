@@ -480,7 +480,7 @@ test('in-flight V4 reconciliation rejects a switched account rather than reusing
  ctx.MC_ACCOUNT_ID=other;ctx.DBN='comicteca-user-'+other;
  await assert.rejects(win.MCAutoSyncRuntimeV4.uploadQueued(),/Cambio de cuenta durante sincronización/);
  assert.equal(calls,1,'no cross-account transport request');
- release();await initial;
+ release();await assert.rejects(initial,/Cambio de cuenta durante sincronización; resultado descartado/);
 });
 
 test('an in-flight result from a previous UID cannot update the new account status',async()=>{
