@@ -5,9 +5,12 @@
 // collection card without changing private records or their statuses.
 function mcSeriesCollectionKey(x){
  const normal=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
+ // Canonicalize BOTH sides, not only Aguila. The earlier fix kept the main
+ // series' original volume and stage, so the two keys still differed.
  if(normal(x.publisher)==='novaro'&&normal(x.catalogHeader||x.series)==='batman'&&
-    String(x.startYear||'')==='1954'&&normal(x.stage).includes('aguila')){
-  return ckey({...x,stage:'',volume:''});
+    String(x.startYear||'').trim()==='1954'&&
+    !/avestruz|colibri/.test(normal(x.stage))){
+  return ckey({...x,volume:'',stage:'',catalogHeader:'Batman',series:'Batman',startYear:'1954'});
  }
  return ckey(x);
 }
