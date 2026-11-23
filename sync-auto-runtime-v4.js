@@ -12,7 +12,7 @@
   if(!RELEASE_APPROVED||!sent||!Number(sent.pending)||timer)return;
   const errors=sent.conflicts||[];
   const retryable=errors.length>0&&errors.every(e=>
-   /(?:HTTP 5\d\d|HTTP 429|HTTP 408|HTTP 425|Failed to fetch|NetworkError|network|sin conexión|timeout|offline)/i.test(String(e.reason||'')));
+   /(?:HTTP 5\d\d|HTTP 429|HTTP 408|HTTP 425|Failed to fetch|Load failed|Network request failed|NetworkError|network|sin conexión|timeout|offline)/i.test(String(e.reason||'')));
   if(errors.length&&!retryable)return; // Real conflict requires user review, not a busy loop.
   // A pending outbox with no reported conflict is not proof of progress.
   // Avoid hammering the API every 1.5 seconds if the transport repeatedly
@@ -84,7 +84,7 @@
     STATE.lastError=String(e.message||e);emit();
     // Network errors can reject the transport instead of returning a pending
     // result. Retry those without acknowledging or dropping the durable outbox.
-    if(/(?:HTTP 5\d\d|HTTP 429|HTTP 408|HTTP 425|Failed to fetch|NetworkError|network|sin conexión|timeout|offline)/i.test(STATE.lastError)){
+    if(/(?:HTTP 5\d\d|HTTP 429|HTTP 408|HTTP 425|Failed to fetch|Load failed|Network request failed|NetworkError|network|sin conexión|timeout|offline)/i.test(STATE.lastError)){
      // A failed initial pull or full reconciliation must retry that same operation,
      // not silently degrade to push-only (which would leave remote edits unseen).
      reschedulePending({pending:1,conflicts:[{reason:STATE.lastError}]},mode);
