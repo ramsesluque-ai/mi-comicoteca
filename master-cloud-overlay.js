@@ -101,5 +101,24 @@
   if(!response.ok)throw Error('No se ha podido registrar la propuesta ('+response.status+')');
   return {status:'pending'};
  };
+ // A small, delegated contribution action inside the existing Master issue modal.
+ // Never auto-publish browser-submitted bibliographic changes.
+ document.addEventListener('click',async event=>{
+  const button=event.target?.closest?.('[data-master-propose]');
+  if(!button)return;
+  const id=button.getAttribute('data-master-propose');
+  const comic=(window.MCMasterUI?.activeIssueRows||[]).find(x=>String(x.id)===id);
+  if(!comic){window.toast?.('No se ha encontrado la ficha para proponer el cambio');return}
+  const title=prompt('Proponer un título para '+(comic.catalogHeader||comic.series)+' n.º '+comic.issueNr,comic.title||'');
+  if(title===null||!title.trim()||title.trim()===String(comic.title||'').trim())return;
+  button.disabled=true;
+  try{
+   await window.mcMasterSubmitProposal({publisher:comic.publisher,seriesTitle:comic.catalogHeader||comic.series,
+    issueNumber:comic.issueNr||comic.issue,title:title.trim(),
+    targetComicId:String(comic.id||'').startsWith('cloud-master-')?String(comic.id).slice(13):undefined});
+   window.toast?.('Corrección recibida. Pendiente de revisión.');
+  }catch(error){window.toast?.('No se pudo enviar la corrección: '+error.message)}
+  finally{button.disabled=false}
+ });
  window.mcMasterCloudInvalidate=()=>cache.clear();
 })();
