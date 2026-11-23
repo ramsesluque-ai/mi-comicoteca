@@ -555,11 +555,12 @@ test('a completed old-account request cannot replay a queued save under a new UI
   console,Promise,Date,setTimeout,clearTimeout};
  vm.runInNewContext(enabled,ctx);
  const request=win.MCAutoSyncRuntimeV4.syncNow();
- events.get('mc-local-comic-saved')();
+ const queued=win.MCAutoSyncRuntimeV4.uploadQueued();
  ctx.MC_ACCOUNT_ID=other;ctx.DBN='comicteca-user-'+other;ctx.db={};
  const prior=statuses.length;
  finish();
  await assert.rejects(request,/Cambio de cuenta/);
+ await assert.rejects(queued,/Cambio de cuenta/);
  for(let i=0;i<12;i++)await Promise.resolve();
  assert.deepEqual(calls,['initial'],'old-account queued save must not reach the new private account');
  assert.equal(statuses.length,prior,'old-account completion must not publish status to new account');
