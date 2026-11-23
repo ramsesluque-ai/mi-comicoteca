@@ -146,36 +146,19 @@ async function mcMasterLoadPublisher(pub){await mcManualAdditions();if(MCMasterU
  }
  const existing=new Set(rows.map(key));
  for(const r of [...archive,...manual]){const k=key(r);if(!existing.has(k)){rows.push(r);existing.add(k)}}
- // Novaro Batman: Serie Águila is a format within the numbered main series.
- // Only collapse a verified same-number pair; never merge Avestruz/Colibrí
- // or discard unpaired entries, variants or other source records.
- if(mcSENorm(pub)==='novaro'){
-  const isBatman=r=>mcSENorm(r.catalogHeader||r.series)==='batman';
-  const isAguila=r=>mcSENorm(r.stage||'').includes('aguila')&&isBatman(r);
-  const isOther=r=>/avestruz|colibri/.test(mcSENorm(r.stage||''));
-  const main=new Map();
-  for(const r of rows){
-   const n=String(r.issueNr||r.issue||'').trim();
-   if(isBatman(r)&&!isAguila(r)&&!isOther(r)&&/^[0-9]+$/.test(n)&&Number(n)>=1&&Number(n)<=1301){
-    if(!main.has(Number(n)))main.set(Number(n),r);
-   }
-  }
-  for(let i=rows.length-1;i>=0;i--){
-   const r=rows[i],n=String(r.issueNr||r.issue||'').trim();
-   if(!isAguila(r)||!/^[0-9]+$/.test(n))continue;
-   const target=main.get(Number(n));
-   if(!target)continue;
-   // Only collapse when bibliographic identity agrees; mismatched source
-   // metadata remains visible for manual review.
-   const isbn=x=>String(x.isbn||'').replace(/[^0-9X]/gi,'');
-   if(isbn(r)&&isbn(target)&&isbn(r)!==isbn(target))continue;
-   if(r.title&&!target.title)target.title=r.title;
-   if(r.coverUrl&&!target.coverUrl)target.coverUrl=r.coverUrl;
-   rows.splice(i,1);
-  }
- }
+ // Preserve every original Novaro bibliographic row. The series browser groups
+ // the Aguila format with the main Batman series; no source row is deleted.
  MCMasterUI.rows=await mcMasterEnrichRows(rows);MCMasterUI.loadedPublisher=meta.publisher;return MCMasterUI.rows}
-function mcMasterGroupKey(r){return [mcSENorm(r.publisher),mcSENorm(r.catalogHeader||r.series),String(r.volume||''),mcSENorm(r.stage||''),String(r.startYear||'')].join('|')}
+function mcMasterIsNovaroBatmanAguila(r){
+ return mcSENorm(r.publisher)==='novaro'&&mcSENorm(r.catalogHeader||r.series)==='batman'&&
+  mcSENorm(r.stage||'').includes('aguila')&&String(r.startYear||'')==='1954';
+}
+function mcMasterGroupKey(r){
+ // Aguila is an edition format of the main 1954 Batman collection, not a
+ // separate navigation card. Keep every row and its original metadata intact.
+ if(mcMasterIsNovaroBatmanAguila(r))return [mcSENorm(r.publisher),'batman','','','1954'].join('|');
+ return [mcSENorm(r.publisher),mcSENorm(r.catalogHeader||r.series),String(r.volume||''),mcSENorm(r.stage||''),String(r.startYear||'')].join('|')
+}
 function mcMasterGroupLabel(r){return [r.catalogHeader||r.series,r.volume&&('Vol. '+r.volume),r.stage,r.startYear].filter(Boolean).join(' · ')}
 function mcMasterIssueSort(a,b){const A=String(a.issueNr||a.issue||''),B=String(b.issueNr||b.issue||''),na=parseFloat(A),nb=parseFloat(B);if(Number.isFinite(na)&&Number.isFinite(nb)&&na!==nb)return na-nb;return A.localeCompare(B,'es',{numeric:true})}
 
