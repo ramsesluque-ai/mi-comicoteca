@@ -19,10 +19,16 @@ jobs:
           node --check app1.js
           node --check app5.js
           node --check vault.js
+          node --check sync-v3-core.js
           node --check sync-auto-v4.js
           node --check sync-auto-covers-v4.js
           node --check sync-auto-runtime-v4.js
           node --check manual-sync-v2-button.js
+          node --check tests/sync-auto-v4.test.cjs
+          node --check tests/sync-auto-v4-e2e.test.cjs
+          node --check tests/sync-auto-covers-v4.test.cjs
+          node --check tests/sync-auto-runtime-v4.test.cjs
+          node --check tests/sync-delete-v4-sql.test.cjs
       - name: Enforce closed production release gate until real two-user E2E
         run: |
           node -e "const fs=require('fs');const s=fs.readFileSync('sync-auto-runtime-v4.js','utf8');if(!/const RELEASE_APPROVED=false\s*;/.test(s)){console.error('Unsafe sync V4 release gate');process.exit(1)}"
