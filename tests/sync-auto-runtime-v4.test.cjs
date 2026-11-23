@@ -512,3 +512,25 @@ test('an in-flight result from a previous UID cannot update the new account stat
  assert.equal(win.MCAutoSyncRuntimeV4.getStatus().lastDownloads,0);
  assert.equal(emitted.filter(e=>e.type==='mc-catalog-cloud-merged').length,0);
 });
+
+
+test('late network failure from previous UID cannot schedule retry or publish error for new account',async()=>{
+ const source=fs.readFileSync(path.resolve(__dirname,'../sync-auto-runtime-v4.js'),'utf8');
+ assert.match(source,/const RELEASE_APPROVED=false/);
+ const enabled=source.replace('const RELEASE_APPROVED=false','const RELEASE_APPROVED=true');
+ const uid='11111111-1111-4111-8111-111111111111';
+ const other='22222222-2222-4222-8222-222222222222';
+ let rejectOld;const pending=new Promise((_,reject)=>{rejectOld=reject});
+ const timers=[];const dbA={};const dbB={};
+ const win={MCAutoCoversV4:{},MCAutoSyncV4:{uploadQueued:()=>pending},dispatchEvent:()=>{}};
+ const ctx={window:win,db:dbA,DBN:'comicteca-user-'+uid,MC_ACCOUNT_ID:uid,MC_IMPORT_TEST:false,
+  CustomEvent:class CustomEvent{constructor(type,options){this.type=type;this.detail=options.detail}},
+  console,Promise,Date,setTimeout:(fn,ms)=>{timers.push(ms);return timers.length},clearTimeout:()=>{}};
+ vm.runInNewContext(enabled,ctx,{filename:'sync-auto-runtime-v4.js'});
+ const oldJob=win.MCAutoSyncRuntimeV4.uploadQueued();
+ ctx.MC_ACCOUNT_ID=other;ctx.DBN='comicteca-user-'+other;ctx.db=dbB;
+ rejectOld(Error('HTTP 503'));
+ await assert.rejects(oldJob,/HTTP 503/);
+ assert.equal(timers.length,0,'old UID must not schedule retries for the new account');
+ assert.equal(win.MCAutoSyncRuntimeV4.getStatus().lastError,null,'old UID error must not leak into new account status');
+});
