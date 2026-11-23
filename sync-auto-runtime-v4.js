@@ -89,6 +89,10 @@
     update(result,mode);
     return result;
    }catch(e){
+    // A stale request must not publish errors or schedule retries under a new UID.
+    // The new account will perform its own startup/reconnection reconciliation.
+    if(activeIdentity && (typeof MC_ACCOUNT_ID!=='string'||MC_ACCOUNT_ID!==activeIdentity.uid||DBN!==activeIdentity.dbName||db!==activeIdentity.database))
+     throw e;
     STATE.lastError=String(e.message||e);emit();
     // Network errors can reject the transport instead of returning a pending
     // result. Retry those without acknowledging or dropping the durable outbox.
