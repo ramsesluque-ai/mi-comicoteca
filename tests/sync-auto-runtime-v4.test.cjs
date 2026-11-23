@@ -534,3 +534,33 @@ test('late network failure from previous UID cannot schedule retry or publish er
  assert.equal(timers.length,0,'old UID must not schedule retries for the new account');
  assert.equal(win.MCAutoSyncRuntimeV4.getStatus().lastError,null,'old UID error must not leak into new account status');
 });
+
+test('a completed old-account request cannot replay a queued save under a new UID',async()=>{
+ const source=fs.readFileSync(path.resolve(__dirname,'../sync-auto-runtime-v4.js'),'utf8');
+ const enabled=source.replace('const RELEASE_APPROVED=false','const RELEASE_APPROVED=true');
+ const uid='11111111-1111-4111-8111-111111111111';
+ const other='22222222-2222-4222-8222-222222222222';
+ let finish;const wait=new Promise(resolve=>finish=resolve);
+ const calls=[],events=new Map(),statuses=[];
+ const firstDb={};
+ const win={document:{readyState:'loading',hidden:false,addEventListener:()=>{}},
+  MCAutoCoversV4:{},MCAutoSyncV4:{
+   syncNow:async()=>{calls.push('initial');await wait;return {sent:{pending:0,conflicts:[]},received:{downloaded:0,conflicts:[]}}},
+   uploadQueued:async()=>{calls.push('upload');return {pending:0,conflicts:[]}},
+   pull:async()=>({downloaded:0})
+  },addEventListener:(name,fn)=>events.set(name,fn),
+  dispatchEvent:event=>statuses.push(event.type)};
+ const ctx={window:win,db:firstDb,DBN:'comicteca-user-'+uid,MC_ACCOUNT_ID:uid,
+  MC_IMPORT_TEST:false,CustomEvent:class{constructor(type,options){this.type=type;this.detail=options.detail}},
+  console,Promise,Date,setTimeout,clearTimeout};
+ vm.runInNewContext(enabled,ctx);
+ const request=win.MCAutoSyncRuntimeV4.syncNow();
+ events.get('mc-local-comic-saved')();
+ ctx.MC_ACCOUNT_ID=other;ctx.DBN='comicteca-user-'+other;ctx.db={};
+ const prior=statuses.length;
+ finish();
+ await assert.rejects(request,/Cambio de cuenta/);
+ for(let i=0;i<12;i++)await Promise.resolve();
+ assert.deepEqual(calls,['initial'],'old-account queued save must not reach the new private account');
+ assert.equal(statuses.length,prior,'old-account completion must not publish status to new account');
+});
