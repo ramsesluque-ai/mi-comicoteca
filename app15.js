@@ -1,6 +1,16 @@
 'use strict';
 /* v21: filtros completos en Colecciones + búsqueda GCD robusta por Serie/Nº, validando editorial/país/año de serie. */
 
+// Group the 33 Novaro Aguila records into the existing Batman 1954
+// collection card without changing private records or their statuses.
+function mcSeriesCollectionKey(x){
+ const normal=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
+ if(normal(x.publisher)==='novaro'&&normal(x.catalogHeader||x.series)==='batman'&&
+    String(x.startYear||'')==='1954'&&normal(x.stage).includes('aguila')){
+  return ckey({...x,stage:'',volume:''});
+ }
+ return ckey(x);
+}
 function mcSeriesFilterRows(rows, upto='all'){
   const order=['publisher','catalogHeader','volume','stage','startYear'];
   let a=rows.slice();
@@ -54,7 +64,7 @@ renderSeries=async function(){
   if(filters.status==='__blank__')r=r.filter(x=>!x.status); else if(filters.status)r=r.filter(x=>x.status===filters.status);
   const master=await allStore('master'),mt={};master.forEach(x=>mt[ckey(x)]=(mt[ckey(x)]||0)+1);
   const q=norm(filters.q||$('#sq')?.value||''),m={};
-  r.forEach(x=>{const k=ckey(x);m[k]??={sample:x,have:0,wish:0,total:0,cover:''};m[k].total++;if(x.status==='In Collection')m[k].have++;if(x.status==='On Wish List')m[k].wish++;if(!m[k].cover&&(x.coverKey||x.coverUrl))m[k].cover=x.coverKey?'key:'+x.coverKey:x.coverUrl});
+  r.forEach(x=>{const k=mcSeriesCollectionKey(x);m[k]??={sample:x,have:0,wish:0,total:0,cover:''};m[k].total++;if(x.status==='In Collection')m[k].have++;if(x.status==='On Wish List')m[k].wish++;if(!m[k].cover&&(x.coverKey||x.coverUrl))m[k].cover=x.coverKey?'key:'+x.coverKey:x.coverUrl});
   let a=Object.entries(m).filter(([,x])=>!q||norm(clabel(x.sample)).includes(q)).sort((a,b)=>mcSortRecord(a[1].sample,b[1].sample));
   const per=60,pages=Math.max(1,Math.ceil(a.length/per));page=Math.min(page,pages);const slice=a.slice((page-1)*per,page*per);
   $('#seriesbody').innerHTML=`<div class="series-grid visual">${slice.map(([k,x])=>{const total=x.total,pct=null,s={...x.sample};if(x.cover?.startsWith('key:'))s.coverKey=x.cover.slice(4);else if(x.cover)s.coverUrl=x.cover;return `<article class="series-card visual" onclick="openSeries('${encodeURIComponent(k)}')"><div class="series-cover">${img(s,'cover seriescover')}</div><div class="series-content"><div class="comic-kicker">${esc(x.sample.publisher||'Sin editorial')}</div><div class="series-title">${esc(x.sample.catalogHeader||x.sample.series)}</div><div class="master-meta">${esc([x.sample.volume&&('Vol. '+x.sample.volume),x.sample.stage,x.sample.startYear].filter(Boolean).join(' · ')||'Edición sin identificar')}</div><div class="progress"><span style="width:${pct===null?0:Math.min(100,pct)}%;background:${pct===null?'#45627d':(typeof mcPctColor==='function'?mcPctColor(pct):'')}"></span></div><div class="series-stats"><b>${x.have}</b> en colección · <b>${x.wish}</b> wishlist · <b>${total}</b> registros en tu catálogo</div></div></article>`}).join('')||'<div class="empty">Sin resultados.</div>'}</div><div class="pager"><span>${a.length.toLocaleString('es-ES')} colecciones · Página ${page}/${pages}</span><span><button class="btn sm" ${page<=1?'disabled':''} onclick="page--;renderSeries()">Anterior</button> <button class="btn sm" ${page>=pages?'disabled':''} onclick="page++;renderSeries()">Siguiente</button></span></div>`;
