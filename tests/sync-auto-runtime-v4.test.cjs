@@ -482,3 +482,33 @@ test('in-flight V4 reconciliation rejects a switched account rather than reusing
  assert.equal(calls,1,'no cross-account transport request');
  release();await initial;
 });
+
+test('an in-flight result from a previous UID cannot update the new account status',async()=>{
+ const source=fs.readFileSync(path.resolve(__dirname,'../sync-auto-runtime-v4.js'),'utf8');
+ assert.match(source,/const RELEASE_APPROVED=false/);
+ const enabled=source.replace('const RELEASE_APPROVED=false','const RELEASE_APPROVED=true');
+ const first='11111111-1111-4111-8111-111111111111';
+ const second='22222222-2222-4222-8222-222222222222';
+ let finish;
+ const pending=new Promise(resolve=>{finish=resolve});
+ const emitted=[];
+ const win={MCAutoCoversV4:{},MCAutoSyncV4:{
+  syncNow:async()=>pending,
+  pull:async()=>({downloaded:0}),
+  uploadQueued:async()=>({pending:0,uploaded:0,conflicts:[]})
+ },dispatchEvent:event=>emitted.push(event)};
+ const ctx={window:win,db:{},DBN:'comicteca-user-'+first,MC_ACCOUNT_ID:first,MC_IMPORT_TEST:false,
+  CustomEvent:class CustomEvent{constructor(type,options){this.type=type;this.detail=options.detail}},
+  console,Promise,Date,setTimeout,clearTimeout};
+ vm.runInNewContext(enabled,ctx,{filename:'sync-auto-runtime-v4.js'});
+ const job=win.MCAutoSyncRuntimeV4.syncNow();
+ await Promise.resolve();
+ ctx.MC_ACCOUNT_ID=second;
+ ctx.DBN='comicteca-user-'+second;
+ ctx.db={};
+ finish({sent:{pending:0,uploaded:1,conflicts:[]},received:{downloaded:5,conflicts:[]}});
+ await assert.rejects(job,/Cambio de cuenta durante sincronización; resultado descartado/);
+ assert.equal(win.MCAutoSyncRuntimeV4.getStatus().lastSuccessful,null);
+ assert.equal(win.MCAutoSyncRuntimeV4.getStatus().lastDownloads,0);
+ assert.equal(emitted.filter(e=>e.type==='mc-catalog-cloud-merged').length,0);
+});
