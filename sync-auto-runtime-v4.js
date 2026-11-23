@@ -7,7 +7,7 @@
  const RELEASE_APPROVED=false; // Flip only after verified E2E; never from localStorage/query params.
  const STATE={enabled:RELEASE_APPROVED,running:false,scheduled:false,lastError:null,lastSuccessful:null,
   lastUploads:0,lastDownloads:0,lastConflicts:0,pending:null};
- let job=null,timer=null,pendingRetryMode=null,lastOnReturn=0,retryMs=5000,afterJobPush=false,afterJobRefresh=false;
+ let job=null,activeIdentity=null,timer=null,pendingRetryMode=null,lastOnReturn=0,retryMs=5000,afterJobPush=false,afterJobRefresh=false;
  function reschedulePending(sent, retryMode='push'){
   if(!RELEASE_APPROVED||!sent||!Number(sent.pending)||timer)return;
   const errors=sent.conflicts||[];
@@ -65,6 +65,9 @@
  async function work(mode){
   if(!RELEASE_APPROVED)return {paused:true,reason:'Pendiente validación E2E y despliegue en micomicteca.es'};
   if(job){
+   // Never reuse a previous account's in-flight result after an auth/account switch.
+   if(activeIdentity && (typeof MC_ACCOUNT_ID!=='string'||MC_ACCOUNT_ID!==activeIdentity.uid||DBN!==activeIdentity.dbName||db!==activeIdentity.database))
+    throw Error('Cambio de cuenta durante sincronización; operación bloqueada');
    // A save may happen while the initial 16k-record cloud scan is running.
    // Never let that save request vanish behind the already-running job.
    if(mode==='both'||mode==='pull')afterJobRefresh=true;
@@ -75,6 +78,7 @@
    STATE.running=true;emit();
    try{
     const options=context();
+    activeIdentity={uid:options.uid,dbName:options.dbName,database:options.database};
     const engine=root.MCAutoSyncV4;
     const result=mode==='push'?{sent:await engine.uploadQueued(options)}:
       mode==='pull'?{received:await engine.pull(options)}:await engine.syncNow(options);
@@ -92,7 +96,7 @@
     throw e
    }
    finally{
-    STATE.running=false;job=null;emit();
+    STATE.running=false;job=null;activeIdentity=null;emit();
     const next=afterJobRefresh?'both':afterJobPush?'push':null;
     afterJobRefresh=false;afterJobPush=false;
     if(next)Promise.resolve().then(()=>work(next).catch(e=>console.warn('MI COMICTECA sincronización reprogramada pendiente',e)));
