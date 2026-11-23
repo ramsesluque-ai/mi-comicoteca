@@ -75,12 +75,15 @@
   }
 
   function resolvedKey(r,st){
-    // Unify Novaro Batman 1954 including the Aguila format in the actual
-    // v50/v53 Collections renderer. Do not alter private rows or other series.
+    // The same Novaro Batman run is stored under three legacy identities:
+    // Batman (1954), Batman (year missing) and Batman - Novaro (year missing).
+    // Normalize the display identity only. Never rewrite private records.
     const c=parts(r);
-    if(c.publisher==='novaro'&&c.header==='batman'&&c.year==='1954'&&
-       !/avestruz|colibri/.test(c.stage)){
-      return [c.publisher,c.header,'','','1954'].join('|');
+    const batmanHeader=c.header==='batman'||c.header==='batman novaro';
+    const eligibleYear=!c.year||c.year==='1954';
+    const distinctEdition=/avestruz|colibri/.test(c.stage)||/avestruz|colibri/.test(c.volume);
+    if(c.publisher==='novaro'&&batmanHeader&&eligibleYear&&!distinctEdition){
+      return [c.publisher,'batman','','','1954'].join('|');
     }
     const k=fullKey(r);if(st.full.has(k))return k;
     const originalParts=collectionParts(r||{});
