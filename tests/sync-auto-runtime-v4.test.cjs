@@ -407,3 +407,26 @@ test('HTTP 408 and 425 are classified as transient without enabling release',()=
  assert.equal((source.match(/HTTP 425/g)||[]).length,2);
  assert.match(source,/if\(errors\.length&&!retryable\)return/);
 });
+
+test('HTTP 408 and 425 transport rejections retry safely; CAS 409 does not',async()=>{
+ const source=fs.readFileSync(path.resolve(__dirname,'../sync-auto-runtime-v4.js'),'utf8');
+ const enabled=source.replace('const RELEASE_APPROVED=false','const RELEASE_APPROVED=true');
+ const uid='11111111-1111-4111-8111-111111111111';
+ for(const status of [408,425,409]){
+  const timers=new Map();let seq=0,attempts=0;
+  const win={MCAutoCoversV4:{},MCAutoSyncV4:{
+   uploadQueued:async()=>{attempts++;throw Error('HTTP '+status)},
+   syncNow:async()=>({sent:{pending:0,conflicts:[]},received:{downloaded:0}}),
+   pull:async()=>({downloaded:0})
+  },dispatchEvent:()=>{}};
+  const ctx={window:win,db:{},DBN:'comicteca-user-'+uid,MC_ACCOUNT_ID:uid,MC_IMPORT_TEST:false,
+   CustomEvent:class CustomEvent{constructor(type,options){this.type=type;this.detail=options.detail}},
+   console,Promise,Date,setTimeout:(fn,ms)=>{const id=++seq;timers.set(id,{fn,ms});return id},
+   clearTimeout:id=>timers.delete(id)};
+  vm.runInNewContext(enabled,ctx,{filename:'sync-auto-runtime-v4.js'});
+  await assert.rejects(win.MCAutoSyncRuntimeV4.uploadQueued(),new RegExp('HTTP '+status));
+  assert.equal(attempts,1);
+  assert.equal(timers.size,status===409?0:1,'only transient transport errors schedule retries');
+  if(status!==409)assert.equal([...timers.values()][0].ms,5000);
+ }
+});
