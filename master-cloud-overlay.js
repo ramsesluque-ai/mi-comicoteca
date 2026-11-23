@@ -74,5 +74,32 @@
   }
   return merged;
  };
+ // User contributions are proposals, not direct edits to shared bibliographic data.
+ // Editorial novedades can use the same queue with source_type='novedades'.
+ window.mcMasterSubmitProposal=async function(input){
+  const config=window.MI_COMICOTECA_CLOUD,auth=session();
+  if(!config?.url||!config?.publishableKey||!auth?.user?.id)throw Error('Inicia sesión para proponer una corrección al Maestro');
+  const publisher=String(input?.publisher||'').trim();
+  const seriesTitle=String(input?.seriesTitle||input?.catalogHeader||'').trim();
+  const issueNumber=String(input?.issueNumber??input?.issueNr??'').trim();
+  if(!publisher||!seriesTitle||!issueNumber)throw Error('Editorial, colección y número son obligatorios');
+  const allowed=['title','publicationDate','isbn','barcode','coverUrl','notes','originalEdition','equivalences'];
+  const proposed={};
+  for(const field of allowed)if(typeof input[field]==='string'&&input[field].trim())proposed[field]=input[field].trim();
+  if(!Object.keys(proposed).length)throw Error('No hay datos bibliográficos nuevos que proponer');
+  const target=input?.targetComicId;
+  if(target&&!/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(String(target)))throw Error('Identificador de ficha central inválido');
+  const sourceType=input?.sourceType==='novedades'?'novedades':'user';
+  const payload={author_uid:auth.user.id,publisher,series_title:seriesTitle,issue_number:issueNumber,
+   proposed_fields:proposed,source_type:sourceType,
+   source_reference:String(input?.sourceReference||'').slice(0,2000)};
+  if(target)payload.target_comic_id=target;
+  const response=await fetch(config.url.replace(/\\/$/,'')+'/rest/v1/master_change_proposals',{
+   method:'POST',headers:{apikey:config.publishableKey,Authorization:'Bearer '+auth.access_token,
+    'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify(payload)
+  });
+  if(!response.ok)throw Error('No se ha podido registrar la propuesta ('+response.status+')');
+  return {status:'pending'};
+ };
  window.mcMasterCloudInvalidate=()=>cache.clear();
 })();
