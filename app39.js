@@ -60,6 +60,9 @@
     }
     let a=Object.entries(m).map(([k,x])=>{
       const me=st.full.get(k);if(me)x.sample=me.sample;
+      // A merged card must display its canonical edition rather than the
+      // first legacy row (which may say Batman - Novaro / year unknown).
+      if(k==='novaro|batman|||1954')x.sample={...x.sample,publisher:'Novaro',catalogHeader:'Batman',series:'Batman',volume:'',stage:'',startYear:'1954'};
       x.have=x.haveSet.size;x.wish=x.wishSet.size;x.personalTotal=x.personalSet.size;
       x.total=x.personalTotal; // Distinct registered issues, never the highest issue number.
       x.continuousTotal=consecutiveRegistered(fullGroups.get(k)||[]);
