@@ -156,13 +156,13 @@ async function mcMasterLoadPublisher(pub){await mcManualAdditions();if(MCMasterU
   const main=new Map();
   for(const r of rows){
    const n=String(r.issueNr||r.issue||'').trim();
-   if(isBatman(r)&&!isAguila(r)&&!isOther(r)&&/^\\d+$/.test(n)&&Number(n)>=1&&Number(n)<=1301){
+   if(isBatman(r)&&!isAguila(r)&&!isOther(r)&&/^[0-9]+$/.test(n)&&Number(n)>=1&&Number(n)<=1301){
     if(!main.has(Number(n)))main.set(Number(n),r);
    }
   }
   for(let i=rows.length-1;i>=0;i--){
    const r=rows[i],n=String(r.issueNr||r.issue||'').trim();
-   if(!isAguila(r)||!/^\\d+$/.test(n))continue;
+   if(!isAguila(r)||!/^[0-9]+$/.test(n))continue;
    const target=main.get(Number(n));
    if(!target)continue;
    // Only collapse when bibliographic identity agrees; mismatched source
