@@ -82,6 +82,10 @@
     const engine=root.MCAutoSyncV4;
     const result=mode==='push'?{sent:await engine.uploadQueued(options)}:
       mode==='pull'?{received:await engine.pull(options)}:await engine.syncNow(options);
+    // Auth may change while an awaited REST request is in flight. Never
+    // acknowledge its result in the UI of a different private account.
+    if(MC_ACCOUNT_ID!==options.uid||DBN!==options.dbName||db!==options.database)
+     throw Error('Cambio de cuenta durante sincronización; resultado descartado');
     update(result,mode);
     return result;
    }catch(e){
