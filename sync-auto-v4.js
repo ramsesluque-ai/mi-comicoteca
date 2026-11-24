@@ -198,12 +198,26 @@
   });
  }
 
+ // Account-scoped scheduling hints only; the durable outbox remains authoritative.
+ const attemptsByDb=new WeakMap();
+ const retryableReason=reason=>/(?:HTTP 5\d\d|HTTP 429|HTTP 408|HTTP 425|Failed to fetch|Load failed|Network request failed|NetworkError|network|sin conexión|timeout|offline)/i.test(String(reason||''));
+ function queueAttempts(database,uid){
+  let state=attemptsByDb.get(database);
+  if(!state||state.uid!==uid){state={uid,seq:0,failures:new Map()};attemptsByDb.set(database,state)}
+  return state;
+ }
  async function uploadQueued({database,dbName,uid,cfg,fetcher=fetch,coverTransport,onProgress=()=>{},limit=MAX_UPLOADS}){
   validateIdentity({database,dbName,uid});
   const session=await freshSession(uid);
   await engine().verifySession({session,cfg,fetcher});
-  const entries=(await txRows(database,'sync_outbox')).filter(x=>x.uid===uid).slice(0,limit);
-  const stats={uploaded:0,acknowledged:0,prepared:0,conflicts:[],pending:entries.length};
+  assert(Number.isSafeInteger(limit)&&limit>0,'Límite de cola inválido');
+  const state=queueAttempts(database,uid),failures=state.failures;
+  const all=(await txRows(database,'sync_outbox')).filter(x=>x.uid===uid);
+  const liveRevs=new Map(all.map(x=>[x.id,x.rev]));
+  for(const [id,f] of failures)if(!liveRevs.has(id)||liveRevs.get(id)!==f.rev)failures.delete(id);
+  const rank=x=>{const f=failures.get(x.id);return !f?0:retryableReason(f.reason)?1:2};
+  const entries=all.slice().sort((a,b)=>rank(a)-rank(b)||(failures.get(a.id)?.seq||0)-(failures.get(b.id)?.seq||0)).slice(0,limit);
+  const stats={uploaded:0,acknowledged:0,prepared:0,conflicts:[],pending:all.length};
   for(const entry of entries){
    const current=await txOne(database,'sync_outbox',entry.id);
    if(!current||current.rev!==entry.rev)continue;
@@ -278,7 +292,18 @@
    }catch(error){stats.conflicts.push({id:entry.id,reason:String(error.message||error)})}
    onProgress({stage:'upload',...stats});
   }
-  stats.pending=(await txRows(database,'sync_outbox')).filter(x=>x.uid===uid).length;
+  const attempted=new Map(entries.map(x=>[x.id,x.rev]));
+  for(const x of stats.conflicts)if(attempted.has(x.id))
+   failures.set(x.id,{rev:attempted.get(x.id),reason:x.reason,seq:++state.seq});
+  const pending=(await txRows(database,'sync_outbox')).filter(x=>x.uid===uid);
+  const remaining=new Map(pending.map(x=>[x.id,x.rev]));
+  for(const [id,f] of failures)if(!remaining.has(id)||remaining.get(id)!==f.rev)failures.delete(id);
+  stats.pending=pending.length;
+  stats.unattempted=pending.filter(x=>!failures.has(x.id)).length;
+  stats.retryablePending=[...failures.values()].filter(f=>retryableReason(f.reason)).length;
+  const reported=new Map(stats.conflicts.map(x=>[x.id,x]));
+  for(const [id,f] of failures)reported.set(id,{id,reason:f.reason});
+  stats.conflicts=[...reported.values()];
   return stats;
  }
  async function pull({database,dbName,uid,cfg,fetcher=fetch,coverTransport,onProgress=()=>{}}){

@@ -565,3 +565,17 @@ test('a completed old-account request cannot replay a queued save under a new UI
  assert.deepEqual(calls,['initial'],'old-account queued save must not reach the new private account');
  assert.equal(statuses.length,prior,'old-account completion must not publish status to new account');
 });
+
+test('runtime advances past permanent conflicts without looping afterward',async()=>{
+ const sandbox=createSandbox();
+ let runs=0;
+ sandbox.win.MCAutoSyncV4.uploadQueued=async()=>++runs===1
+  ? {pending:41,unattempted:1,retryablePending:0,conflicts:[{reason:'CAS version conflict'}]}
+  : {pending:40,unattempted:0,retryablePending:0,uploaded:1,conflicts:[{reason:'CAS version conflict'}]};
+ await sandbox.win.MCAutoSyncRuntimeV4.uploadQueued();
+ assert.equal(sandbox.timers.size,1);
+ sandbox.fireTimer(5000);
+ for(let i=0;i<20;i++)await Promise.resolve();
+ assert.equal(runs,2);
+ assert.equal(sandbox.timers.size,0);
+});

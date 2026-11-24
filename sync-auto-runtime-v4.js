@@ -13,7 +13,11 @@
   const errors=sent.conflicts||[];
   const retryable=errors.length>0&&errors.every(e=>
    /(?:HTTP 5\d\d|HTTP 429|HTTP 408|HTTP 425|Failed to fetch|Load failed|Network request failed|NetworkError|network|sin conexión|timeout|offline)/i.test(String(e.reason||'')));
-  if(errors.length&&!retryable)return; // Real conflict requires user review, not a busy loop.
+  // Continue unvisited revisions or transient failures even after permanent CAS conflicts.
+  const canProgress=typeof sent.unattempted==='number'
+   ? sent.unattempted>0||Number(sent.retryablePending)>0
+   : !errors.length||retryable;
+  if(!canProgress)return;
   // A pending outbox with no reported conflict is not proof of progress.
   // Avoid hammering the API every 1.5 seconds if the transport repeatedly
   // returns pending records without acknowledging any of them.

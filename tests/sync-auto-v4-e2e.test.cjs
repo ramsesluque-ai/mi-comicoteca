@@ -337,3 +337,47 @@ test('a newly saved linked HTTPS cover becomes private in two safe upload stages
  assert.equal(uploads,2);
  assert.equal(server.maps.get(UID).get('comics:c_link').metadata.record.coverSha256,'a'.repeat(64));
 });
+
+test('40 permanent conflicts cannot starve a later new save',async()=>{
+ const server=backend(),device=new MemoryDb();
+ session(UID,'token-primary');
+ for(let i=0;i<40;i++){
+  const id='blocked_'+i;
+  device.stores.sync_outbox.set(id,{id,uid:UID,rev:'delete-'+i,op:'delete'});
+ }
+ const comic={id:'fresh_save',title:'Must reach cloud'};
+ device.stores.comics.set(comic.id,comic);
+ device.stores.sync_outbox.set(comic.id,{id:comic.id,uid:UID,rev:'fresh',op:'save'});
+ const opts={database:device,dbName:'comicteca-user-'+UID,uid:UID,cfg,fetcher:server.fetcher};
+ const first=await sync.uploadQueued(opts);
+ assert.equal(first.pending,41);
+ assert.equal(first.unattempted,1);
+ assert.equal(first.conflicts.length,40);
+ const next=await sync.uploadQueued(opts);
+ assert.equal(next.uploaded,1);
+ assert.equal(next.pending,40);
+ assert.equal(next.unattempted,0);
+ assert.equal(next.retryablePending,0);
+ assert.equal(next.conflicts.length,40);
+ assert.equal(server.maps.get(UID).size,1);
+ assert.equal(server.maps.get(OTHER).size,0);
+});
+test('transient failure remains retryable alongside a permanent conflict',async()=>{
+ const server=backend(),device=new MemoryDb();
+ session(UID,'token-primary');
+ device.stores.sync_outbox.set('blocked',{id:'blocked',uid:UID,rev:'delete',op:'delete'});
+ const comic={id:'fresh',title:'Retry me'};
+ device.stores.comics.set(comic.id,comic);
+ device.stores.sync_outbox.set(comic.id,{id:comic.id,uid:UID,rev:'fresh'});
+ const opts={database:device,dbName:'comicteca-user-'+UID,uid:UID,cfg,fetcher:server.fetcher};
+ server.setOffline(true);
+ const first=await sync.uploadQueued(opts);
+ assert.equal(first.retryablePending,1);
+ assert.equal(first.unattempted,0);
+ server.setOffline(false);
+ const next=await sync.uploadQueued(opts);
+ assert.equal(next.uploaded,1);
+ assert.equal(next.pending,1);
+ assert.equal(next.retryablePending,0);
+ assert.equal(next.unattempted,0);
+});
