@@ -1,5 +1,5 @@
 'use strict';
-/* Public interactive preview: synthetic in-memory data only. No Supabase, IndexedDB or storage writes. */
+/* Public interactive preview: public bibliographic sample, session-only ownership. No Supabase, IndexedDB or storage writes. */
 (function(){
  let comics=[];
  const sources=['novaro-001','zinco-001','planeta-deagostini-001'];
@@ -11,7 +11,7 @@
    const groups=new Map();
    for(const x of rows){
     const serie=String(x.catalogHeader||x.series||'').trim(),numero=String(x.issueNr||x.issue||'').trim();
-    if(!serie||!/^\\d+$/.test(numero))continue;
+    if(!serie||!/^\d+$/.test(numero))continue;
     const key=[serie,x.volume,x.startYear,x.stage].join('|');
     if(!groups.has(key))groups.set(key,new Map());
     const g=groups.get(key);if(!g.has(numero))g.set(numero,x);
@@ -45,7 +45,7 @@
    body.innerHTML='<h2>Así verás tu colección</h2><div class="mc-demo-kpis"><div><b>'+owned.length+'</b><span>Ejemplares</span></div><div><b>'+new Set(owned.map(x=>[x.editorial,x.serie,x.edicion].join('|'))).size+'</b><span>Colecciones</span></div><div><b>'+wish.length+'</b><span>En Wishlist</span></div><div><b>'+data.filter(x=>x.estado==='Pendiente').length+'</b><span>Pendientes</span></div></div><p>Prueba a cambiar el estado de los ejemplares en Catálogo o Maestro y observa cómo se actualizan estos indicadores.</p><h2>Distribución por editorial</h2>'+[...new Set(data.map(x=>x.editorial))].map(n=>{const count=owned.filter(x=>x.editorial===n).length;return '<p>'+esc(n)+' · '+count+'</p><div class="mc-demo-meter"><span style="width:'+Math.round(100*count/Math.max(1,owned.length))+'%"></span></div>'}).join('');
   }else if(tab==='series'){
    const names=[...new Set(data.map(x=>[x.editorial,x.serie,x.edicion].join('|')))];
-   body.innerHTML='<h2>Mis colecciones</h2><div class="mc-demo-grid">'+names.map(n=>{const items=data.filter(x=>[x.editorial,x.serie,x.edicion].join('|')===n);return '<article class="mc-demo-card">'+cover(items[0])+'<b>'+esc(items[0].serie)+' · '+esc(items[0].edicion)+'</b><p>'+items.filter(x=>x.estado==='Colección').length+' de '+items.length+' números en colección</p><div class="mc-demo-meter"><span style="width:'+Math.round(100*items.filter(x=>x.estado==='Colección').length/items.length)+'%"></span></div></article>'}).join('')+'</div>';
+   body.innerHTML='<h2>Mis colecciones</h2><div class="mc-demo-grid">'+names.map(n=>{const items=data.filter(x=>[x.editorial,x.serie,x.edicion].join('|')===n);return '<article class="mc-demo-card">'+cover(items[0])+'<b>'+esc(items[0].serie)+' · '+esc(items[0].edicion)+'</b><p>'+items.filter(x=>x.estado==='Colección').length+' de '+items.length+' números de la muestra en colección</p><div class="mc-demo-meter"><span style="width:'+Math.round(100*items.filter(x=>x.estado==='Colección').length/items.length)+'%"></span></div></article>'}).join('')+'</div>';
   }else{
    const filtered=data.filter(x=>(tab==='wishlist'?x.estado==='Wishlist':tab==='catalog'?x.estado==='Colección':true)&&[x.serie,x.editorial,String(x.numero)].join(' ').toLowerCase().includes(search.toLowerCase()));
    body.innerHTML='<h2>'+({catalog:'Mi catálogo',wishlist:'Mi Wishlist',master:'Maestro de ejemplo'})[tab]+'</h2><p>Haz clic en los botones para simular el traspaso entre Maestro, colección y Wishlist. Los cambios se perderán al cerrar la demo.</p><input id="mcDemoSearch" placeholder="Buscar serie o editorial…" value="'+esc(search)+'" aria-label="Buscar cómics"><div class="mc-demo-grid">'+filtered.map(x=>'<article class="mc-demo-card">'+cover(x)+'<b>'+esc(x.serie)+' · Nº '+esc(x.numero)+'</b><small>'+esc(x.titulo)+'</small><small>'+esc(x.editorial)+'</small>'+pill(x.estado)+'<div class="mc-demo-actions"><button data-demo-id="'+x.id+'" data-demo-state="Colección" '+(x.estado==='Colección'?'disabled':'')+'>A colección</button><button data-demo-id="'+x.id+'" data-demo-state="Wishlist" '+(x.estado==='Wishlist'?'disabled':'')+'>Wishlist</button></div></article>').join('')+'</div>';
