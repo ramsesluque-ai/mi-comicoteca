@@ -1,5 +1,5 @@
 'use strict';
-/* Admin-only batch cover publication for Novaro Batman 1..150.
+/* Admin-only batch cover publication for Novaro Batman (existing numbered issues).
  * Files are selected by the administrator in the authenticated browser.
  * Each cover is uploaded privately, then published via the existing
  * server-side publish-master-cover function; no direct public bucket writes.
@@ -8,7 +8,7 @@
  const OWNER='0bcbe06d-263d-4ac1-a516-355d27d417f1';
  const config=()=>window.MI_COMICOTECA_CLOUD||{};
  const session=()=>{for(const storage of [sessionStorage,localStorage]){try{const s=JSON.parse(storage.getItem('mc_supabase_session_v1')||'null');if(s?.access_token&&s?.user?.id)return s}catch(_){}}return null};
- const numberOf=file=>{const m=/^(?:batman[_ -]*)?0*([1-9][0-9]{0,2})\.(?:jpg|jpeg|png|webp)$/i.exec(file.name);return m?Number(m[1]):0};
+ const numberOf=file=>{const m=/^(?:batman[_ -]*)?0*([1-9][0-9]*)\.(?:jpg|jpeg|png|webp)$/i.exec(file.name);return m?Number(m[1]):0};
  async function run(files,status,button){
   const c=config(),s=session();
   if(!s||s.user.id!==OWNER||!c.url||!c.publishableKey)throw Error('Acceso reservado al administrador');
@@ -20,7 +20,7 @@
   const matches=new Map();
   for(const row of rows){
    const n=Number(row.issueNr||row.issue);
-   if(n<1||n>150||!Number.isInteger(n))continue;
+   if(n<1||!Number.isSafeInteger(n))continue;
    if(String(row.catalogHeader||row.series||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase()!=='batman')continue;
    if(/avestruz|colibri/.test(String(row.stage||'').toLowerCase()))continue;
    if(!matches.has(n))matches.set(n,[]);
@@ -29,7 +29,7 @@
   const selected=new Map();
   for(const file of files){
    const n=numberOf(file);
-   if(!n||n>150)throw Error('Nombre de archivo no reconocido: '+file.name);
+   if(!Number.isSafeInteger(n)||n<1)throw Error('Nombre de archivo no reconocido: '+file.name);
    if(selected.has(n))throw Error('Número repetido: '+n);
    if(!['image/jpeg','image/png','image/webp'].includes(file.type)||!file.size||file.size>5242880)throw Error('Imagen inválida o mayor de 5 MB: '+file.name);
    selected.set(n,file);
@@ -73,7 +73,7 @@
   wrapper.id='mcNovaroBulk';
   wrapper.className='panel';
   const title=document.createElement('strong');title.textContent='Portadas Batman Novaro · carga de administrador';
-  const info=document.createElement('p');info.className='muted';info.textContent='Extrae el ZIP y selecciona las imágenes 1.jpg a 150.jpg. Se publican solo portadas ausentes, una por una.';
+  const info=document.createElement('p');info.className='muted';info.textContent='Extrae el ZIP y selecciona las imágenes numeradas (por ejemplo, 171.jpg o 1301.jpg). Se publican solo portadas ausentes, una por una.';
   const input=document.createElement('input');input.type='file';input.multiple=true;input.accept='image/jpeg,image/png,image/webp';
   const button=document.createElement('button');button.className='btn primary';button.type='button';button.textContent='Publicar portadas seleccionadas';
   const status=document.createElement('span');status.setAttribute('role','status');status.style.marginLeft='12px';
