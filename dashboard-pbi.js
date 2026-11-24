@@ -116,7 +116,7 @@
     const estimated=inc.reduce((s,x)=>s+num(x.estimated),0),now=new Date(),mk=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'),monthPurchases=purchases.filter(x=>monthKey(x.date)===mk),monthSpend=monthPurchases.reduce((s,x)=>s+num(x.price)+num(x.shipping),0);
     const pubs=countBy(inc,x=>x.publisher),characters=countBy(classifiedOwned,characterName),universes=countBy(classifiedOwned,universeName),authors=countMulti(classifiedOwned,['writer','writers','script','author','authors','artist','artists','penciller']),decades=countBy(inc,x=>yearBand(x.startYear||x.year));
     const recent=[...purchases].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).slice(0,6),progress=cs.filter(x=>x.missing>0).sort((a,b)=>a.missing-b.missing||b.have-a.have||String(a.key).localeCompare(String(b.key)));
-    const noCover=inc.filter(x=>!(x.cover||x.coverUrl||x.image||x.imageUrl)).length,noIsbn=inc.filter(x=>!(x.isbn||x.ISBN)).length,lowQuality=inc.filter(x=>String(x.quality||'').toLowerCase().includes('baj')||String(x.condition||'').toLowerCase().includes('poor')).length;
+    const noCover=inc.filter(x=>!(x.coverKey||x.cover||x.coverUrl||x.image||x.imageUrl)).length,noIsbn=inc.filter(x=>!(x.isbn||x.ISBN)).length,lowQuality=inc.filter(x=>String(x.quality||'').toLowerCase().includes('baj')||String(x.condition||'').toLowerCase().includes('poor')).length;
     return head('Dashboard','Centro de control interactivo de tu comicoteca.',`<button class="btn primary" onclick="editComic()">+ Añadir cómic</button>`)+`<div class="pbi-shell">
       <div class="pbi-kpis">
         <button onclick="PbiDashboard.goto('catalog','In Collection')"><span>En colección</span><b>${fmt(inc.length)}</b><small>Cómics registrados</small></button>

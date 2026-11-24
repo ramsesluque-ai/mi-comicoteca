@@ -45,3 +45,7 @@ jobs:
       - name: V4 private cover binary tests
         if: success() || failure()
         run: node --test tests/sync-auto-covers-v4.test.cjs
+
+      - name: Maestro selected-cover transfer regression
+        if: success() || failure()
+        run: node --test tests/master-selected-cover-transfer.test.cjs
