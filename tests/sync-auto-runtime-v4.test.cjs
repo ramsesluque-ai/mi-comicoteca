@@ -405,7 +405,9 @@ test('HTTP 408 and 425 are classified as transient without enabling release',()=
  assert.match(source,/const RELEASE_APPROVED=false/);
  assert.equal((source.match(/HTTP 408/g)||[]).length,2);
  assert.equal((source.match(/HTTP 425/g)||[]).length,2);
- assert.match(source,/if\(errors\.length&&!retryable\)return/);
+ assert.match(source,/if\(!canProgress\)return/);
+ assert.match(source,/sent\.unattempted>0\|\|Number\(sent\.retryablePending\)>0/);
+ assert.match(source,/: !errors\.length\|\|retryable/);
 });
 
 test('HTTP 408 and 425 transport rejections retry safely; CAS 409 does not',async()=>{
