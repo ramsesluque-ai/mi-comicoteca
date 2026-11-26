@@ -6,6 +6,8 @@
 (function(){
  const original=window.mcMasterLoadPublisher;
  if(typeof original!=='function')return;
+ // Remains false until the full central inventory and functional tests are reconciled.
+ const CENTRAL_MASTER_APPROVED=false;
  const ttl=60000,cache=new Map();
  const normalize=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
  function session(){
@@ -17,21 +19,29 @@
  async function cloudRows(publisher){
   const config=window.MI_COMICOTECA_CLOUD,s=session();
   if(!config?.url||!config?.publishableKey||!s)return null;
-  const now=Date.now(),prior=cache.get(publisher);
+  // Scope caches to the authenticated session's user, not just publisher.
+  const cacheKey=s.user.id+'|'+publisher;
+  const now=Date.now(),prior=cache.get(cacheKey);
   if(prior&&now-prior.at<ttl)return prior.rows;
   const headers={apikey:config.publishableKey,Authorization:'Bearer '+s.access_token};
   const endpoint=config.url.replace(/\/$/,'')+'/rest/v1/';
-  const seriesURL=endpoint+'master_series?select=id,publisher,title,volume,stage,start_year&publisher=eq.'+encodeURIComponent(publisher)+'&limit=1000';
-  const seriesResponse=await fetch(seriesURL,{headers,cache:'no-store'});
-  if(!seriesResponse.ok)throw Error('Maestro central: lectura de colecciones HTTP '+seriesResponse.status);
-  const series=await seriesResponse.json();
-  if(!Array.isArray(series))throw Error('Maestro central: formato de colecciones incorrecto');
+  // A deterministic order and full pagination prevent silently truncating an editorial.
+  const series=[];
+  for(let offset=0;;offset+=1000){
+   const seriesURL=endpoint+'master_series?select=id,publisher,title,volume,stage,start_year&publisher=eq.'+encodeURIComponent(publisher)+'&order=id.asc&limit=1000&offset='+offset;
+   const seriesResponse=await fetch(seriesURL,{headers,cache:'no-store'});
+   if(!seriesResponse.ok)throw Error('Maestro central: lectura de colecciones HTTP '+seriesResponse.status);
+   const page=await seriesResponse.json();
+   if(!Array.isArray(page))throw Error('Maestro central: formato de colecciones incorrecto');
+   series.push(...page);
+   if(page.length<1000)break;
+  }
   const result=[];
   // Query by series ID to avoid cross-publisher exposure and URL length limits.
   for(const group of series){
    let offset=0;
    while(true){
-    const url=endpoint+'master_comics?select=id,series_id,issue_number,title,publication_date,isbn,barcode,cover_url,metadata&series_id=eq.'+encodeURIComponent(group.id)+'&order=issue_number.asc&limit=1000&offset='+offset;
+    const url=endpoint+'master_comics?select=id,series_id,issue_number,title,publication_date,isbn,barcode,cover_url,metadata&series_id=eq.'+encodeURIComponent(group.id)+'&order=issue_number.asc,id.asc&limit=1000&offset='+offset;
     const response=await fetch(url,{headers,cache:'no-store'});
     if(!response.ok)throw Error('Maestro central: lectura de números HTTP '+response.status);
     const issues=await response.json();
@@ -49,10 +59,18 @@
     offset+=1000;
    }
   }
-  cache.set(publisher,{at:now,rows:result});
+  if(session()?.user?.id!==s.user.id)throw Error('La cuenta cambió durante la lectura del Maestro');
+  cache.set(cacheKey,{at:now,rows:result});
   return result;
  }
  window.mcMasterLoadPublisher=async function(publisher){
+  // The authoritative reader is intentionally gated. No fallback to stale
+  // snapshots once the central inventory is certified: failure is explicit.
+  if(CENTRAL_MASTER_APPROVED){
+   const central=await cloudRows(publisher);
+   if(!Array.isArray(central))throw Error('Maestro central no disponible');
+   return central;
+  }
   const base=await original(publisher);
   let central;
   try{central=await cloudRows(publisher)}catch(error){console.warn('[Maestro] No disponible la actualización central; se conserva el catálogo de referencia',error);return base}
