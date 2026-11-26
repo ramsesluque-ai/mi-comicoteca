@@ -43,10 +43,14 @@
           coverRejectedAt:before.coverRejectedAt||''
         });
       }
+      // Base save already preserves the original fields. Avoid a second queued
+      // write for the pilot, which can race the acknowledged cloud revision.
+      if(typeof MC_ACCOUNT_ID==='string'&&MC_ACCOUNT_ID==='f7847aa2-1243-4d04-87a8-18b41e2a1aa6'&&window.MCAutoSyncRuntimeV4?.enabled===true)return saved;
       await putStore('comics',next);
       try{window.CloudSync?.schedule?.()}catch{}
       // El controlador base ya gestiona la navegación según mode.
       // En stay y copy, volver a renderizar aquí expulsaba al usuario de la ficha.
+      return saved;
     };
   }
 
