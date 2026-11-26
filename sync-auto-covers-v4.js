@@ -66,6 +66,13 @@
  async function getRemote({uid,key,session,cfg,fetcher=fetch}){
   const response=await fetcher(remoteUrl({uid,key,cfg}),{method:'GET',headers:headers({session,cfg}),cache:'no-store'});
   if(response.status===404)return null;
+  // Storage may wrap an S3 NoSuchKey as HTTP 400 with an inner 404.
+  // Never treat arbitrary 400/401/403 responses as absent objects.
+  if(response.status===400){
+   let detail=null;
+   try{detail=await response.json()}catch(_){}
+   if(String(detail?.statusCode)==='404'&&detail?.code==='NoSuchKey'&&detail?.error==='not_found')return null;
+  }
   check(response.ok,'No se pudo recuperar portada privada HTTP '+response.status);
   return response.blob();
  }
