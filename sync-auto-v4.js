@@ -220,9 +220,10 @@
   const stats={uploaded:0,acknowledged:0,prepared:0,conflicts:[],pending:all.length};
   for(const entry of entries){
    const current=await txOne(database,'sync_outbox',entry.id);
-   if(!current||current.rev!==entry.rev)continue;
+   if(!current||current.uid!==uid||current.rev!==entry.rev)continue;
    const local=await txOne(database,'comics',entry.id);
-   const baseline=await txOne(database,'sync_baseline',entry.id);
+   const storedBaseline=await txOne(database,'sync_baseline',entry.id);
+   const baseline=storedBaseline?.uid===uid?storedBaseline:null;
    try{
     const remote=await lookup({uid,session,cfg,id:entry.id,fetcher});
     const decision=decideQueuedPush({entry,local,remote,baseline});
@@ -281,7 +282,7 @@
     }
     const newer=await txOne(database,'sync_outbox',entry.id);
     const live=await txOne(database,'comics',entry.id);
-    if(!newer||newer.rev!==entry.rev||!live||json(live)!==json(local)){
+    if(!newer||newer.uid!==uid||newer.rev!==entry.rev||!live||json(live)!==json(local)){
      stats.conflicts.push({id:entry.id,reason:'modificacion-durante-el-envio'});continue
     }
     const version=await engine().pushOne({session,cfg,fetcher,item:{
