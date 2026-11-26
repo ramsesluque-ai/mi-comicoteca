@@ -5,11 +5,30 @@
  */
 (function(root){
  const RELEASE_APPROVED=false; // Flip only after verified E2E; never from localStorage/query params.
+ // Pilot remains fail-closed: only the designated UID and a fresh server-side
+ // app_metadata flag can authorize this runtime. Global release stays gated.
+ const PILOT_UID='f7847aa2-1243-4d04-87a8-18b41e2a1aa6';
+ function candidate(){return RELEASE_APPROVED||(typeof MC_ACCOUNT_ID==='string'&&MC_ACCOUNT_ID===PILOT_UID);}
+ async function authorize(options){
+  if(RELEASE_APPROVED)return true;
+  if(options.uid!==PILOT_UID)return false;
+  const who=await root.CommercialBilling?.currentUser?.();
+  if(who?.id!==options.uid)return false;
+  let session=null;
+  for(const store of [root.localStorage,root.sessionStorage]){
+   try{const s=JSON.parse(store.getItem('mc_supabase_session_v1')||'null');if(s?.user?.id===options.uid&&s.access_token){session=s;break}}catch(_){}
+  }
+  if(!session||!/^https:\/\/[^/?#]+\/?$/.test(String(options.cfg?.url||'')))return false;
+  const response=await fetch(options.cfg.url.replace(/\/+$/,'')+'/auth/v1/user',{headers:{apikey:options.cfg.publishableKey,Authorization:'Bearer '+session.access_token},cache:'no-store'});
+  if(!response.ok)return false;
+  const verified=await response.json();
+  return verified?.id===options.uid&&verified?.app_metadata?.mc_sync_v4_pilot===true&&MC_ACCOUNT_ID===options.uid&&DBN===options.dbName&&db===options.database;
+ }
  const STATE={enabled:RELEASE_APPROVED,running:false,scheduled:false,lastError:null,lastSuccessful:null,
   lastUploads:0,lastDownloads:0,lastConflicts:0,pending:null};
  let job=null,activeIdentity=null,timer=null,pendingRetryMode=null,lastOnReturn=0,retryMs=5000,afterJobPush=false,afterJobRefresh=false;
  function reschedulePending(sent, retryMode='push'){
-  if(!RELEASE_APPROVED||!sent||!Number(sent.pending)||timer)return;
+  if(!candidate()||!STATE.enabled||!sent||!Number(sent.pending)||timer)return;
   const errors=sent.conflicts||[];
   const retryable=errors.length>0&&errors.every(e=>
    /(?:HTTP 5\d\d|HTTP 429|HTTP 408|HTTP 425|Failed to fetch|Load failed|Network request failed|NetworkError|network|sin conexión|timeout|offline)/i.test(String(e.reason||'')));
@@ -67,7 +86,7 @@
   }
  }
  async function work(mode){
-  if(!RELEASE_APPROVED)return {paused:true,reason:'Pendiente validación E2E y despliegue en micomicteca.es'};
+  if(!candidate())return {paused:true,reason:'Pendiente validación E2E y despliegue en micomicteca.es'};
   if(job){
    // Never reuse a previous account's in-flight result after an auth/account switch.
    if(activeIdentity && (typeof MC_ACCOUNT_ID!=='string'||MC_ACCOUNT_ID!==activeIdentity.uid||DBN!==activeIdentity.dbName||db!==activeIdentity.database))
@@ -83,6 +102,9 @@
    try{
     const options=context();
     activeIdentity={uid:options.uid,dbName:options.dbName,database:options.database};
+    STATE.enabled=await authorize(options);
+    emit();
+    if(!STATE.enabled)return {paused:true,reason:'Piloto no autorizado por el servidor'};
     const engine=root.MCAutoSyncV4;
     const result=mode==='push'?{sent:await engine.uploadQueued(options)}:
       mode==='pull'?{received:await engine.pull(options)}:await engine.syncNow(options);
@@ -127,7 +149,7 @@
   return job;
  }
  function queueUpload(){
-  if(!RELEASE_APPROVED)return;
+  if(!candidate())return;
   // Preserve an unfinished full pull/reconciliation when a new save replaces
   // its retry timer. A push-only debounce must not suppress remote changes.
   const nextMode=pendingRetryMode==='both'||pendingRetryMode==='pull'?'both':'push';
@@ -137,23 +159,23 @@
   timer=setTimeout(()=>{timer=null;pendingRetryMode=null;STATE.scheduled=false;emit();work(nextMode).catch(e=>console.warn('MI COMICTECA auto-upload pendiente',e))},800);
  }
  function onReturn(){
-  if(!RELEASE_APPROVED||root.document?.hidden||Date.now()-lastOnReturn<120000)return;
+  if(!candidate()||root.document?.hidden||Date.now()-lastOnReturn<120000)return;
   lastOnReturn=Date.now();
   work('both').catch(e=>console.warn('MI COMICTECA recuperación pendiente',e));
  }
  function begin(){
   root.addEventListener('mc-local-comic-saved',queueUpload);
-  root.addEventListener('online',()=>{if(RELEASE_APPROVED)work('both').catch(e=>console.warn('Reconexión pendiente',e))});
+  root.addEventListener('online',()=>{if(candidate())work('both').catch(e=>console.warn('Reconexión pendiente',e))});
   root.addEventListener('focus',onReturn);
   root.document?.addEventListener('visibilitychange',onReturn);
-  if(!RELEASE_APPROVED)return;
   const kick=()=>{
    if(typeof db==='undefined'||!db||root.MC_CATALOG_BOOT_PENDING){setTimeout(kick,250);return}
+   if(!candidate())return;
    work('both').catch(e=>console.warn('MI COMICTECA arranque cloud pendiente',e));
   };
   setTimeout(kick,100);
  }
- const api={enabled:RELEASE_APPROVED,syncNow:()=>work('both'),pull:()=>work('pull'),uploadQueued:()=>work('push'),
+ const api={get enabled(){return candidate()&&STATE.enabled},syncNow:()=>work('both'),pull:()=>work('pull'),uploadQueued:()=>work('push'),
   getStatus:()=>({...STATE})};
  root.MCAutoSyncRuntimeV4=api;
  if(typeof module!=='undefined'&&module.exports)module.exports=api;
