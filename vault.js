@@ -59,7 +59,19 @@
    })().catch(e=>{inflight.delete(k);throw e});
    inflight.set(k,p);return p;
  }
- async function markLocal(comic,blob,sourceUrl){await cachePut(comic.id,blob);const updated={...comic,coverKey:comic.id,coverSourceUrl:sourceUrl,coverUrl:'',coverSyncPending:true,coverRejectedSourceUrl:'',coverRejectedAt:''};await putStore('comics',updated);return updated}
+ async function markLocal(comic,blob,sourceUrl){
+  const pilot=typeof MC_ACCOUNT_ID==='string'&&MC_ACCOUNT_ID==='f7847aa2-1243-4d04-87a8-18b41e2a1aa6'&&window.MCAutoSyncRuntimeV4?.enabled===true;
+  let key=comic.id,sha='';
+  if(pilot){
+   sha=await window.MCSyncV2CoverIntegrity.sha256(blob);
+   if(!/^[a-f0-9]{64}$/.test(sha))throw Error('Huella de portada no válida');
+   key=String(comic.id).replace(/[^a-zA-Z0-9_.-]/g,'_').slice(0,110)+'-'+sha;
+  }
+  await cachePut(key,blob);
+  const updated={...comic,coverKey:key,coverSourceUrl:sourceUrl,coverUrl:'',coverSyncPending:true,coverRejectedSourceUrl:'',coverRejectedAt:''};
+  if(pilot){updated.coverSha256=sha;updated.coverSyncedAt=''}
+  await putStore('comics',updated);return updated
+ }
  async function syncOne(comic){if(!comic?.id||!comic.coverKey)throw Error('Ficha sin portada local');let blob=await cacheGet(comic.coverKey);if(!blob&&/^https?:\/\//i.test(String(comic.coverSourceUrl||''))){blob=await fetchAndCompress(comic.coverSourceUrl);await cachePut(comic.coverKey,blob)}if(!blob)throw Error('La copia local de la portada no está disponible');await upload(comic.coverKey,blob);const updated={...comic,coverSyncPending:false,coverSyncedAt:new Date().toISOString()};await putStore('comics',updated);return updated}
  async function attach(comic,sourceUrl,opts={}){if(!comic?.id)throw Error('Ficha no válida');const blob=await fetchAndCompress(sourceUrl);let updated=await markLocal(comic,blob,sourceUrl);if(opts.sync===true&&pass()&&token()){try{updated=await syncOne(updated)}catch(e){console.warn('Portada guardada localmente; sincronización pendiente:',e)}}return updated}
  async function attachFile(comic,file,opts={}){if(!comic?.id)throw Error('Ficha no válida');const blob=await compress(file);let updated=await markLocal(comic,blob,'archivo local');if(opts.sync===true&&pass()&&token()){try{updated=await syncOne(updated)}catch(e){console.warn('Portada guardada localmente; sincronización pendiente:',e)}}return updated}
