@@ -101,3 +101,13 @@ test('an in-flight sync cannot be reused by a second IndexedDB instance with the
   global.localStorage=previousStorage;
  }
 });
+
+test('first edit of a legacy cache can update only against an exact pre-edit cloud match',()=>{
+ const entry={id:A.id,uid:'test',op:'save',rev:'new',preEditRecord:A};
+ const changed={...A,notes:'Mobile edit'};
+ const match=engine.decideQueuedPush({entry,local:changed,remote:remote({...A}),baseline:null});
+ assert.equal(match.action,'update');assert.equal(match.expectedVersion,'2026-11-20T11:00:00.000Z');
+ assert.equal(engine.decideQueuedPush({entry,local:changed,remote:remote({...A,notes:'Concurrent edit'}),baseline:null}).action,'conflict');
+ assert.equal(engine.decideQueuedPush({entry,local:changed,remote:null,baseline:null}).action,'conflict');
+ assert.equal(engine.decideQueuedPush({entry:{...entry,op:'delete'},local:changed,remote:remote(A),baseline:null}).action,'conflict');
+});

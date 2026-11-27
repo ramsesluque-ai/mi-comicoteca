@@ -416,3 +416,17 @@ test('empty device bootstrap stores remote baseline atomically and refuses pendi
  await assert.rejects(rehydrate.restoreAtomically(empty,[record],UID,new Map([[record.id,version]])));
  assert.equal(empty.stores.comics.size,0);assert.equal(empty.stores.sync_baseline.size,0);assert.equal(empty.stores.sync_outbox.size,1);
 });
+
+test('legacy mobile cache without baseline can send first edit using verified prior record; laptop receives update',async()=>{
+ const server=backend(),mobile=new MemoryDb(),laptop=new MemoryDb();session(UID,'token-primary');
+ const comic={id:'c_legacy_edit',title:'Original',notes:''},edited={...comic,notes:'Edited from phone'};
+ const opts=database=>({database,dbName:'comicteca-user-'+UID,uid:UID,cfg,fetcher:server.fetcher});
+ laptop.stores.comics.set(comic.id,comic);laptop.stores.sync_outbox.set(comic.id,{id:comic.id,uid:UID,rev:'first'});
+ assert.equal((await sync.uploadQueued(opts(laptop))).uploaded,1);
+ mobile.stores.comics.set(comic.id,edited);mobile.stores.sync_outbox.set(comic.id,{id:comic.id,uid:UID,rev:'edit',preEditRecord:comic});
+ assert.equal(mobile.stores.sync_baseline.size,0);
+ assert.equal((await sync.uploadQueued(opts(mobile))).uploaded,1);
+ assert.equal((await sync.pull(opts(laptop))).downloaded,1);
+ assert.deepEqual(laptop.stores.comics.get(comic.id),edited);
+ assert.equal(mobile.stores.sync_outbox.size,0);assert.equal(server.maps.get(OTHER).size,0);
+});

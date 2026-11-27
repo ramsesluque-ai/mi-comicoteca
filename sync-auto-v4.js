@@ -92,6 +92,16 @@
    return {action:'conflict',reason:'baja-pendiente-de-tombstone-CAS'};
   if(entry?.op!=null&&entry?.op!=='save'&&entry?.op!=='import')
    return {action:'conflict',reason:'operacion-outbox-no-admitida'};
+  // Old devices may have a clean cached record but no recorded baseline.
+  // Only an exact match with the authenticated remote record can establish
+  // the missing common ancestor. Never infer it from timestamps or fields.
+  if(!baseline&&entry?.preEditRecord){
+   const prior=entry.preEditRecord;
+   if(!remote||remote.deleted||String(prior.id)!==String(entry.id))
+    return {action:'conflict',reason:'origen-de-edicion-no-verificado'};
+   if(json(prior)===json(remote.record))
+    return decidePush({local,remote,baseline:{record:prior,version:remote.version}});
+  }
   return decidePush({local,remote,baseline});
  }
  function commitLocal(database,{updates,uid}){
@@ -177,7 +187,7 @@
       comics.put(updated);
       outbox.put({id:updated.id,uid,
         rev:'cover-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2),
-        op:'save',createdAt:new Date().toISOString()});
+        op:'save',createdAt:new Date().toISOString(),...(queued.preEditRecord?{preEditRecord:queued.preEditRecord}:{})});
       if(remoteBaseline){
        base.put({id:updated.id,uid,record:remoteBaseline.record,
         version:remoteBaseline.version,at:new Date().toISOString()});

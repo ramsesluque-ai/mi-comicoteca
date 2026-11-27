@@ -34,8 +34,31 @@ function putStore(name,v){return new Promise((res,rej)=>{
   const track=mcOutboxEnabled(name);
   if(track&&(!v?.id||typeof v.id!=='string')){rej(Error('No se puede guardar una ficha sin ID'));return}
   const tx=db.transaction(track?[name,'sync_outbox']:[name],'readwrite');
-  tx.objectStore(name).put(v);
-  if(track)tx.objectStore('sync_outbox').put(mcOutboxEntry(v.id));
+  const store=tx.objectStore(name);
+  if(!track)store.put(v);
+  else{
+   const outbox=tx.objectStore('sync_outbox'),before=store.get(v.id),queued=outbox.get(v.id);
+   let haveBefore=false,haveQueued=false;
+   const finish=()=>{
+    if(!haveBefore||!haveQueued)return;
+    try{
+     const prior=queued.result;
+     if(prior&&prior.uid!==MC_ACCOUNT_ID){tx.abort();return}
+     const next=mcOutboxEntry(v.id);
+     // Capture the first pre-edit snapshot only when no operation is pending.
+     // It is a candidate, NOT an acknowledged baseline. Repeated saves must
+     // retain the original candidate, never promote an unsent edit.
+     if(prior){
+      if(prior.op!=='delete'&&prior.op!=='remove'&&prior.preEditRecord)
+       next.preEditRecord=prior.preEditRecord;
+     }else if(before.result)next.preEditRecord=before.result;
+     store.put(v);outbox.put(next);
+    }catch(_){tx.abort()}
+   };
+   before.onsuccess=()=>{haveBefore=true;finish()};
+   queued.onsuccess=()=>{haveQueued=true;finish()};
+   before.onerror=queued.onerror=()=>tx.abort();
+  }
   tx.oncomplete=()=>{res(v);if(track)mcOutboxNotify()};
   tx.onabort=()=>rej(tx.error||Error('El guardado local no se pudo completar. No se ha marcado como sincronizado.'));
   tx.onerror=()=>{};
