@@ -32,6 +32,7 @@ class MemoryDb {
     };
     return {
      get:key=>req(()=>store.get(key)),
+     count:()=>req(()=>store.size),
      getAll:()=>req(()=>[...store.values()]),
      getAllKeys:()=>req(()=>[...store.keys()]),
      add:value=>req(()=>{if(store.has(value.id))throw Error('duplicate');store.set(value.id,value);return value.id}),
@@ -402,4 +403,16 @@ test('add-only recovery captures version for newly downloaded rows and protects 
  await rehydrate.mergeMissingAtomically(d,[remote.record],UID,new Map([[first.id,remote.version]]));
  assert.equal(d.stores.comics.get(first.id).title,'Initial');
  assert.equal(d.stores.sync_baseline.get(first.id).version,version);
+});
+
+test('empty device bootstrap stores remote baseline atomically and refuses pending local deletes',async()=>{
+ const rehydrate=require('../catalog-cloud-rehydrate.js');
+ const d=new MemoryDb(),record={id:'c_bootstrap',title:'Original'};
+ const version='2026-11-27T07:00:00.000Z';
+ await rehydrate.restoreAtomically(d,[record],UID,new Map([[record.id,version]]));
+ assert.equal(d.stores.sync_baseline.get(record.id).version,version);
+ assert.equal(sync.decidePull({local:record,remote:{record:{...record,title:'Edited'},version:'2026-11-27T08:00:00.000Z'},baseline:d.stores.sync_baseline.get(record.id),pending:false}).action,'download');
+ const empty=new MemoryDb();empty.stores.sync_outbox.set(record.id,{id:record.id,uid:UID,op:'delete'});
+ await assert.rejects(rehydrate.restoreAtomically(empty,[record],UID,new Map([[record.id,version]])));
+ assert.equal(empty.stores.comics.size,0);assert.equal(empty.stores.sync_baseline.size,0);assert.equal(empty.stores.sync_outbox.size,1);
 });

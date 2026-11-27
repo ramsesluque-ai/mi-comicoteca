@@ -44,6 +44,7 @@ test('a save while initial cloud sync is running schedules a later upload',async
  const sandbox=createSandbox();
  sandbox.documentEvents.get('DOMContentLoaded')();
  sandbox.fireTimer(100); // automatic open begins
+ await Promise.resolve(); // async authorization must resolve before transport
  assert.deepEqual(sandbox.calls,['syncNow']);
  sandbox.events.get('mc-local-comic-saved')();
  sandbox.fireTimer(800); // save debounced during in-flight cloud read
@@ -558,6 +559,7 @@ test('a completed old-account request cannot replay a queued save under a new UI
  vm.runInNewContext(enabled,ctx);
  const request=win.MCAutoSyncRuntimeV4.syncNow();
  const queued=win.MCAutoSyncRuntimeV4.uploadQueued();
+ await Promise.resolve(); // ensure the old-account request really started
  ctx.MC_ACCOUNT_ID=other;ctx.DBN='comicteca-user-'+other;ctx.db={};
  const prior=statuses.length;
  finish();
@@ -580,4 +582,17 @@ test('runtime advances past permanent conflicts without looping afterward',async
  for(let i=0;i<20;i++)await Promise.resolve();
  assert.equal(runs,2);
  assert.equal(sandbox.timers.size,0);
+});
+
+test('account switch during asynchronous authorization cannot start transport',async()=>{
+ const source=fs.readFileSync(path.resolve(__dirname,'../sync-auto-runtime-v4.js'),'utf8');
+ const enabled=source.replace('const RELEASE_APPROVED=false','const RELEASE_APPROVED=true');
+ const uid='11111111-1111-4111-8111-111111111111',other='22222222-2222-4222-8222-222222222222';
+ let calls=0;const win={MCAutoCoversV4:{},MCAutoSyncV4:{syncNow:async()=>{calls++}},dispatchEvent:()=>{}};
+ const ctx={window:win,db:{},DBN:'comicteca-user-'+uid,MC_ACCOUNT_ID:uid,MC_IMPORT_TEST:false,console,Promise,Date,setTimeout,clearTimeout};
+ vm.runInNewContext(enabled,ctx);
+ const job=win.MCAutoSyncRuntimeV4.syncNow();
+ ctx.MC_ACCOUNT_ID=other;ctx.DBN='comicteca-user-'+other;ctx.db={};
+ await assert.rejects(job,/Cambio de cuenta/);
+ assert.equal(calls,0);
 });

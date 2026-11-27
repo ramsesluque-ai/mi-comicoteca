@@ -102,7 +102,12 @@
    try{
     const options=context();
     activeIdentity={uid:options.uid,dbName:options.dbName,database:options.database};
-    STATE.enabled=await authorize(options);
+    const authorized=await authorize(options);
+    // Authorization is asynchronous: do not start a transport or publish
+    // status if the account changed during the authorization request.
+    if(MC_ACCOUNT_ID!==options.uid||DBN!==options.dbName||db!==options.database)
+     throw Error('Cambio de cuenta durante sincronización; resultado descartado');
+    STATE.enabled=authorized;
     emit();
     if(!STATE.enabled)return {paused:true,reason:'Piloto no autorizado por el servidor'};
     const engine=root.MCAutoSyncV4;

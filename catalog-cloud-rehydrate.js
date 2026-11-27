@@ -76,21 +76,33 @@
   assert(sha.length===64,'No se pudo verificar el SHA-256 del respaldo');
   return {sha,count:rows.length,bytes:bytes.length};
  }
- function restoreAtomically(database,rows){
+ function restoreAtomically(database,rows,uid,versions=new Map()){
   return new Promise((resolve,reject)=>{
    let transaction,checked=false;
    try{
-    transaction=database.transaction('comics','readwrite');
+    const withBaseline=!!uid&&database.objectStoreNames?.contains('sync_baseline')===true&&database.objectStoreNames?.contains('sync_outbox')===true;
+    transaction=database.transaction(withBaseline?['comics','sync_outbox','sync_baseline']:'comics','readwrite');
     const store=transaction.objectStore('comics');
     const count=store.count();
-    count.onsuccess=()=>{
-     if(count.result!==0){
-      transaction.abort();
-      return;
-     }
+    const baseline=withBaseline?transaction.objectStore('sync_baseline'):null;
+    const pending=withBaseline?transaction.objectStore('sync_outbox').getAll():null;
+    const known=baseline?.getAll();
+    let countReady=false,pendingReady=!pending,knownReady=!known;
+    const restore=()=>{
+     if(!countReady||!pendingReady||!knownReady)return;
+     if(count.result!==0||pending?.result?.length){transaction.abort();return}
      checked=true;
-     for(const row of rows)store.add(row); // never put; a collision aborts the whole transaction
+     const existing=new Set((known?.result||[]).map(x=>String(x.id)));
+     for(const row of rows){
+      store.add(row); // never put; a collision aborts the whole transaction
+      const id=String(row.id),version=versions.get(id);
+      if(baseline&&version&&!existing.has(id))baseline.add({id,uid,record:row,version,at:new Date().toISOString()});
+     }
     };
+    count.onsuccess=()=>{countReady=true;restore()};
+    count.onerror=()=>transaction.abort();
+    if(pending){pending.onsuccess=()=>{pendingReady=true;restore()};pending.onerror=()=>transaction.abort()}
+    if(known){known.onsuccess=()=>{knownReady=true;restore()};known.onerror=()=>transaction.abort()}
     transaction.oncomplete=()=>resolve(rows.length);
     transaction.onabort=()=>reject(Error(checked?'Restauración cancelada sin aplicar cambios (transacción revertida).':'La colección local cambió mientras se recuperaba; no se ha sobrescrito.'));
     transaction.onerror=()=>{}; // onabort owns error reporting
@@ -268,7 +280,7 @@
    assert(current.user.id===uid&&dbName==='comicteca-user-'+uid,'La sesión cambió durante la restauración: operación bloqueada.');
    // This is local rehydration, not cloud synchronization; metadata for private
    // covers is preserved verbatim, but CoverVault binaries are NOT transferred.
-   await restoreAtomically(database,result.rows);
+   await restoreAtomically(database,result.rows,uid,result.versions);
    const after=await countLocal(database);
    assert(after===result.rows.length,'La recuperación local no ha superado la verificación de recuento.');
    try{localStorage.setItem('mc-catalog-cloud-seen-'+uid,String(result.rows.length))}catch(_){}
