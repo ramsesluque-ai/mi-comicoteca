@@ -10,7 +10,7 @@ const rows=[
 ];
 function setup(view){
  let foot,opened=[];
- const make=()=>({children:[],appendChild(x){this.children.push(x)},prepend(x){this.children.unshift(x)}});
+ const make=()=>({style:{},children:[],appendChild(x){this.children.push(x)},prepend(x){this.children.unshift(x)}});
  const modal={querySelectorAll:()=>[]};
  const window={editComic:async id=>{opened.push(id);foot=make()},mcCollectionIdentityV50:{
   currentStatic:async()=>({}),resolvedKey:x=>x.edition==='legacy-a'?'a':x.edition

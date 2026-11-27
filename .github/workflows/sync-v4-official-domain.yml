@@ -3,6 +3,7 @@ on:
   push:
     branches: [commercial-published]
     paths:
+      - 'comic-ficha-navigation.js'
       - 'app1.js'
       - 'sync-auto-v4.js'
       - 'sync-auto-covers-v4.js'
@@ -26,7 +27,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          files=(index.html sw.js app1.js vault.js sync-auto-v4.js sync-auto-covers-v4.js sync-auto-runtime-v4.js)
+          files=(index.html sw.js comic-ficha-navigation.js app1.js vault.js sync-auto-v4.js sync-auto-covers-v4.js sync-auto-runtime-v4.js)
           for attempt in $(seq 1 10); do
             echo "Checking https://micomicteca.es, attempt ${attempt}/10, commit ${GITHUB_SHA}"
             ok=1
