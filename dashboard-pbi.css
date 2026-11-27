@@ -64,3 +64,6 @@
 .pbi-bar-row:nth-of-type(5n+4) .pbi-track i{background:linear-gradient(90deg,#dc9740,#f4c56a)}
 .pbi-bar-row:nth-of-type(5n) .pbi-track i{background:linear-gradient(90deg,#db6a89,#f49ba5)}
 @media(max-width:760px){.pbi-progress-row{grid-template-columns:minmax(0,1fr) auto}.pbi-progress-row strong{grid-column:2;grid-row:1}.pbi-progress{grid-column:1/-1;grid-row:2}}
+
+/* Read-only statistics scope; global financial and completion indicators remain unchanged. */
+.pbi-stats-scope{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:12px 0}.pbi-stats-scope small{display:block;opacity:.75;margin-top:4px}.pbi-scope-buttons{display:flex;gap:6px;flex-wrap:wrap}.pbi-scope-buttons button[aria-pressed='true']{font-weight:700}

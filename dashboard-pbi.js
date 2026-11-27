@@ -1,6 +1,9 @@
 'use strict';
 (function(){
-  let drill=null;
+  let drill=null,statsScope='collection';
+  const scopeOptions=[['collection','En colección'],['wishlist','Wishlist'],['all','Todos']];
+  function scopeRows(rows,scope=statsScope){return scope==='all'?rows:rows.filter(x=>x.status===(scope==='wishlist'?'On Wish List':'In Collection'));}
+  function setScope(scope){if(!scopeOptions.some(([id])=>id===scope))return;statsScope=scope;drill=null;if(typeof render==='function')return render();}
   const fmt=n=>(Number(n)||0).toLocaleString('es-ES');
   function countBy(rows,fn){const m={};rows.forEach(x=>{const k=String(fn(x)||'Sin dato').trim()||'Sin dato';m[k]=(m[k]||0)+1});return Object.entries(m).sort((a,b)=>b[1]-a[1]);}
   function splitPeople(v){return String(v||'').split(/[,;|\/]+/).map(x=>x.trim()).filter(Boolean);}
@@ -27,16 +30,16 @@
   function drillPanel(rows){
     if(!drill)return '';
     const selected=drillRows(rows),owned=selected.filter(x=>x.status==='In Collection'),wish=selected.filter(x=>x.status==='On Wish List');
-    const secondary=drill.kind==='publisher'?countBy(owned,characterName):drill.kind==='universe'?countBy(owned,characterName):countBy(owned,universeName);
+    const secondary=drill.kind==='character'?countBy(selected,universeName):countBy(selected,characterName);
     const seriesMap=new Map();
-    owned.forEach(x=>{const key=ckey(x);if(!seriesMap.has(key))seriesMap.set(key,{key,sample:x,count:0});seriesMap.get(key).count++;});
+    selected.forEach(x=>{const key=ckey(x);if(!seriesMap.has(key))seriesMap.set(key,{key,sample:x,count:0});seriesMap.get(key).count++;});
     const series=[...seriesMap.values()].sort((a,b)=>b.count-a.count);
     const heading=({publisher:'Editorial',universe:'Universo',character:'Personaje',author:'Autor',decade:'Década'})[drill.kind]||'Filtro';
-    const details=owned.map(x=>`<tr><td>${esc(x.publisher||'Sin dato')}</td><td>${esc(x.catalogHeader||x.series||'Sin cabecera')}</td><td>${esc(x.volume||x.stage||'—')}</td><td>${esc(x.issueNr??x.issue??x.number??'—')}</td><td>${esc(x.title||'Sin título acreditado')}</td></tr>`).join('');
+    const details=selected.map(x=>`<tr><td>${esc(x.publisher||'Sin dato')}</td><td>${esc(x.catalogHeader||x.series||'Sin cabecera')}</td><td>${esc(x.volume||x.stage||'—')}</td><td>${esc(x.issueNr??x.issue??x.number??'—')}</td><td>${esc(x.title||'Sin título acreditado')}</td><td>${esc(x.status==='In Collection'?'En colección':x.status==='On Wish List'?'Wishlist':x.status||'Sin estado')}</td></tr>`).join('');
     return `<section class="pbi-drill" aria-label="Desglose interactivo"><div class="pbi-drill-head"><div><small>DESGLOSE · ${heading}</small><h2>${esc(drill.value)}</h2><p>Explora los datos sin salir del dashboard. Las cifras reflejan los registros actuales.</p></div><button class="btn sm" onclick="PbiDashboard.clearDrill()">✕ Cerrar desglose</button></div>
-      <div class="pbi-drill-kpis"><div><small>En colección</small><b>${fmt(owned.length)}</b></div><div><small>Wishlist</small><b>${fmt(wish.length)}</b></div><div><small>Series / etapas</small><b>${fmt(series.length)}</b></div><div><small>Editoriales</small><b>${fmt(countBy(owned,x=>x.publisher).length)}</b></div></div>
+      <div class="pbi-drill-kpis"><div><small>En colección</small><b>${fmt(owned.length)}</b></div><div><small>Wishlist</small><b>${fmt(wish.length)}</b></div><div><small>Series / etapas</small><b>${fmt(series.length)}</b></div><div><small>Editoriales</small><b>${fmt(countBy(selected,x=>x.publisher).length)}</b></div></div>
       <div class="pbi-drill-grid"><div><h3>${drill.kind==='character'?'Universos':'Personajes'}</h3>${bars(secondary,drill.kind==='character'?'universe':'character',12)||'<p class="muted">Sin datos</p>'}</div><div><h3>Series y etapas</h3>${series.map(item=>`<button type="button" class="pbi-drill-series pbi-series-link" onclick="PbiDashboard.openCollection('${safeParam(item.key)}')" title="Abrir colección"><span>${esc([item.sample.publisher,item.sample.catalogHeader||item.sample.series||'Sin cabecera',item.sample.volume||item.sample.stage||'Sin etapa',item.sample.startYear||'Sin año'].join(' · '))}<small>Universo: ${esc(universeName(item.sample))} · Personaje: ${esc(characterName(item.sample))}</small></span><b>${fmt(item.count)} ↗</b></button>`).join('')||'<p class="muted">Sin datos</p>'}</div></div>
-      <details class="pbi-drill-table"><summary>Ver todos los ejemplares (${fmt(owned.length)})</summary><div class="pbi-drill-scroll"><table><thead><tr><th>Editorial</th><th>Cabecera</th><th>Volumen / etapa</th><th>N.º</th><th>Título</th></tr></thead><tbody>${details}</tbody></table></div></details>
+      <details class="pbi-drill-table"><summary>Ver todos los ejemplares (${fmt(selected.length)})</summary><div class="pbi-drill-scroll"><table><thead><tr><th>Editorial</th><th>Cabecera</th><th>Volumen / etapa</th><th>N.º</th><th>Título</th><th>Estado</th></tr></thead><tbody>${details}</tbody></table></div></details>
     </section>`;
   }
   function clearDrill(){drill=null;if(typeof render==='function')return render();}
@@ -84,7 +87,7 @@
         ...Object.fromEntries(['writer','writers','script','author','authors','artist','artists','penciller'].map(field=>[field,x[field]??exact[field]??'']))
       };
     });
-    const classifiedOwned=classifiedRows.filter(x=>x.status==='In Collection');
+    const scoped=scopeRows(classifiedRows);
     // Personal collection progress: only wishlist issues are missing.
     // The shared Maestro is NOT the user's purchase checklist.
     const collections=new Map();
@@ -107,7 +110,7 @@
     const complete=cs.filter(x=>x.missing===0).length,incomplete=cs.length-complete;
     const pct=cs.length?Math.round(100*complete/cs.length):0;
     const estimated=inc.reduce((s,x)=>s+num(x.estimated),0),now=new Date(),mk=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'),monthPurchases=purchases.filter(x=>monthKey(x.date)===mk),monthSpend=monthPurchases.reduce((s,x)=>s+num(x.price)+num(x.shipping),0);
-    const pubs=countBy(inc,x=>x.publisher),characters=countBy(classifiedOwned,characterName),universes=countBy(classifiedOwned,universeName),authors=countMulti(classifiedOwned,['writer','writers','script','author','authors','artist','artists','penciller']),decades=countBy(inc,x=>yearBand(x.startYear||x.year));
+    const pubs=countBy(scoped,x=>x.publisher),characters=countBy(scoped,characterName),universes=countBy(scoped,universeName),authors=countMulti(scoped,['writer','writers','script','author','authors','artist','artists','penciller']),decades=countBy(scoped,x=>yearBand(x.startYear||x.year));
     const recent=[...purchases].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).slice(0,6),progress=cs.filter(x=>x.missing>0).sort((a,b)=>a.missing-b.missing||b.have-a.have||String(a.key).localeCompare(String(b.key)));
     const noCover=inc.filter(x=>!(x.coverKey||x.cover||x.coverUrl||x.image||x.imageUrl)).length,noIsbn=inc.filter(x=>!(x.isbn||x.ISBN)).length,lowQuality=inc.filter(x=>String(x.quality||'').toLowerCase().includes('baj')||String(x.condition||'').toLowerCase().includes('poor')).length;
     return head('Dashboard','Centro de control interactivo de tu comicoteca.',`<button class="btn primary" onclick="editComic()">+ Añadir cómic</button>`)+`<div class="pbi-shell">
@@ -119,7 +122,8 @@
         <div><span>Valor estimado</span><b>${money(estimated)}</b><small>Valor registrado</small></div>
         <button onclick="PbiDashboard.goto('purchases')"><span>Compras del mes</span><b>${fmt(monthPurchases.length)}</b><small>${money(monthSpend)} este mes</small></button>
       </div>
-      ${drillPanel(classifiedRows)}
+      <div class="pbi-stats-scope"><div><b>Estadísticas del catálogo</b><small>${fmt(scoped.length)} fichas · ${scopeOptions.find(([id])=>id===statsScope)[1]}</small></div><div class="pbi-scope-buttons" role="group" aria-label="Ámbito de las estadísticas">${scopeOptions.map(([id,label])=>`<button type="button" class="btn sm ${statsScope===id?'primary':''}" aria-pressed="${statsScope===id}" onclick="PbiDashboard.setScope('${id}')">${label}</button>`).join('')}</div></div>
+      ${drillPanel(scoped)}
       <div class="pbi-grid pbi-grid-3">
         <section class="pbi-panel"><div class="pbi-title"><b>Editoriales</b><span>Clic para filtrar</span></div>${bars(pubs,'publisher')||'<div class="muted">Sin datos</div>'}</section>
         <section class="pbi-panel"><div class="pbi-title"><b>Personajes</b><span>Clasificación específica · sin identificar si falta</span></div>${bars(characters,'character')||'<div class="muted">Sin datos</div>'}</section>
@@ -127,7 +131,7 @@
         <section class="pbi-panel"><div class="pbi-title"><b>Autores</b><span>Guionistas y artistas</span></div>${bars(authors,'author')||'<div class="muted">Sin datos de autores</div>'}</section>
         <section class="pbi-panel"><div class="pbi-title"><b>Décadas</b><span>Año de inicio</span></div>${bars(decades,'decade')||'<div class="muted">Sin datos</div>'}</section>
         <section class="pbi-panel"><div class="pbi-title"><b>Evolución de compras</b><span>Gasto · últimos 12 meses</span></div>${monthBars(purchases)}<button class="btn sm" onclick="PbiDashboard.goto('purchases')">Abrir compras</button></section>
-        <section class="pbi-panel"><div class="pbi-title"><b>Calidad del catálogo</b><span>Pendientes de completar</span></div><div class="pbi-quality-grid">${qualityCard('Sin portada',noCover,inc.length,"PbiDashboard.goto('covers')")}${qualityCard('Sin ISBN',noIsbn,inc.length,"PbiDashboard.goto('quality')")}${qualityCard('Calidad baja',lowQuality,inc.length,"PbiDashboard.goto('quality')")}</div></section>
+        <section class="pbi-panel"><div class="pbi-title"><b>Calidad del catálogo</b><span>En colección · pendientes de completar</span></div><div class="pbi-quality-grid">${qualityCard('Sin portada',noCover,inc.length,"PbiDashboard.goto('covers')")}${qualityCard('Sin ISBN',noIsbn,inc.length,"PbiDashboard.goto('quality')")}${qualityCard('Calidad baja',lowQuality,inc.length,"PbiDashboard.goto('quality')")}</div></section>
         <section class="pbi-panel pbi-wide"><div class="pbi-title"><b>Colecciones más próximas a completar</b><span>Números pendientes según tu wishlist · 1, 2, 3…</span></div><div class="pbi-progress-list">${collectionProgress(progress)||'<div class="muted">No hay colecciones con números pendientes en wishlist</div>'}</div></section>
         <section class="pbi-panel"><div class="pbi-title"><b>Últimas compras</b><span>${fmt(purchases.length)} registradas</span></div><div class="pbi-purchases">${recent.map(x=>`<div><span>${esc([x.publisher,x.series,x.issue&&('#'+x.issue)].filter(Boolean).join(' · ')||'Compra')}</span><b>${money(num(x.price)+num(x.shipping))}</b><small>${esc(x.date||'Sin fecha')}</small></div>`).join('')||'<div class="muted">Sin compras registradas</div>'}</div></section>
       </div>
@@ -136,7 +140,7 @@
   async function goto(v,status){await route(v);if(status&&v==='catalog'){filters.status=status;await render();}}
   async function filter(kind,value){const v=decodeURIComponent(value);if(['publisher','character','universe','author','decade'].includes(kind)){drill={kind,value:v};if(typeof render==='function')await render();return;}current='catalog';page=1;filters={status:'In Collection'};if(kind==='author')filters.q=v;else if(kind==='decade')filters.q=v.split('–')[0];setNav('catalog');await render();}
   async function openCollection(encoded){const key=decodeURIComponent(encoded);current='series';page=1;setNav('series');await render();if(typeof openSeries==='function')return openSeries(encodeURIComponent(key));if(typeof window.openCollection==='function' && window.openCollection!==window.PbiDashboard.openCollection)return window.openCollection(encodeURIComponent(key));}
-  window.PbiDashboard={view,goto,filter,openCollection,clearDrill};
+  window.PbiDashboard={view,goto,filter,openCollection,clearDrill,setScope};
   window.dashboard=view;
 
   // app1/app5 can start their initial asynchronous render before this module loads.
