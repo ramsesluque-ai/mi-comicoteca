@@ -43,3 +43,20 @@ assert.equal(ctx.mcImportIdentityConflict(known,{...known,volume:'2',startYear:'
 assert.equal(ctx.mcImportIdentityConflict(unknown,{...known,publisher:'Planeta DeAgostini'}),false);
 assert.equal(ctx.mcImportIdentityConflict(unknown,{...known,issueNr:'2'}),false);
 console.log('PASS: ambiguous Batgirl editions quarantined; different publisher, edition and issue preserved');
+
+// Independent classification: import, editor, both save paths and dashboard.
+assert(saved[1].includes('"Universo";"Personaje";"Personajes"'));
+ctx.cleanComic=x=>x;
+vm.runInContext(take('function mcImportMap(raw){','function mcImportKey('),ctx);
+const classified=ctx.mcImportMap({Universo:'DC',Personaje:'Batman',Grupo:'Histórico',Personajes:'Robin'});
+assert.equal(classified.universe,'DC');assert.equal(classified.character,'Batman');assert.equal(classified.group,'Histórico');assert.equal(classified.characters,'Robin');
+const editor=fs.readFileSync('app3.js','utf8'),save=fs.readFileSync('app4.js','utf8'),cover=fs.readFileSync('app8.js','utf8');
+assert(editor.includes("fld('universe','Universo',r.universe)"));assert(editor.includes("fld('character','Personaje',r.character)"));
+assert(save.includes("personaje:'character',character:'character'"));
+assert.equal((cover.match(/character:document\.getElementById\('m_character'\)/g)||[]).length,2);
+const dash=fs.readFileSync('dashboard-pbi.js','utf8');const start=dash.indexOf('  function universeName(x)'),end=dash.indexOf('  function drillRows(rows)',start);
+vm.runInContext(dash.slice(start,end),ctx);
+assert.equal(ctx.universeName({universe:'DC',character:'Batman',group:'Lobezno'}),'DC');
+assert.equal(ctx.characterName({universe:'DC',character:'Batman',group:'Lobezno'}),'Batman');
+assert.equal(ctx.characterName({group:'Lobezno'}),'Sin identificar');assert.equal(ctx.universeName({group:'Lobezno'}),'Sin identificar');
+console.log('PASS: independent character and universe classifications');
