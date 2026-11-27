@@ -3,7 +3,7 @@
 (function(){
  const base=window.editComic;
  if(typeof base!=='function')return;
- let sequence=[],current='',baseline='';
+ let sequence=[],currentId='',baseline='';
  const snapshot=()=>{const modal=document.querySelector('#modal');if(!modal)return '';return JSON.stringify(Array.from(modal.querySelectorAll('input,select,textarea')).filter(el=>!['button','submit','reset','file','hidden'].includes(el.type)).map(el=>[el.id||el.name,el.type==='checkbox'||el.type==='radio'?el.checked:el.value]));};
  const hasChanges=()=>snapshot()!==baseline;
  window.mcComicMarkSaved=()=>{baseline=snapshot()};
@@ -16,8 +16,24 @@
   if(!foot)return;
   const record=id?await getStore('comics',id):null;
   if(!record)return;
-  const same=(await allStore('comics')).filter(x=>ckey(x)===ckey(record)&&x.status===record.status).sort(compare);
-  sequence=same.map(x=>x.id);current=id;
+  const rows=await allStore('comics');
+  // Collections opens the complete personal edition, regardless of status.
+  // Keep the status-specific navigation only when editing outside Collections.
+  const fromSeries=(typeof current!=='undefined'&&current==='series')||
+    (typeof mcEditingFromSeries!=='undefined'&&mcEditingFromSeries===true);
+  let key=typeof mcSeriesCollectionKey==='function'?mcSeriesCollectionKey:ckey;
+  if(fromSeries&&window.mcCollectionIdentityV50){
+   const api=window.mcCollectionIdentityV50;
+   try{
+    const st=await api.currentStatic(rows);
+    key=x=>api.resolvedKey(x,st);
+   }catch(e){console.warn('MI COMICTECA: navegación por identidad local',e)}
+  }else if(!fromSeries)key=ckey;
+  // Do not attach stale navigation to a modal that has already been replaced.
+  if(foot!==document.querySelector('#modal .modalfoot'))return;
+  const edition=key(record);
+  const same=rows.filter(x=>key(x)===edition&&(fromSeries||x.status===record.status)).sort(compare);
+  sequence=same.map(x=>x.id);currentId=id;
   const i=sequence.indexOf(id);
   const bar=document.createElement('div');
   bar.style.cssText='display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-right:auto';
@@ -29,7 +45,7 @@
   baseline=snapshot();
  }
  async function move(direction){
-  const index=sequence.indexOf(current),target=sequence[index+direction];
+  const index=sequence.indexOf(currentId),target=sequence[index+direction];
   if(!target)return;
   if(hasChanges()&&!confirm('Hay cambios sin guardar. ¿Quieres descartarlos y abrir otra ficha?'))return;
   await window.editComic(target);

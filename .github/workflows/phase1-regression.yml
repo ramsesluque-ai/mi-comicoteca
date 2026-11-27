@@ -47,5 +47,7 @@ jobs:
           assert(app.includes('function issueNumberLabel('),'Unknown issue numbers need safe display');
           console.log('PHASE1_STATIC_GATE_PASS');
           NODE
+      - name: Validate collection issue navigation across statuses
+        run: node --test tests/comic-ficha-navigation.test.cjs
       - name: Validate reviewed ECC Maestro records and cache versions
         run: node tests/master-ecc-catalog-regression.cjs
