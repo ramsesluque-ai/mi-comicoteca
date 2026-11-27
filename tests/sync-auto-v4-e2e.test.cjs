@@ -430,3 +430,20 @@ test('legacy mobile cache without baseline can send first edit using verified pr
  assert.deepEqual(laptop.stores.comics.get(comic.id),edited);
  assert.equal(mobile.stores.sync_outbox.size,0);assert.equal(server.maps.get(OTHER).size,0);
 });
+
+test('a concurrent save during download defers only its record and applies other cloud updates',async()=>{
+ const db=new MemoryDb(),a={id:'c_race_download',notes:'Old'},b={id:'c_other_download',notes:'Old'};
+ const changed={...a,notes:'Saved on this device during cloud scan'};
+ db.stores.comics.set(a.id,changed);db.stores.comics.set(b.id,b);
+ db.stores.sync_outbox.set(a.id,{id:a.id,uid:UID,rev:'local-race'});
+ db.stores.sync_baseline.set(a.id,{id:a.id,uid:UID,record:a,version:'old'});
+ const skipped=[],version='2026-11-27T22:00:00.000Z';
+ const downloaded=await sync.commitLocal(db,{uid:UID,skipped,updates:[
+  {id:a.id,type:'download',original:a,record:{...a,notes:'Remote edit'},version},
+  {id:b.id,type:'download',original:b,record:{...b,notes:'Remote update'},version}
+ ]});
+ assert.equal(downloaded,1);assert.equal(skipped.length,1);assert.equal(skipped[0].id,a.id);
+ assert.deepEqual(db.stores.comics.get(a.id),changed);assert.equal(db.stores.sync_outbox.get(a.id).rev,'local-race');
+ assert.equal(db.stores.sync_baseline.get(a.id).version,'old');
+ assert.equal(db.stores.comics.get(b.id).notes,'Remote update');assert.equal(db.stores.sync_baseline.get(b.id).version,version);
+});

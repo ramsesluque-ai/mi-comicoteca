@@ -104,7 +104,7 @@
   }
   return decidePush({local,remote,baseline});
  }
- function commitLocal(database,{updates,uid}){
+ function commitLocal(database,{updates,uid,skipped=[]}){
   if(!updates.length)return Promise.resolve(0);
   return new Promise((resolve,reject)=>{
    let tx,performed=0,failed=false;
@@ -118,7 +118,12 @@
      const attempt=()=>{
       if(!haveComic||!havePending||failed)return;
       try{
-       if(dirty||!((row===undefined&&u.original===undefined)||(row!==undefined&&u.original!==undefined&&json(row)===json(u.original)))){abort();return}
+       // A save arriving during a remote scan must not discard that save,
+       // but it must not block unrelated downloads or the subsequent upload.
+       // Skip only the contested record; do not touch its baseline or outbox.
+       if(dirty||!((row===undefined&&u.original===undefined)||(row!==undefined&&u.original!==undefined&&json(row)===json(u.original)))){
+        skipped.push({id:u.id,reason:'modificacion-local-durante-descarga'});return
+       }
        if(u.type==='download'){comics.put(u.record);performed++}
        baseline.put({id:u.id,uid,record:u.record,version:u.version,at:new Date().toISOString()});
       }catch(_){abort()}
@@ -128,7 +133,7 @@
      original.onerror=abort;pending.onerror=abort;
     }
     tx.oncomplete=()=>resolve(performed);
-    tx.onabort=()=>reject(Error('La copia local cambió durante la descarga; transacción revertida'));
+    tx.onabort=()=>reject(Error('Error de almacenamiento durante la descarga; transacción revertida'));
     tx.onerror=()=>{};
    }catch(e){reject(e)}
   });
@@ -354,12 +359,12 @@
   await engine().verifySession({session,cfg,fetcher});
   // Commit in bounded transactions. No local records are overwritten if the
   // outbox changed while the authenticated remote snapshot was being read.
-  let downloaded=0;
+  let downloaded=0;const skipped=[];
   for(let i=0;i<updates.length;i+=200){
-   downloaded+=await commitLocal(database,{updates:updates.slice(i,i+200),uid});
+   downloaded+=await commitLocal(database,{updates:updates.slice(i,i+200),uid,skipped});
    onProgress({stage:'download',processed:Math.min(i+200,updates.length),total:updates.length,downloaded});
   }
-  return {cloud:remote.length,downloaded,conflicts,unchanged:updates.length-downloaded};
+  return {cloud:remote.length,downloaded,conflicts:conflicts.concat(skipped),unchanged:updates.length-downloaded-skipped.length};
  }
  // A global in-flight promise must never be shared across accounts or databases.
  // Reject concurrent cross-account runs rather than returning another user's result.
