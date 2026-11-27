@@ -531,6 +531,7 @@ test('late network failure from previous UID cannot schedule retry or publish er
   console,Promise,Date,setTimeout:(fn,ms)=>{timers.push(ms);return timers.length},clearTimeout:()=>{}};
  vm.runInNewContext(enabled,ctx,{filename:'sync-auto-runtime-v4.js'});
  const oldJob=win.MCAutoSyncRuntimeV4.uploadQueued();
+ await Promise.resolve(); // allow the old account transport to start before switching
  ctx.MC_ACCOUNT_ID=other;ctx.DBN='comicteca-user-'+other;ctx.db=dbB;
  rejectOld(Error('HTTP 503'));
  await assert.rejects(oldJob,/HTTP 503/);
@@ -595,4 +596,18 @@ test('account switch during asynchronous authorization cannot start transport',a
  ctx.MC_ACCOUNT_ID=other;ctx.DBN='comicteca-user-'+other;ctx.db={};
  await assert.rejects(job,/Cambio de cuenta/);
  assert.equal(calls,0);
+});
+
+
+test('retry remote changes and private covers even when the upload queue is empty',async()=>{
+ const source=fs.readFileSync(path.resolve(__dirname,'../sync-auto-runtime-v4.js'),'utf8');
+ const enabled=source.replace('const RELEASE_APPROVED=false','const RELEASE_APPROVED=true');
+ const uid='11111111-1111-4111-8111-111111111111';
+ const timers=new Map();let seq=0,full=0,push=0;
+ const win={MCAutoCoversV4:{},MCAutoSyncV4:{syncNow:async()=>{full++;return {sent:{pending:0,conflicts:[]},received:full===1?{downloaded:0,retryablePending:1,conflicts:[{reason:'portada-no-recuperada: HTTP 503'}]}:{downloaded:1,retryablePending:0,conflicts:[]}}},uploadQueued:async()=>{push++;return {pending:0,conflicts:[]}}},dispatchEvent:()=>{}};
+ const ctx={window:win,db:{},DBN:'comicteca-user-'+uid,MC_ACCOUNT_ID:uid,MC_IMPORT_TEST:false,CustomEvent:class{constructor(type,options){this.type=type;this.detail=options.detail}},console,Promise,Date,setTimeout:(fn,ms)=>{const id=++seq;timers.set(id,{fn,ms});return id},clearTimeout:id=>timers.delete(id)};
+ vm.runInNewContext(enabled,ctx);await win.MCAutoSyncRuntimeV4.syncNow();
+ assert.equal(timers.size,1);const [id,t]=[...timers.entries()][0];assert.equal(t.ms,5000);timers.delete(id);t.fn();
+ for(let i=0;i<20;i++)await Promise.resolve();
+ assert.equal(full,2);assert.equal(push,0);assert.equal(timers.size,0);assert.equal(win.MCAutoSyncRuntimeV4.getStatus().lastDownloads,1);
 });

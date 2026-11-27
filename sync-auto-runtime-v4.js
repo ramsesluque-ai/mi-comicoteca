@@ -73,14 +73,21 @@
   // previously failed pull/full reconciliation has recovered remote changes.
   // Preserve that retry even if a manual push completes successfully.
   const unfinishedPull=pendingRetryMode==='both'||pendingRetryMode==='pull';
-  if(result?.sent&&Number(result.sent.pending)===0&&!(mode==='push'&&unfinishedPull)){
+  const retryDownload=Number(result?.received?.retryablePending||0)>0;
+  if(!retryDownload&&result?.sent&&Number(result.sent.pending)===0&&!(mode==='push'&&unfinishedPull)){
    if(timer){clearTimeout(timer);timer=null}
    pendingRetryMode=null;
    STATE.scheduled=false;
    retryMs=5000;
   }
   emit();
-  reschedulePending(result?.sent,mode);
+  // A failed private-cover download or a local race can leave remote updates
+  // unapplied even when every outgoing revision has been acknowledged.
+  // Retry the full reconciliation; do not treat an empty outbox as success.
+  if(retryDownload){
+   if(timer&&pendingRetryMode==='push'){clearTimeout(timer);timer=null}
+   reschedulePending({pending:Number(result.received.retryablePending),unattempted:0,retryablePending:Number(result.received.retryablePending),conflicts:result.received.conflicts||[]},'both');
+  }else reschedulePending(result?.sent,mode);
   if(STATE.lastDownloads){
    root.dispatchEvent(new CustomEvent('mc-catalog-cloud-merged',{detail:{added:STATE.lastDownloads}}));
   }

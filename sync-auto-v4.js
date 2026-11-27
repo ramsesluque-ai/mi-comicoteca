@@ -364,7 +364,7 @@
    downloaded+=await commitLocal(database,{updates:updates.slice(i,i+200),uid,skipped});
    onProgress({stage:'download',processed:Math.min(i+200,updates.length),total:updates.length,downloaded});
   }
-  return {cloud:remote.length,downloaded,conflicts:conflicts.concat(skipped),unchanged:updates.length-downloaded-skipped.length};
+  return {cloud:remote.length,downloaded,conflicts:conflicts.concat(skipped),unchanged:updates.length-downloaded-skipped.length,retryablePending:conflicts.filter(x=>retryableReason(x.reason)).length+skipped.length};
  }
  // A global in-flight promise must never be shared across accounts or databases.
  // Reject concurrent cross-account runs rather than returning another user's result.
