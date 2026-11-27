@@ -33,6 +33,8 @@ class MemoryDb {
     return {
      get:key=>req(()=>store.get(key)),
      getAll:()=>req(()=>[...store.values()]),
+     getAllKeys:()=>req(()=>[...store.keys()]),
+     add:value=>req(()=>{if(store.has(value.id))throw Error('duplicate');store.set(value.id,value);return value.id}),
      put:value=>req(()=>{store.set(value.id,value);return value.id}),
      delete:key=>req(()=>store.delete(key))
     };
@@ -380,4 +382,24 @@ test('transient failure remains retryable alongside a permanent conflict',async(
  assert.equal(next.pending,1);
  assert.equal(next.retryablePending,0);
  assert.equal(next.unattempted,0);
+});
+
+// Regression: additive cloud recovery must not discard the common ancestor
+// needed by V4 when an existing comic is edited on another device.
+test('add-only recovery captures version for newly downloaded rows and protects pending edits',async()=>{
+ const rehydrate=require('../catalog-cloud-rehydrate.js');
+ const d=new MemoryDb(),first={id:'c_new',title:'Initial'},pending={id:'c_pending',title:'Central'};
+ const version='2026-11-27T07:00:00.000Z';
+ d.stores.sync_outbox.set(pending.id,{id:pending.id,uid:UID,rev:'pending',op:'delete'});
+ const result=await rehydrate.mergeMissingAtomically(d,[first,pending],UID,new Map([[first.id,version],[pending.id,version]]));
+ assert.equal(result.added,1);
+ assert.deepEqual(d.stores.sync_baseline.get(first.id).record,first);
+ assert.equal(d.stores.sync_baseline.get(first.id).version,version);
+ assert.equal(d.stores.comics.has(pending.id),false);
+ assert.equal(d.stores.sync_outbox.has(pending.id),true);
+ const remote={record:{...first,title:'Edited on mobile'},version:'2026-11-27T07:01:00.000Z'};
+ assert.equal(sync.decidePull({local:d.stores.comics.get(first.id),remote,baseline:d.stores.sync_baseline.get(first.id),pending:false}).action,'download');
+ await rehydrate.mergeMissingAtomically(d,[remote.record],UID,new Map([[first.id,remote.version]]));
+ assert.equal(d.stores.comics.get(first.id).title,'Initial');
+ assert.equal(d.stores.sync_baseline.get(first.id).version,version);
 });

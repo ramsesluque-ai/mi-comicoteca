@@ -29,11 +29,11 @@
   assert(cfg?.url&&cfg?.publishableKey,'Configuración cloud ausente');
   const authenticated=await verify();
   assert(authenticated?.id===uid,'La identidad verificada no coincide con la base local.');
-  const rows=[],seen=new Set();
+  const rows=[],seen=new Set(),versions=new Map();
   let last=null,complete=false,tombstones=0;
   const base=String(cfg.url).replace(/\/+$/,'');
   for(let page=0;page<MAX_PAGES;page++){
-   const query='?select=user_id,local_id,metadata&user_id=eq.'+encodeURIComponent(uid)+'&order=local_id.asc&limit='+PAGE+(last===null?'':'&local_id=gt.'+encodeURIComponent(last));
+   const query='?select=user_id,local_id,metadata,updated_at&user_id=eq.'+encodeURIComponent(uid)+'&order=local_id.asc&limit='+PAGE+(last===null?'':'&local_id=gt.'+encodeURIComponent(last));
    const request=()=>fetcher(base+'/rest/v1/user_comics'+query,{method:'GET',headers:{apikey:cfg.publishableKey,Authorization:'Bearer '+getAccountSession(uid).access_token},cache:'no-store'});
    let response=await request();
    if(response.status===401||response.status===403){
@@ -59,12 +59,13 @@
     if(m.deleted===true){tombstones++;continue;}
     assert(m.record&&typeof m.record==='object'&&String(m.record.id)===id,'Ficha remota incompleta o con ID distinto.');
     rows.push(m.record);
+    if(typeof x.updated_at==='string'&&Number.isFinite(Date.parse(x.updated_at)))versions.set(id,x.updated_at);
    }
    progress?.(rows.length);
    if(batch.length<PAGE){complete=true;break;}
   }
   assert(complete,'La lectura de Supabase ha quedado incompleta; restauración cancelada.');
-  return {rows,tombstones,scanned:seen.size};
+  return {rows,versions,tombstones,scanned:seen.size};
  }
  async function verifiedSnapshot(rows,hasher=crypto.subtle.digest.bind(crypto.subtle)){
   const payload=JSON.stringify(rows);
@@ -100,17 +101,20 @@
  // Add-only reconciliation for a POPULATED account cache. Never uses put/delete,
  // never sends writes to the server and never changes an existing local row.
  // The complete authenticated cloud scan finishes BEFORE this transaction.
- function mergeMissingAtomically(database,rows,uid){
+ function mergeMissingAtomically(database,rows,uid,versions=new Map()){
   return new Promise((resolve,reject)=>{
    let transaction,added=0,present=0,onlyLocal=0;
    try{
-    transaction=database.transaction(['comics','sync_outbox'],'readwrite');
+    const withBaseline=database.objectStoreNames?.contains('sync_baseline')===true;
+    transaction=database.transaction(withBaseline?['comics','sync_outbox','sync_baseline']:['comics','sync_outbox'],'readwrite');
     const store=transaction.objectStore('comics');
     const pending=transaction.objectStore('sync_outbox').getAll();
     const keys=store.getAllKeys();
-    let existingKeys=null,queuedDeletes=null;
+    const baseline=withBaseline?transaction.objectStore('sync_baseline'):null;
+    const known=baseline?.getAll();
+    let existingKeys=null,queuedIds=null,knownIds=baseline?null:new Set();
     const reconcile=()=>{
-     if(!existingKeys||!queuedDeletes)return;
+     if(!existingKeys||!queuedIds||!knownIds)return;
      const existing=new Set(existingKeys.map(String));
      const cloudIds=new Set(rows.map(row=>String(row.id)));
      onlyLocal=[...existing].filter(id=>!cloudIds.has(id)).length;
@@ -119,12 +123,21 @@
       if(!id){transaction.abort();return}
       if(existing.has(id)){present++;continue}
       // Local deletions are durable intent. Add-only cloud recovery must never resurrect them.
-      if(queuedDeletes.has(id))continue;
+      if(queuedIds.has(id))continue;
       existing.add(id);store.add(row);added++;
+      // The authenticated remote snapshot is the common ancestor of this new
+      // cached record. Capture it atomically, without replacing an existing
+      // baseline or claiming that a private cover binary has been restored.
+      const version=versions.get(id);
+      if(baseline&&version&&!knownIds.has(id)){
+       baseline.add({id,uid,record:row,version,at:new Date().toISOString()});
+       knownIds.add(id);
+      }
      }
     };
     keys.onsuccess=()=>{existingKeys=keys.result;reconcile()};
-    pending.onsuccess=()=>{queuedDeletes=new Set(pending.result.filter(x=>x.op==='delete'&&x.uid===uid).map(x=>String(x.id)));reconcile()};
+    pending.onsuccess=()=>{queuedIds=new Set(pending.result.map(x=>String(x.id)));reconcile()};
+    if(known){known.onsuccess=()=>{knownIds=new Set(known.result.map(x=>String(x.id)));reconcile()};known.onerror=()=>transaction.abort()}
     keys.onerror=()=>transaction.abort();
     pending.onerror=()=>transaction.abort();
     transaction.oncomplete=()=>resolve({added,present,onlyLocal});
@@ -160,7 +173,7 @@
     assert(id&&!ids.has(id),'ID remoto repetido o inválido; ninguna ficha importada.');
     ids.add(id);
    }
-   const merged=await mergeMissingAtomically(database,result.rows,uid);
+   const merged=await mergeMissingAtomically(database,result.rows,uid,result.versions);
    const after=await countLocal(database);
    assert(after>=before,'La reconciliación no debe eliminar fichas locales.');
    try{localStorage.setItem('mc-catalog-cloud-seen-'+uid,String(result.rows.length))}catch(_){}
